@@ -1,0 +1,17 @@
+/*
+ * Przykladowy komentarz
+*/
+// Ten rowniez
+
+
+/*
+ * Poczatek programu
+*/
+int main() {
+    bool b = false;
+    if(b == false) {
+        return _fun1(1234, 0);
+    }
+    return -1;
+}
+

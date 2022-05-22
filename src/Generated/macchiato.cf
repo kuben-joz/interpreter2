@@ -1,0 +1,155 @@
+-- programs ------------------------------------------------
+
+entrypoints Program ;
+
+ProgramS.   Program ::= [FnDef] ;
+
+FunDef.	   FnDef ::= Type UIdent "(" [Arg] ")" Block ;
+
+separator nonempty FnDef "" ;
+
+ArgVal. 	   Arg ::= Type UIdent;
+
+ArgRef.	   	   Arg ::= Type "&" UIdent;
+
+separator  Arg "," ;
+
+-- statements ----------------------------------------------
+
+FunBlock.     Block ::= "{" [Stmt] "}" ;
+
+separator  Stmt "" ;
+
+Empty.     Stmt ::= ";" ;
+
+BStmt.     Stmt ::= Block ;
+
+FunStmt.   Stmt ::= FnDef;
+
+Decl.      Stmt ::= Type [Item] ";" ;
+
+NoInit.    Item ::= UIdent ; 
+
+Init.      Item ::= UIdent "=" Expr ;
+
+separator nonempty Item "," ;
+
+Ass.       Stmt ::= UIdent "=" Expr  ";" ;
+
+ArrAss.    Stmt ::= UIdent [DimAcc] "=" Expr ";" ;
+
+Ret.       Stmt ::= "return" Expr ";" ;
+
+Cond.      Stmt ::= "if" "(" Expr ")" Stmt  ;
+
+CondElse.  Stmt ::= "if" "(" Expr ")" Stmt "else" Stmt  ;
+
+While.     Stmt ::= "while" "(" Expr ")" Stmt ;
+
+SExp.      Stmt ::= Expr  ";" ;
+
+Print.     Stmt ::= "print" [PrintParam] ";" ;
+
+FunPrintParam. PrintParam ::= "<<" Expr ;
+
+separator nonempty PrintParam "" ;
+
+-- Types and modifiers ---------------------------------------------------
+
+Int.       Type ::= "int" ;
+
+Str.       Type ::= "string" ;
+
+Bool.      Type ::= "bool" ;
+
+token UIdent ((letter | '_') (letter | digit | '_')*) ;
+
+Arr.       Type ::= Type [DimBra];
+
+ModDimBra.    DimBra ::= "[]" ;
+
+separator nonempty DimBra "";
+
+internal   Fun. Type ::= Type "(" [Type] ")" ;
+
+separator  Type "," ;
+
+
+-- Expressions ---------------------------------------------
+
+EVar.      Expr6 ::= UIdent ;
+
+ENewArr.   Expr6 ::= "new" Type [DimAcc] [DimBra] ;
+
+EArrAcc.    Expr6 ::= UIdent [DimAcc] ;
+
+EDimAcc.    DimAcc::= "[" Expr6 "]" ;
+
+separator  nonempty DimAcc "" ;
+
+-- KeyWords are something like arr::length for arrays
+KeyWordLength. KeyWord ::= "LENGTH" ;
+KeyWordMaxVal. KeyWord ::= "MAX_VAL";
+
+EKeyWord.   Expr6 ::= UIdent"::"KeyWord ;
+
+EArrKeyWord. Expr6 ::= UIdent[DimAcc]"::"KeyWord ;
+
+ELitInt.   Expr6 ::= Integer ;
+
+ELitTrue.  Expr6 ::= "true" ;
+
+ELitFalse. Expr6 ::= "false" ;
+
+EApp.      Expr6 ::= UIdent "(" [Expr] ")" ;
+
+EString.   Expr6 ::= String ;
+
+Neg.       Expr5 ::= "-" Expr6 ;
+
+Not.       Expr5 ::= "!" Expr6 ;
+
+EMul.      Expr4 ::= Expr4 MulOp Expr5 ;
+
+EAdd.      Expr3 ::= Expr3 AddOp Expr4 ;
+
+ERel.      Expr2 ::= Expr2 RelOp Expr3 ;
+
+EAnd.      Expr1 ::= Expr2 "&&" Expr1 ;
+
+EOr.       Expr ::= Expr1 "||" Expr ;
+
+coercions  Expr 6 ;
+
+separator  Expr "," ;
+
+-- operators -----------------------------------------------
+
+Plus.      AddOp ::= "+" ;
+
+Minus.     AddOp ::= "-" ;
+
+Times.     MulOp ::= "*" ;
+
+Div.       MulOp ::= "/" ;
+
+Mod.       MulOp ::= "%" ;
+
+LTH.       RelOp ::= "<" ;
+
+LE.        RelOp ::= "<=" ;
+
+GTH.       RelOp ::= ">" ;
+
+GE.        RelOp ::= ">=" ;
+
+EQU.       RelOp ::= "==" ;
+
+NE.        RelOp ::= "!=" ;
+
+
+-- comments ------------------------------------------------
+
+comment    "//" ;
+
+comment    "/*" "*/" ;
