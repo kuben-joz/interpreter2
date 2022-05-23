@@ -64,11 +64,11 @@ Bool.      Type ::= "bool" ;
 
 token UIdent ((letter | '_') (letter | digit | '_')*) ;
 
-Arr.       Type ::= Type [DimBra];
+Arr.       Type ::= Type "[]" [DimBra];
 
 ModDimBra.    DimBra ::= "[]" ;
 
-separator nonempty DimBra "";
+separator DimBra "";
 
 internal   Fun. Type ::= Type "(" [Type] ")" ;
 

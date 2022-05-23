@@ -31,9 +31,12 @@ library
       Generated.ParMacchiato
       Generated.PrintMacchiato
       Generated.SkelMacchiato
+      Generated.TestMacchiato
       Mem.SymbolTable
       StaticAnalysis.Environment
+      StaticAnalysis.Err
       StaticAnalysis.MacchiatoTypes
+      StaticAnalysis.Traverser
       StaticAnalysis.TypeCheck
   other-modules:
       Paths_interpreter
@@ -43,6 +46,7 @@ library
       array
     , base >=4.7 && <5
     , containers
+    , mtl
   default-language: Haskell2010
 
 executable interpreter-exe
@@ -57,13 +61,13 @@ executable interpreter-exe
     , base >=4.7 && <5
     , containers
     , interpreter
+    , mtl
   default-language: Haskell2010
 
 test-suite interpreter-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
-      TestMacchiato
       Paths_interpreter
   hs-source-dirs:
       test
@@ -73,4 +77,5 @@ test-suite interpreter-test
     , base >=4.7 && <5
     , containers
     , interpreter
+    , mtl
   default-language: Haskell2010

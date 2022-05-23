@@ -1,14 +1,20 @@
 {-# OPTIONS_GHC -fno-warn-unused-binds -fno-warn-missing-signatures #-}
 {-# LANGUAGE CPP,MagicHash #-}
-{-# LINE 3 "LexMacchiato.x" #-}
+{-# LINE 4 "LexMacchiato.x" #-}
 
 {-# OPTIONS -fno-warn-incomplete-patterns #-}
 {-# OPTIONS_GHC -w #-}
+
+{-# LANGUAGE PatternSynonyms #-}
+
 module LexMacchiato where
 
+import Prelude
+
 import qualified Data.Bits
-import Data.Word (Word8)
-import Data.Char (ord)
+import Data.Char     (ord)
+import Data.Function (on)
+import Data.Word     (Word8)
 
 #if __GLASGOW_HASKELL__ >= 603
 #include "ghcconfig.h"
@@ -112,51 +118,74 @@ alex_actions = array (0 :: Int, 11)
   , (0,alex_action_7)
   ]
 
-{-# LINE 44 "LexMacchiato.x" #-}
+{-# LINE 64 "LexMacchiato.x" #-}
 
+-- | Create a token with position.
+tok :: (String -> Tok) -> (Posn -> String -> Token)
+tok f p = PT p . f
 
-tok :: (Posn -> String -> Token) -> (Posn -> String -> Token)
-tok f p s = f p s
+-- | Token without position.
+data Tok
+  = TK {-# UNPACK #-} !TokSymbol  -- ^ Reserved word or symbol.
+  | TL !String                    -- ^ String literal.
+  | TI !String                    -- ^ Integer literal.
+  | TV !String                    -- ^ Identifier.
+  | TD !String                    -- ^ Float literal.
+  | TC !String                    -- ^ Character literal.
+  | T_UIdent !String
+  deriving (Eq, Show, Ord)
 
-share :: String -> String
-share = id
+-- | Smart constructor for 'Tok' for the sake of backwards compatibility.
+pattern TS :: String -> Int -> Tok
+pattern TS t i = TK (TokSymbol t i)
 
-data Tok =
-   TS !String !Int    -- reserved words and symbols
- | TL !String         -- string literals
- | TI !String         -- integer literals
- | TV !String         -- identifiers
- | TD !String         -- double precision float literals
- | TC !String         -- character literals
- | T_UIdent !String
+-- | Keyword or symbol tokens have a unique ID.
+data TokSymbol = TokSymbol
+  { tsText :: String
+      -- ^ Keyword or symbol text.
+  , tsID   :: !Int
+      -- ^ Unique ID.
+  } deriving (Show)
 
- deriving (Eq,Show,Ord)
+-- | Keyword/symbol equality is determined by the unique ID.
+instance Eq  TokSymbol where (==)    = (==)    `on` tsID
 
-data Token =
-   PT  Posn Tok
- | Err Posn
-  deriving (Eq,Show,Ord)
+-- | Keyword/symbol ordering is determined by the unique ID.
+instance Ord TokSymbol where compare = compare `on` tsID
 
+-- | Token with position.
+data Token
+  = PT  Posn Tok
+  | Err Posn
+  deriving (Eq, Show, Ord)
+
+-- | Pretty print a position.
 printPosn :: Posn -> String
 printPosn (Pn _ l c) = "line " ++ show l ++ ", column " ++ show c
 
+-- | Pretty print the position of the first token in the list.
 tokenPos :: [Token] -> String
 tokenPos (t:_) = printPosn (tokenPosn t)
-tokenPos [] = "end of file"
+tokenPos []    = "end of file"
 
+-- | Get the position of a token.
 tokenPosn :: Token -> Posn
 tokenPosn (PT p _) = p
-tokenPosn (Err p) = p
+tokenPosn (Err p)  = p
 
+-- | Get line and column of a token.
 tokenLineCol :: Token -> (Int, Int)
 tokenLineCol = posLineCol . tokenPosn
 
+-- | Get line and column of a position.
 posLineCol :: Posn -> (Int, Int)
 posLineCol (Pn _ l c) = (l,c)
 
+-- | Convert a token into "position token" form.
 mkPosToken :: Token -> ((Int, Int), String)
-mkPosToken t@(PT p _) = (posLineCol p, tokenText t)
+mkPosToken t = (tokenLineCol t, tokenText t)
 
+-- | Convert a token to its text.
 tokenText :: Token -> String
 tokenText t = case t of
   PT _ (TS s _) -> s
@@ -168,24 +197,53 @@ tokenText t = case t of
   Err _         -> "#error"
   PT _ (T_UIdent s) -> s
 
+-- | Convert a token to a string.
 prToken :: Token -> String
 prToken t = tokenText t
 
-data BTree = N | B String Tok BTree BTree deriving (Show)
+-- | Finite map from text to token organized as binary search tree.
+data BTree
+  = N -- ^ Nil (leaf).
+  | B String Tok BTree BTree
+      -- ^ Binary node.
+  deriving (Show)
 
+-- | Convert potential keyword into token or use fallback conversion.
 eitherResIdent :: (String -> Tok) -> String -> Tok
 eitherResIdent tv s = treeFind resWords
   where
   treeFind N = tv s
-  treeFind (B a t left right) | s < a  = treeFind left
-                              | s > a  = treeFind right
-                              | s == a = t
+  treeFind (B a t left right) =
+    case compare s a of
+      LT -> treeFind left
+      GT -> treeFind right
+      EQ -> t
 
+-- | The keywords and symbols of the language organized as binary search tree.
 resWords :: BTree
-resWords = b ">=" 21 (b "-" 11 (b "(" 6 (b "%" 3 (b "!=" 2 (b "!" 1 N N) N) (b "&&" 5 (b "&" 4 N N) N)) (b "+" 9 (b "*" 8 (b ")" 7 N N) N) (b "," 10 N N))) (b "<<" 16 (b ";" 14 (b "::" 13 (b "/" 12 N N) N) (b "<" 15 N N)) (b "==" 19 (b "=" 18 (b "<=" 17 N N) N) (b ">" 20 N N)))) (b "int" 31 (b "]" 26 (b "[" 24 (b "MAX_VAL" 23 (b "LENGTH" 22 N N) N) (b "[]" 25 N N)) (b "false" 29 (b "else" 28 (b "bool" 27 N N) N) (b "if" 30 N N))) (b "true" 36 (b "return" 34 (b "print" 33 (b "new" 32 N N) N) (b "string" 35 N N)) (b "||" 39 (b "{" 38 (b "while" 37 N N) N) (b "}" 40 N N))))
-   where b s n = let bs = s
-                 in  B bs (TS bs n)
+resWords =
+  b ">=" 21
+    (b "-" 11
+       (b "(" 6
+          (b "%" 3 (b "!=" 2 (b "!" 1 N N) N) (b "&&" 5 (b "&" 4 N N) N))
+          (b "+" 9 (b "*" 8 (b ")" 7 N N) N) (b "," 10 N N)))
+       (b "<<" 16
+          (b ";" 14 (b "::" 13 (b "/" 12 N N) N) (b "<" 15 N N))
+          (b "==" 19 (b "=" 18 (b "<=" 17 N N) N) (b ">" 20 N N))))
+    (b "int" 31
+       (b "]" 26
+          (b "[" 24 (b "MAX_VAL" 23 (b "LENGTH" 22 N N) N) (b "[]" 25 N N))
+          (b "false" 29 (b "else" 28 (b "bool" 27 N N) N) (b "if" 30 N N)))
+       (b "true" 36
+          (b "return" 34
+             (b "print" 33 (b "new" 32 N N) N) (b "string" 35 N N))
+          (b "||" 39 (b "{" 38 (b "while" 37 N N) N) (b "}" 40 N N))))
+  where
+  b s n = B bs (TS bs n)
+    where
+    bs = s
 
+-- | Unquote string literal.
 unescapeInitTail :: String -> String
 unescapeInitTail = id . unesc . tail . id
   where
@@ -195,9 +253,9 @@ unescapeInitTail = id . unesc . tail . id
     '\\':'t':cs  -> '\t' : unesc cs
     '\\':'r':cs  -> '\r' : unesc cs
     '\\':'f':cs  -> '\f' : unesc cs
-    '"':[]    -> []
-    c:cs      -> c : unesc cs
-    _         -> []
+    '"':[]       -> []
+    c:cs         -> c : unesc cs
+    _            -> []
 
 -------------------------------------------------------------------
 -- Alex wrapper code.
@@ -205,7 +263,7 @@ unescapeInitTail = id . unesc . tail . id
 -------------------------------------------------------------------
 
 data Posn = Pn !Int !Int !Int
-      deriving (Eq, Show,Ord)
+  deriving (Eq, Show, Ord)
 
 alexStartPos :: Posn
 alexStartPos = Pn 0 1 1
@@ -249,7 +307,7 @@ alexInputPrevChar (p, c, bs, s) = c
 -- | Encode a Haskell String to a list of Word8 values, in UTF8 format.
 utf8Encode :: Char -> [Word8]
 utf8Encode = map fromIntegral . go . ord
- where
+  where
   go oc
    | oc <= 0x7f       = [oc]
 
@@ -267,11 +325,11 @@ utf8Encode = map fromIntegral . go . ord
                         , 0x80 + oc Data.Bits..&. 0x3f
                         ]
 
-alex_action_3 =  tok (\p s -> PT p (eitherResIdent (TV . share) s)) 
-alex_action_4 =  tok (\p s -> PT p (eitherResIdent (T_UIdent . share) s)) 
-alex_action_5 =  tok (\p s -> PT p (eitherResIdent (TV . share) s)) 
-alex_action_6 =  tok (\p s -> PT p (TL $ share $ unescapeInitTail s)) 
-alex_action_7 =  tok (\p s -> PT p (TI $ share s))    
+alex_action_3 =  tok (eitherResIdent TV) 
+alex_action_4 =  tok (eitherResIdent T_UIdent) 
+alex_action_5 =  tok (eitherResIdent TV) 
+alex_action_6 =  tok (TL . unescapeInitTail) 
+alex_action_7 =  tok TI 
 {-# LINE 1 "templates/GenericTemplate.hs" #-}
 -- -----------------------------------------------------------------------------
 -- ALEX TEMPLATE
