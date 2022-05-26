@@ -64,6 +64,7 @@ data Type' a
     | Str a
     | Bool a
     | Arr a (Type' a) [DimBra' a]
+    -- todo delete, this one never occurs
     | Fun a (Type' a) [Type' a]
   deriving (C.Eq, C.Ord, C.Show, C.Read, C.Functor, C.Foldable, C.Traversable)
 

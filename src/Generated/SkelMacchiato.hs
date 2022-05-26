@@ -4,10 +4,10 @@
 
 {-# OPTIONS_GHC -fno-warn-unused-matches #-}
 
-module SkelMacchiato where
+module Generated.SkelMacchiato where
 
 import Prelude (($), Either(..), String, (++), Show, show)
-import qualified AbsMacchiato
+import qualified Generated.AbsMacchiato as AbsMacchiato
 
 type Err = Either String
 type Result = Err String

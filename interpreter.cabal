@@ -31,13 +31,16 @@ library
       Generated.ParMacchiato
       Generated.PrintMacchiato
       Generated.SkelMacchiato
-      Generated.TestMacchiato
       Mem.SymbolTable
       StaticAnalysis.Environment
       StaticAnalysis.Err
       StaticAnalysis.MacchiatoTypes
+      StaticAnalysis.StaticCheck
+      StaticAnalysis.StaticChecks
       StaticAnalysis.Traverser
       StaticAnalysis.TypeCheck
+      StaticAnalysis.TypeChecks
+      Util.FieldExtractors
   other-modules:
       Paths_interpreter
   hs-source-dirs:

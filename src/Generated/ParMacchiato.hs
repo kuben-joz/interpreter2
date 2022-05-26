@@ -6,7 +6,7 @@
 {-# OPTIONS_GHC -fno-warn-incomplete-patterns -fno-warn-overlapping-patterns #-}
 {-# LANGUAGE PatternSynonyms #-}
 
-module ParMacchiato
+module Generated.ParMacchiato
   ( happyError
   , myLexer
   , pProgram
@@ -14,8 +14,8 @@ module ParMacchiato
 
 import Prelude
 
-import qualified AbsMacchiato
-import LexMacchiato
+import qualified Generated.AbsMacchiato as AbsMacchiato
+import Generated.LexMacchiato
 import qualified Data.Array as Happy_Data_Array
 import qualified Data.Bits as Bits
 import qualified GHC.Exts as Happy_GHC_Exts

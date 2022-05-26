@@ -2,46 +2,39 @@
 
 module Mem.SymbolTable where
 
+
 import qualified Data.Map as Map
 
 type Loc = Int
 type Id = String
 
-data Value a = Value{val :: a, no_of_ref :: Int}
 
-
-type Envs = [Env]
 
 type Env = Map.Map Id Loc
 
-type State a = Map.Map Loc (Value a)
+type State a = Map.Map Loc a
 
 
 
+-- dat is used for any additional data we need, this changes based on wether we are type checking or executing the program
+data SymTable s d = SymTable{global_env :: Env, current_env :: [Env], state :: State s, dat :: d, loc :: Int}
 
-data SymTable a = SymTable{proc_envs :: Envs, val_envs :: Envs, state :: State a}
+refreshState SymTable{..} = SymTable global_env [Map.empty] state dat loc
+
+expandState SymTable{..} = SymTable global_env (Map.empty:current_env) state dat loc
+
+initState d = SymTable Map.empty [] Map.empty d 0
+
+getEnvs SymTable{..} = (global_env, current_env)
+
+getState SymTable{..} = state
 
 
 --newEnv :: SymTable a -> SymTable a
 --newEnv SymTable {..} = SymTable{proc_envs=proc_envs, val_envs =  : val_envs, ..}
 
-
-pushEnv :: [Map.Map k a] -> [Map.Map k a]
-pushEnv envs = Map.empty : envs
-
-
-popEnv :: Env -> State a -> State a
-popEnv e s = removeRefs (Map.elems e) s
-
-
-removeRefs :: [Int] -> State a -> State a
-removeRefs locs state
-  = foldl (flip (Map.update removeRef)) state locs
-
-
-removeRef :: Value a -> Maybe (Value a)
-removeRef Value {val=_, no_of_ref=1} = Nothing
-removeRef Value {..} = Just (Value{val=val, no_of_ref=no_of_ref-1})
+-- based on this https://stackoverflow.com/questions/27663084/how-can-i-decently-add-an-undo-functionality-to-state-monads
+-- I also initially had an explicvit stack, but this gives better time complexity as I don't have to manually pop things off SymTable {state}
 
 
 

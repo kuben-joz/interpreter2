@@ -9,7 +9,7 @@
 
 -- | Pretty-printer for PrintMacchiato.
 
-module PrintMacchiato where
+module Generated.PrintMacchiato where
 
 import Prelude
   ( ($), (.)
@@ -20,7 +20,7 @@ import Prelude
   , all, elem, foldr, id, map, null, replicate, shows, span
   )
 import Data.Char ( Char, isSpace )
-import qualified AbsMacchiato
+import qualified Generated.AbsMacchiato as AbsMacchiato
 
 -- | The top-level printing method.
 
