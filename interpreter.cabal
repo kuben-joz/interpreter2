@@ -29,8 +29,7 @@ library
       Generated.ErrM
       Generated.LexMacchiato
       Generated.ParMacchiato
-      Generated.PrintMacchiato
-      Generated.SkelMacchiato
+      Interpretation.Interpreter
       Mem.SymbolTable
       StaticAnalysis.Environment
       StaticAnalysis.Err

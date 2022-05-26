@@ -23,6 +23,10 @@ import StaticAnalysis.StaticChecks
 import Control.Monad.State
 import Data.Maybe
 
+
+startTypeCheck :: AType.Program -> Either StaticException (Maybe MFType)
+startTypeCheck prog = runExcept $ evalStateT (check Nothing prog) (initState ())
+
 class Checkable e where
     check :: (Maybe MFType) -> e -> STraverser
 
