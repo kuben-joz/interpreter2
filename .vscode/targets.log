@@ -8,7 +8,7 @@ make: *** No rule to make target 'all'.  Stop.
 # This is free software: you are free to change and redistribute it.
 # There is NO WARRANTY, to the extent permitted by law.
 
-# Make data base, printed on Thu May 26 14:52:52 2022
+# Make data base, printed on Fri May 27 01:44:12 2022
 
 # Variables
 
@@ -25,7 +25,7 @@ I3SOCK = /run/user/1000/i3/ipc-socket.1254
 # environment
 CSF_EXCEPTION_PROMPT = 1
 # environment
-VSCODE_IPC_HOOK_EXTHOST = /run/user/1000/vscode-ipc-3d691386-60c1-4eb8-8743-aaa03506062f.sock
+VSCODE_IPC_HOOK_EXTHOST = /run/user/1000/vscode-ipc-a2ef7f1f-1873-4481-9c5a-8498a2f5a150.sock
 # environment
 CSF_XmlOcafResource = /usr/share/opencascade/resources/XmlOcafResource
 # environment
@@ -115,7 +115,7 @@ MAKEFILE_LIST :=
 # environment
 VSCODE_VERBOSE_LOGGING = true
 # environment
-VSCODE_PID = 611523
+VSCODE_PID = 861201
 # environment
 XDG_SESSION_TYPE = x11
 # automatic
@@ -277,11 +277,10 @@ LC_IDENTIFICATION = pl_PL.UTF-8
 
 # Directories
 
-# . (device 66308, inode 20323937): 17 files, no impossibilities.
+# . (device 66308, inode 20323937): 19 files, no impossibilities.
 
-# 17 files, no impossibilities in 1 directories.
+# 19 files, no impossibilities in 1 directories.
 
- 
 # Implicit Rules
 
 # No implicit rules.
@@ -303,6 +302,7 @@ Makefile:
 
 # Not a target:
 all:
+ 
 #  Command line target.
 #  Implicit rule search has been done.
 #  File does not exist.
@@ -330,12 +330,12 @@ GNUmakefile:
 
 # No general ('VPATH' variable) search path.
 
-# strcache buffers: 1 (0) / strings = 25 / storage = 252 B / avg = 10 B
-# current buf: size = 8162 B / used = 252 B / count = 25 / avg = 10 B
+# strcache buffers: 1 (0) / strings = 27 / storage = 269 B / avg = 9 B
+# current buf: size = 8162 B / used = 269 B / count = 27 / avg = 9 B
 
-# strcache performance: lookups = 28 / hit rate = 10%
+# strcache performance: lookups = 30 / hit rate = 10%
 # hash-table stats:
-# Load=25/8192=0%, Rehash=0, Collisions=0/28=0%
-# Finished Make data base on Thu May 26 14:52:52 2022
+# Load=27/8192=0%, Rehash=0, Collisions=0/30=0%
+# Finished Make data base on Fri May 27 01:44:12 2022
 
  

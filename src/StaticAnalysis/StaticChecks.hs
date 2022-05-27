@@ -2,7 +2,7 @@ module StaticAnalysis.StaticChecks where
 
 -- this includes all checks that are not type checks but are still static
 
-import qualified Generated.AbsMacchiato as AType
+import qualified Parsing.AbsMacchiato as AType
 import StaticAnalysis.Traverser
 import Util.FieldExtractors
 import StaticAnalysis.Err as Err

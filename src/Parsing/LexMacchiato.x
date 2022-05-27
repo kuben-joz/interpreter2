@@ -7,7 +7,7 @@
 
 {-# LANGUAGE PatternSynonyms #-}
 
-module Generated.LexMacchiato where
+module Parsing.LexMacchiato where
 
 import Prelude
 

@@ -30,7 +30,7 @@ interpret s = do
 
 check' prog = do
   case startTypeCheck prog of
-    Left ex -> print "fail"
+    Left ex -> print ex
     Right _ -> print "success"
   --return (liftIO)
 

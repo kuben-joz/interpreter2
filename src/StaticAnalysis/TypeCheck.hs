@@ -10,9 +10,8 @@ module StaticAnalysis.TypeCheck where
 import qualified Mem.SymbolTable as ST
 
 
-import qualified Generated.AbsMacchiato as AType
+import qualified Parsing.AbsMacchiato as AType
 import Util.FieldExtractors
-import Generated.AbsMacchiato (FnDef')
 import StaticAnalysis.Traverser
 import StaticAnalysis.Err as Err
 import Mem.SymbolTable
@@ -43,39 +42,41 @@ instance Checkable AType.Program where
         mapM_ (pushPop . check Nothing) defs
         return Nothing
 
+
 instance Checkable AType.FnDef where
     check _ fn@(AType.FunDef pos t (AType.UIdent id) args blk) = do
-        mapM_ addArg args
+        mapM_ (check Nothing) args
   --      return $ fromMaybe (throwError $ Err.NoReturn pos id) (check (Just $ toMFT t) blk)
         res_type <- check (Just $ toMFT t) blk
-        case res_type of
-            Nothing -> throwError $ Err.NoReturn pos id
-            a       -> return a
+        nothingGuard res_type (Err.NoReturn pos id)
+        return res_type
 
-addArg :: AType.Arg -> STraverser
-addArg arg@(AType.ArgVal pos t (AType.UIdent id)) = do
-    key_val <- addKeyVal id (toMFT arg)
-    case key_val of
-        Nothing -> return Nothing
-        _       ->  throwError (Err.FuncNameCollision pos id)
-addArg arg@(AType.ArgRef pos t (AType.UIdent id)) = do
-    key_val <- addKeyVal id (toMFT arg)
-    case key_val of
-        Nothing -> return Nothing
-        _       ->  throwError (Err.FuncNameCollision pos id)
+instance Checkable AType.Arg where
+    check _ arg@(AType.ArgVal pos t (AType.UIdent id)) = do
+        key_val <- addKeyVal id (toMFT arg)
+        notNothingGuard key_val (Err.FuncNameCollision pos id)
+        return Nothing
+    check _ arg@(AType.ArgRef pos t (AType.UIdent id)) = do
+        key_val <- addKeyVal id (toMFT arg)
+        notNothingGuard key_val (Err.FuncNameCollision pos id)
+        return Nothing
 
 
 
 instance Checkable AType.Block where
     check t blk@(AType.FunBlock pos stmts) = do
         rets <- mapM (check t) stmts
-        return $  listToMaybe $ catMaybes rets
+        return $ listToMaybe $ catMaybes rets
 
 
 instance Checkable AType.Stmt where
     check _ (AType.Empty pos) = do return Nothing
     check t (AType.BStmt pos blk) = do push $ check t blk
-    check _ (AType.FunStmt loc fndef) = do push $ check Nothing fndef
+    check _ (AType.FunStmt loc fn@(AType.FunDef pos t (AType.UIdent id) args blk)) = do
+        prev_func <- addKeyVal id (toMFT fn)
+        notNothingGuard prev_func (Err.FuncNameCollision pos id)
+        push $ check Nothing fn
+        return Nothing
     check _ (AType.Decl loc t1 items) = do
         mapM_ (check $ Just $ toMFT t1) items
         return Nothing
@@ -124,25 +125,32 @@ instance Checkable AType.Stmt where
 instance Checkable AType.Item where
     check (Just t) (AType.NoInit pos (AType.UIdent id)) = do
         prev_val <- addKeyVal id t
-        case prev_val of
-            Nothing -> return Nothing
-            _       -> throwError (Err.FuncNameCollision pos id)
+        notNothingGuard prev_val (Err.FuncNameCollision pos id)
+        return Nothing
     check (Just t) (AType.Init pos (AType.UIdent id) expr) = do
         expr_t <- check Nothing expr
         assertType t (fromJust expr_t) pos
         prev_val <- addKeyVal id t
-        case prev_val of
-            Nothing -> return Nothing
-            _       -> throwError (Err.FuncNameCollision pos id)
+        notNothingGuard prev_val (Err.FuncNameCollision pos id)
+        return Nothing
 
 instance Checkable AType.PrintParam where
-    check _ (AType.FunPrintParam _ expr) = check Nothing expr
+    check _ (AType.FunPrintParam loc expr) = do
+        expr_temp <- check Nothing expr
+        let expr_t = fromJust expr_temp
+        arrGuard expr_t (Err.IncompPrintParam loc expr_t)
+        funGuard expr_t (Err.IncompPrintParam loc expr_t)
+        return Nothing
+
+-- todo check arr acc always has ref even if value as I am implementing it as locs
 
 instance Checkable AType.Expr where
     check _ (AType.EVar pos (AType.UIdent id)) = do
         var_type <- getVal id
         nothingGuard var_type (Err.UseOfUndeclaredVar pos id)
-        return var_type
+        case var_type of
+            Just (MFun{}, _) -> throwError $ Err.RefFuncAsVar pos id
+            _                -> return var_type
     check _ (AType.ENewArr pos t dim_acc dim_bra) = do
         mapM_ (check Nothing) dim_acc
         return $ Just (fst $ toMFT t, MTypeMods{dim_num=length dim_acc+length dim_bra, has_ref = False})
@@ -178,9 +186,8 @@ instance Checkable AType.Expr where
         nothingGuard f_t (Err.CallToUnderclaredFun pos id)
         let Just f_t1@(t, mods) = f_t
         case t of
-            (MFun t' ts') -> if strictComp ts' exp_ts2 then return $ Just t
+            (MFun t' ts') -> if strictComp ts' exp_ts2 then return $ Just t'
                            else throwError $ Err.IncompatibleFunParams pos id f_t1 exp_ts2
-        return Nothing
     check _ (AType.ELitInt _ _) = do return $ Just (makeType'' MInt)
     check _ (AType.ELitTrue _ ) = do return $ Just (makeType'' MBool)
     check _ (AType.ELitFalse _) = do return $ Just (makeType'' MBool)
@@ -193,6 +200,7 @@ instance Checkable AType.Expr where
         let t1 = fromJust t1t
         let t2 = fromJust t2t
         notEqGuard t1 t2 $ Err.IncompatibleTypeOpMul pos opi t1 t2
+        arrGuard t1 $ Err.IncompatibleTypeOpAndOr pos op t1 t2
         check (Just t1) opi
     check _ op@(AType.EAdd pos exp1 opi exp2) = do
         t1t <- check Nothing exp1
@@ -200,6 +208,7 @@ instance Checkable AType.Expr where
         let t1 = fromJust t1t
         let t2 = fromJust t2t
         notEqGuard t1 t2 $ Err.IncompatibleTypeOpAdd pos opi t1 t2
+        arrGuard t1 $ Err.IncompatibleTypeOpAndOr pos op t1 t2
         check (Just t1) opi
     check _ op@(AType.ERel pos exp1 opi exp2) = do
         t1t <- check Nothing exp1
@@ -214,7 +223,8 @@ instance Checkable AType.Expr where
         let t1 = fromJust t1t
         let t2 = fromJust t2t
         notEqGuard t1 t2 $ Err.IncompatibleTypeOpAndOr pos op t1 t2
-        if fst t1 /= MBool || dim_num (snd t1) >0 then throwError $ Err.IncompatibleTypeOpAndOr pos op t1 t2
+        arrGuard t1 $ Err.IncompatibleTypeOpAndOr pos op t1 t2
+        if fst t1 /= MBool then throwError $ Err.IncompatibleTypeOpAndOr pos op t1 t2
         else return $ Just t1
     check _ op@(AType.EOr pos exp1 exp2) = do
         t1t <- check Nothing exp1
@@ -222,29 +232,33 @@ instance Checkable AType.Expr where
         let t1 = fromJust t1t
         let t2 = fromJust t2t
         notEqGuard t1 t2 $ Err.IncompatibleTypeOpAndOr pos op t1 t2
-        if fst t1 /= MBool || dim_num (snd t1) >0 then throwError $ Err.IncompatibleTypeOpAndOr pos op t1 t2
+        arrGuard t1 $ Err.IncompatibleTypeOpAndOr pos op t1 t2
+        if fst t1 /= MBool then throwError $ Err.IncompatibleTypeOpAndOr pos op t1 t2
         else return $ Just t1
 
+
+-- todo check arr guards
 
 instance Checkable AType.AddOp where
     check t op@(AType.Plus pos) = do
         let t1@(tt, m) = fromJust t
         case tt of
-            MString -> return Nothing
-            MInt    -> return Nothing
+            MString -> return $ Just t1
+            MInt    -> return $ Just t1
             _       -> throwError $ Err.IncompatibleTypeOpAdd pos op t1 t1
     check t op = do
         let t1@(tt, m) = fromJust t
         case tt of
-            MInt    -> return Nothing
+            MInt    -> return $ Just t1
             _       -> throwError $ Err.IncompatibleTypeOpAdd (AType.hasPosition op) op t1 t1
 
 instance Checkable AType.MulOp where
-    check t op@(AType.Times pos) = do
+    check t op = do
         let t1@(tt, m) = fromJust t
         case tt of
-            MInt -> return Nothing
-            _   -> throwError $ Err.IncompatibleTypeOpMul pos op t1 t1
+            MInt -> return $ Just t1
+            _   -> throwError $ Err.IncompatibleTypeOpMul (AType.hasPosition op) op t1 t1
+{-}
     check t op@(AType.Div pos) = do
         let t1@(tt, m) = fromJust t
         case tt of
@@ -253,16 +267,20 @@ instance Checkable AType.MulOp where
     check t op@(AType.Mod pos) = do
         let t1@(tt, m) = fromJust t
         case tt of
-            MInt -> return Nothing
+            MInt -> return $ Just MInt
             _   -> throwError $ Err.IncompatibleTypeOpMul pos op t1 t1
 
+ -}
+
 instance Checkable AType.RelOp where
+    check t op@(AType.EQU pos) = do return $ Just (makeType'' MBool)
+    check t op@(AType.NE pos) = do return $ Just (makeType'' MBool)
     check t op = do
         let t1@(tt, m) = fromJust t
+        arrGuard t1 (Err.IncompatibleTypeOpRel (AType.hasPosition op) op t1 t1)
         case tt of
-            MBool -> return Nothing
+            MInt -> return $ Just t1
             _   -> throwError $ Err.IncompatibleTypeOpRel (AType.hasPosition op) op t1 t1
-        
 
 
 
@@ -272,10 +290,12 @@ instance Checkable AType.RelOp where
 oneOpCheck expr target_t lim pos op = do
         expr_temp <- check Nothing expr
         let expr_t = fromJust expr_temp
+    --    if fst expr_t == target_t && (dim_num (snd expr_t) <= lim) then
         if fst expr_t == target_t && (dim_num (snd expr_t) <= lim) then
-            throwError $ Err.IncompatibleTypeOp pos op expr_t
-        else
             return $ Just expr_t
+        else
+            throwError $ Err.IncompatibleTypeOp pos op expr_t
+
 
 
 
@@ -335,6 +355,17 @@ assertTypeAndRef _ _ _ = error "Illegal state in assert type"
 
 nothingGuard Nothing err = do throwError err
 nothingGuard _       _   = do return ()
+
+notNothingGuard Nothing _ = do return ()
+notNothingGuard _       err   = do throwError err
+
+funGuard ((MFun _ _), _) err = do throwError err
+funGuard _               _   = do return ()
+
+arrGuard (_, MTypeMods{..}) err = do
+    case dim_num of
+        0 -> return ()
+        _ -> throwError err
 
 notEqGuard t1 t2 err = do
     if t1 == t2 then return Nothing

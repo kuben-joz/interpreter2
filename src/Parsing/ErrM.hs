@@ -17,7 +17,7 @@
 {-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE FlexibleInstances #-}
 
-module Generated.ErrM where
+module Parsing.ErrM where
 
 import Prelude             (id, const, Either(..), String)
 

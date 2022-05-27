@@ -6,13 +6,16 @@
 module StaticAnalysis.MacchiatoTypes where
 
 -- for without arrays but add functionality later
-import Generated.AbsMacchiato
+import Parsing.AbsMacchiato
 import qualified Data.List
 
 -- Macchiato Full Type with array dimensions, for now the dim um is always 0
 type MFType = (MType, MTypeMods)
 
 data MTypeMods = MTypeMods {dim_num :: Int, has_ref :: Bool}
+
+instance Show MTypeMods where
+    show (MTypeMods{..}) = show dim_num ++ ", " ++ show has_ref
 
 instance Eq MTypeMods where
     (==) m1@(MTypeMods dim_num1 _ ) m2@(MTypeMods dim_num2 _ ) = 
@@ -35,7 +38,13 @@ instance StrictEqual MType where
     strictComp a b = a == b
 
 instance StrictEqual a => StrictEqual [a] where
-    strictComp l1 l2 =  foldr (&&) True $ zipWith strictComp l1 l2  
+    strictComp l1 l2 =  foldr (&&) True $ zipWith strictComp l1 l2 
+
+instance Show MType where
+    show MBool = "bool"; 
+    show MString = "String";
+    show MInt = "int";
+    show (MFun _ _) = "fun"
 
 data MType = 
       MBool

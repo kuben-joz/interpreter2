@@ -3,7 +3,7 @@
 module Util.FieldExtractors where
 
 
-import Generated.AbsMacchiato
+import Parsing.AbsMacchiato
 
 
 

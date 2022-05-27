@@ -8,7 +8,7 @@
 
 -- | The abstract syntax of language macchiato.
 
-module Generated.AbsMacchiato where
+module Parsing.AbsMacchiato where
 
 import Prelude (Integer, String)
 import qualified Prelude as C

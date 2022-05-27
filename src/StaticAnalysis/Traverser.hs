@@ -9,11 +9,9 @@ import Mem.SymbolTable
 import StaticAnalysis.MacchiatoTypes
 import Control.Monad.Except
 import Control.Monad.State
-import Control.Monad.List
 import Data.Maybe
-import qualified Generated.AbsMacchiato as AType
+import qualified Parsing.AbsMacchiato as AType
 import qualified StaticAnalysis.Err as Err
-import Util.FieldExtractors
 import qualified Data.Map as M
 import Foreign (deRefStablePtr)
 import GHC.IO.Encoding (getLocaleEncoding)
@@ -25,12 +23,17 @@ type Traverser = StateT (SymTable MFType ()) (Except Err.StaticException)
 type STraverser = Traverser (Maybe MFType)
 
 
+
 pushPop f = do
     s <- get
     put $ refreshState s
     res <- f
     put s
     return res
+
+--pushPopEnv f env = do 
+ --   SymTable{..} <- get
+
 
 push f = do
     s <- get
@@ -59,22 +62,20 @@ addKeyLoc key loc = do
     put SymTable{global_env=global_env, current_env= new_env : tail current_env,..}
     return prev_val
 
-getLoc :: MonadState (SymTable s d) m => Id -> m (Maybe Loc)
+
 getLoc key = do
     (g_env, c_envs) <- gets getEnvs
-    return $ fromMaybe (M.lookup key g_env) (Just (listToMaybe  (mapMaybe (M.lookup key) c_envs)))
+    let main_search = listToMaybe (mapMaybe (M.lookup key) c_envs)
+    case main_search of
+        Nothing -> return $ M.lookup key g_env
+        _       -> return main_search
 
 
-getVal :: MonadState (SymTable s d) m => Id -> m (Maybe s)
 getVal key = do
     state <- gets getState
     loc <- getLoc key
     return $ (`M.lookup` state) =<< loc
-
-
-
-
-
+    
 second a b c = b
 
 

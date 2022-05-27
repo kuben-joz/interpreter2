@@ -25,12 +25,15 @@ source-repository head
 
 library
   exposed-modules:
-      Generated.AbsMacchiato
-      Generated.ErrM
-      Generated.LexMacchiato
-      Generated.ParMacchiato
+      Interpretation.Err
       Interpretation.Interpreter
+      Interpretation.MacchiatoVals
+      Interpretation.Traverser
       Mem.SymbolTable
+      Parsing.AbsMacchiato
+      Parsing.ErrM
+      Parsing.LexMacchiato
+      Parsing.ParMacchiato
       StaticAnalysis.Environment
       StaticAnalysis.Err
       StaticAnalysis.MacchiatoTypes

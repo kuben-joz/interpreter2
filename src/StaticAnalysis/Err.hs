@@ -1,7 +1,6 @@
 module StaticAnalysis.Err where
 
-import Generated.AbsMacchiato ( BNFC'Position, Expr, MulOp, AddOp, RelOp )
-import Control.Exception (NonTermination)
+import Parsing.AbsMacchiato ( BNFC'Position, Expr, MulOp, AddOp, RelOp )
 import StaticAnalysis.MacchiatoTypes
 
 type ErrLoc = BNFC'Position
@@ -29,7 +28,32 @@ data StaticException =
     | IncompatibleFunParams ErrLoc String MFType [MFType]
     -- actual, how far accessed
     | ArrTooShallow ErrLoc Int Int
+    | IncompPrintParam ErrLoc MFType
     | BadRetType ErrLoc MFType MFType
+    | RefFuncAsVar ErrLoc String
+
+
+instance Show StaticException where
+    show (VarRedef _ _) = "Var redef"
+    show (UnknownVar _ _) = "Unkown Var"
+    show NoMain = "no main";
+    show (NotRef _ _) = "not ref";
+    show (TypeMismatch loc t1 t2) = "tpye mismatch " ++ show t1 ++ show t2 ++ show loc;
+    show RefMismatch {} = "ref mismatch";
+    show (IncompatibleTypeOp  loc _ t) = "imcompatible type " ++ show loc ++ show t;
+    show IncompatibleTypeOpMul {} = "imcompatible for mul";
+    show IncompatibleTypeOpAdd {} = "imcompatbile for add";
+    show IncompatibleTypeOpRel {} = "incompabtible for rel";
+    show IncompatibleTypeOpAndOr {} = "icompatbile for or or and";
+    show (InvalidKeyword  _) = "invalid keyword";
+    show (FuncNameCollision  loc name) = show  loc ++ "fonc name collison" ++ name;
+    show (NoReturn  loc name) = show loc ++ " no return " ++ name;
+    show (AssToUndeclaredVar  _ _) = "assingment to endeclared var";
+    show (UseOfUndeclaredVar _ _) = "use of undeclared var in expr";
+    show (CallToUnderclaredFun loc name) = show loc ++ "calll to udneclared fun " ++ name;
+    show IncompatibleFunParams {} = "incompatbiel func params";
+    show ArrTooShallow {} = "arr to shaloow";
+    show BadRetType {} = "bad ret type";
 
 
 
