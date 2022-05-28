@@ -31,6 +31,8 @@ data StaticException =
     | IncompPrintParam ErrLoc MFType
     | BadRetType ErrLoc MFType MFType
     | RefFuncAsVar ErrLoc String
+    | ContInvalidPos ErrLoc
+    | BrkInvalidPos ErrLoc
 
 
 instance Show StaticException where
@@ -54,6 +56,10 @@ instance Show StaticException where
     show IncompatibleFunParams {} = "incompatbiel func params";
     show ArrTooShallow {} = "arr to shaloow";
     show BadRetType {} = "bad ret type";
+    show ContInvalidPos {} = "invalid cont position"
+    show BrkInvalidPos {} = "break outside of while loop"
+    show IncompPrintParam {} = "can't print type"
+    show RefFuncAsVar {} = "can't reference function as variable"
 
 
 

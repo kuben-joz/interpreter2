@@ -1,7 +1,6 @@
 {-# LANGUAGE TypeSynonymInstances #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE RecordWildCards #-}
-{-# OPTIONS_GHC -Wno-incomplete-patterns #-}
 {-# LANGUAGE FlexibleContexts #-}
 module Interpretation.Interpret where
 
@@ -35,6 +34,11 @@ instance Interpretable FnDef where
         let mfun = MFun{env = [], params = params, instructions = blk}
         addKeyVal id mfun
         return Nothing
+
+instance Interpretable Block where
+-- we push the stack before getting here so we don't do it here
+    interpret t (FunBlock _ stmts) = do
+        
 
 
 instance Interpretable Block where
@@ -91,6 +95,11 @@ instance Interpretable Expr where
         r <- interpret expr
         zeroGuard (fromJust r) (Err.DivByZero loc)
         return . Just $ (fromJust l) `div` (fromJust r)
+    interpret (EMul loc expl Mod{} expr) = do
+        l <- interpret expl
+        r <- interpret expr
+        zeroGuard (fromJust r) (Err.ModZero loc)
+        return . Just $ (fromJust l) `mod` (fromJust r)
     interpret (EAdd _ expl Plus{} expr) = do
         l <- interpret expl
         r <- interpret expr
@@ -157,7 +166,7 @@ constructArray t (as@(EDimAcc pos expr):accs) bs = do
     res_elems <- mapM (insertArr (toDefValue t) accs) [d-1 | x <- [1..l]]
     return $ MArr{elems = res_elems, len=l, dim_num=d}
 -- According to the grammar it can't be ampty, have to declare at least one dimension
---constructArray t [] (bra:bras) = do
+constructArray t [] bs = undefined
 
 --todo check that I am passign the right dim_level maybe -1 form what it is
 -- todo check I give arrays hasref at arracc
@@ -212,6 +221,7 @@ getArrVal (MArr{..}) ((EDimAcc loc expr):accs) = do
         next_arr_m <- getVal' $ Just (elems !! i)
         getArrVal (fromJust next_arr_m) accs
        -- getVal' $ Just (elems !! i)
+getArrVal _ _ = undefined
 
 
 

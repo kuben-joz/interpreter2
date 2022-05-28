@@ -33,8 +33,7 @@ makeMain = makeType'' (MFun (makeType'' MInt) [])
 
 -- catch exception here
 instance Checkable AType.Program where
-    check _ prog = do
-        let (AType.ProgramS pos defs) = prog
+    check _ prog@(AType.ProgramS pos defs) = do
         main <- getMain defs
         assertMain main
         mapM_ initEnv defs
@@ -48,7 +47,8 @@ instance Checkable AType.FnDef where
   --      return $ fromMaybe (throwError $ Err.NoReturn pos id) (check (Just $ toMFT t) blk)
         res_type <- check (Just $ toMFT t) blk
         nothingGuard res_type (Err.NoReturn pos id)
-        return res_type
+        -- todo check this should be ret nothing and not res_type
+        return Nothing
 
 instance Checkable AType.Arg where
     check _ arg@(AType.ArgVal pos t (AType.UIdent id)) = do
@@ -115,14 +115,18 @@ instance Checkable AType.Stmt where
         expr_temp <- check Nothing expr
         let expr_type = fromJust expr_temp
         assertType (makeType'' MBool) expr_type loc
-        push $ check t stmt
+        push $ check (setBrkCont t) stmt
     check _ (AType.SExp loc expr) = do check Nothing expr
     check _ (AType.Print loc print_params) = do
         mapM_ (check Nothing) print_params
         return Nothing
 -- todo add chekcign for this
-    check _ (AType.Break _) = do return Nothing
-    check _ (AType.Cont _) = do return Nothing
+    check (Just (t, MTypeMods{..})) (AType.Break pos) = do 
+        if can_brk_cont then return Nothing else 
+            throwError $ Err.BrkInvalidPos pos
+    check (Just (t, MTypeMods{..})) (AType.Cont pos) = do
+        if can_brk_cont then return Nothing else 
+            throwError $ Err.ContInvalidPos pos
 
 instance Checkable AType.Item where
     check (Just t) (AType.NoInit pos (AType.UIdent id)) = do
@@ -160,7 +164,7 @@ instance Checkable AType.Expr where
         mapM_ (check Nothing) dim_acc
         arr_t <- getVal id
         nothingGuard arr_t (Err.UseOfUndeclaredVar pos id)
-        let Just arr_t1 = arr_t
+        let arr_t1 = fromJust arr_t
         arr_t2 <- adjustArrType arr_t1 dim_acc
         case compare (dim_num (snd arr_t2)) 0 of
             LT -> do throwError $ Err.ArrTooShallow pos (dim_num (snd arr_t2)) (length dim_acc)
@@ -174,7 +178,7 @@ instance Checkable AType.Expr where
         mapM_ (check $ Just (makeType'' MInt)) dim_acc
         arr_t <- getVal id
         nothingGuard arr_t (Err.UseOfUndeclaredVar pos id)
-        let Just arr_t1 = arr_t
+        let arr_t1 = fromJust arr_t
         arr_t2 <- adjustArrType arr_t1 dim_acc
         case compare (dim_num (snd arr_t2)) 0 of
             LT -> do throwError $ Err.ArrTooShallow pos (dim_num (snd arr_t2)) (length dim_acc)
@@ -260,7 +264,7 @@ instance Checkable AType.MulOp where
         case tt of
             MInt -> return $ Just t1
             _   -> throwError $ Err.IncompatibleTypeOpMul (AType.hasPosition op) op t1 t1
-{-}
+{-
     check t op@(AType.Div pos) = do
         let t1@(tt, m) = fromJust t
         case tt of
@@ -377,7 +381,7 @@ notEqGuard t1 t2 err = do
 
 
 makeType :: MType -> Int -> Bool -> MFType
-makeType t dim ref = (t, MTypeMods dim ref)
+makeType t dim ref = (t, MTypeMods dim ref False)
 makeType' :: MType -> Int -> MFType
 makeType' t dim = makeType t dim False
 makeType'' :: MType -> MFType

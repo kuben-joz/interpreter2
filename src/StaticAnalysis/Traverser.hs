@@ -15,9 +15,10 @@ import qualified StaticAnalysis.Err as Err
 import qualified Data.Map as M
 import Foreign (deRefStablePtr)
 import GHC.IO.Encoding (getLocaleEncoding)
+import Control.Monad.Reader
 -- import qualified Control.Monad.Reader as 
 
-type Traverser = StateT (SymTable MFType ()) (Except Err.StaticException)
+type Traverser = (StateT (SymTable MFType ()) (Except Err.StaticException))
 
 -- our static traverser
 type STraverser = Traverser (Maybe MFType)
