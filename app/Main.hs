@@ -1,7 +1,7 @@
 {-# LANGUAGE LambdaCase #-}
 
 module Main where
-import Generated.ParMacchiato
+import Parsing.ParMacchiato
 import StaticAnalysis.TypeCheck
 import Interpretation.Interpreter
 import           Control.Monad      ((<=<))

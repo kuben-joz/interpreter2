@@ -48,6 +48,8 @@ data Stmt' a
     | While a (Expr' a) (Stmt' a)
     | SExp a (Expr' a)
     | Print a [PrintParam' a]
+    | Break a
+    | Cont a
   deriving (C.Eq, C.Ord, C.Show, C.Read, C.Functor, C.Foldable, C.Traversable)
 
 type Item = Item' BNFC'Position
@@ -59,13 +61,7 @@ data PrintParam' a = FunPrintParam a (Expr' a)
   deriving (C.Eq, C.Ord, C.Show, C.Read, C.Functor, C.Foldable, C.Traversable)
 
 type Type = Type' BNFC'Position
-data Type' a
-    = Int a
-    | Str a
-    | Bool a
-    | Arr a (Type' a) [DimBra' a]
-    -- todo delete, this one never occurs
-    | Fun a (Type' a) [Type' a]
+data Type' a = Int a | Str a | Bool a | Arr a (Type' a) [DimBra' a]
   deriving (C.Eq, C.Ord, C.Show, C.Read, C.Functor, C.Foldable, C.Traversable)
 
 type DimBra = DimBra' BNFC'Position
@@ -98,7 +94,11 @@ data DimAcc' a = EDimAcc a (Expr' a)
   deriving (C.Eq, C.Ord, C.Show, C.Read, C.Functor, C.Foldable, C.Traversable)
 
 type KeyWord = KeyWord' BNFC'Position
-data KeyWord' a = KeyWordLength a | KeyWordMaxVal a
+data KeyWord' a
+    = KeyWordLength a
+    | KeyWordMaxVal a
+    | KeyWordMinVal a
+    | KeyWordDimNum a
   deriving (C.Eq, C.Ord, C.Show, C.Read, C.Functor, C.Foldable, C.Traversable)
 
 type AddOp = AddOp' BNFC'Position
@@ -162,6 +162,8 @@ instance HasPosition Stmt where
     While p _ _ -> p
     SExp p _ -> p
     Print p _ -> p
+    Break p -> p
+    Cont p -> p
 
 instance HasPosition Item where
   hasPosition = \case
@@ -178,7 +180,6 @@ instance HasPosition Type where
     Str p -> p
     Bool p -> p
     Arr p _ _ -> p
-    Fun p _ _ -> p
 
 instance HasPosition DimBra where
   hasPosition = \case
@@ -212,6 +213,8 @@ instance HasPosition KeyWord where
   hasPosition = \case
     KeyWordLength p -> p
     KeyWordMaxVal p -> p
+    KeyWordMinVal p -> p
+    KeyWordDimNum p -> p
 
 instance HasPosition AddOp where
   hasPosition = \case

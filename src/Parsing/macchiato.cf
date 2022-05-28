@@ -50,6 +50,10 @@ SExp.      Stmt ::= Expr  ";" ;
 
 Print.     Stmt ::= "print" [PrintParam] ";" ;
 
+Break.     Stmt ::= "break" ";" ;
+
+Cont.      Stmt ::= "continue" ";" ;
+
 FunPrintParam. PrintParam ::= "<<" Expr ;
 
 separator nonempty PrintParam "" ;
@@ -70,7 +74,7 @@ ModDimBra.    DimBra ::= "[]" ;
 
 separator DimBra "";
 
-internal   Fun. Type ::= Type "(" [Type] ")" ;
+-- internal   Fun. Type ::= Type "(" [Type] ")" ;
 
 separator  Type "," ;
 
@@ -90,6 +94,9 @@ separator  nonempty DimAcc "" ;
 -- KeyWords are something like arr::length for arrays
 KeyWordLength. KeyWord ::= "LENGTH" ;
 KeyWordMaxVal. KeyWord ::= "MAX_VAL";
+KeyWordMinVal. KeyWord ::= "MIN_VAL";
+KeyWordDimNum. KeyWord ::= "DIM_NUM";
+
 
 EKeyWord.   Expr6 ::= UIdent"::"KeyWord ;
 

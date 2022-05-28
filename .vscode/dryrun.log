@@ -4,8 +4,3 @@ make: Leaving directory '/home/jakub/HaskellProjects/interpreter'
  
 make: *** No targets specified and no makefile found.  Stop.
 
-make: Entering directory '/home/jakub/HaskellProjects/interpreter'
-make: Leaving directory '/home/jakub/HaskellProjects/interpreter'
- 
-make: *** No targets specified and no makefile found.  Stop.
-

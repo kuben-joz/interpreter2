@@ -8,7 +8,7 @@ make: *** No rule to make target 'all'.  Stop.
 # This is free software: you are free to change and redistribute it.
 # There is NO WARRANTY, to the extent permitted by law.
 
-# Make data base, printed on Fri May 27 01:44:12 2022
+# Make data base, printed on Sat May 28 20:46:38 2022
 
 # Variables
 
@@ -21,11 +21,11 @@ NO_AT_BRIDGE = 1
 # environment
 GTK_RC_FILES = /etc/gtk/gtkrc:/home/jakub/.gtkrc:/home/jakub/.config/gtkrc
 # environment
-I3SOCK = /run/user/1000/i3/ipc-socket.1254
+I3SOCK = /run/user/1000/i3/ipc-socket.1286
 # environment
 CSF_EXCEPTION_PROMPT = 1
 # environment
-VSCODE_IPC_HOOK_EXTHOST = /run/user/1000/vscode-ipc-a2ef7f1f-1873-4481-9c5a-8498a2f5a150.sock
+VSCODE_IPC_HOOK_EXTHOST = /run/user/1000/vscode-ipc-dede9118-24cb-4559-91aa-e4681460f234.sock
 # environment
 CSF_XmlOcafResource = /usr/share/opencascade/resources/XmlOcafResource
 # environment
@@ -115,7 +115,7 @@ MAKEFILE_LIST :=
 # environment
 VSCODE_VERBOSE_LOGGING = true
 # environment
-VSCODE_PID = 861201
+VSCODE_PID = 3448
 # environment
 XDG_SESSION_TYPE = x11
 # automatic
@@ -201,7 +201,7 @@ XDG_VTNR = 1
 # makefile
 .DEFAULT_GOAL := 
 # environment
-SYSTEMD_EXEC_PID = 1167
+SYSTEMD_EXEC_PID = 1201
 # environment
 CSF_TObjMessage = /usr/share/opencascade/resources/TObj
 # environment
@@ -289,6 +289,7 @@ LC_IDENTIFICATION = pl_PL.UTF-8
 
 # Not a target:
 Makefile:
+ 
 #  Implicit rule search has been done.
 #  File does not exist.
 #  File has been updated.
@@ -302,7 +303,6 @@ Makefile:
 
 # Not a target:
 all:
- 
 #  Command line target.
 #  Implicit rule search has been done.
 #  File does not exist.
@@ -336,6 +336,6 @@ GNUmakefile:
 # strcache performance: lookups = 30 / hit rate = 10%
 # hash-table stats:
 # Load=27/8192=0%, Rehash=0, Collisions=0/30=0%
-# Finished Make data base on Fri May 27 01:44:12 2022
+# Finished Make data base on Sat May 28 20:46:38 2022
 
  

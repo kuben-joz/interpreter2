@@ -1,16 +1,17 @@
 {
-  "folders": [
-    {
-      "path": "."
-    }
-  ],
-  "settings": {
-    "haskell.toolchain": {
-      "ghc": "8.8.4",
-      "hls": "latest",
-      "cabal": "recommended",
-      "stack": "recommended"
-    },
-    "makefile.extensionOutputFolder": "./.vscode"
-  }
+	"folders": [
+		{
+			"name": "interpreter",
+			"path": "."
+		}
+	],
+	"settings": {
+		"haskell.toolchain": {
+			"ghc": "8.8.4",
+			"hls": "latest",
+			"cabal": "recommended",
+			"stack": "recommended"
+		},
+		"makefile.extensionOutputFolder": "./.vscode"
+	}
 }

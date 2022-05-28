@@ -1,18 +1,32 @@
+{-# LANGUAGE RecordWildCards #-}
 module Interpretation.MacchiatoVals where
 
 import Mem.SymbolTable
 import Parsing.AbsMacchiato
 
-data MArgs = 
+data MArgs =
     MARef Id
-    | MAVal Id 
+    | MAVal Id
 
 data MVal =
-      MString String
+      MString String Int
     | MInt Int
     | MBool Bool
     | MFun {env :: [Env], params :: [MArgs], instructions :: Block}
     | MArr {elems :: [Loc], len :: Int, dim_num :: Int}
+
+class HasLen a where
+  getLen :: a -> Int
+
+instance HasLen MVal where
+  getLen (MString _ l) = l
+  getLen MArr{..} = len
+  getLen _ = undefined
+  
+
+getDimNum MArr{..} = dim_num
+
+
 
 
 (!) :: MVal -> MVal
@@ -21,7 +35,7 @@ data MVal =
 
 -- (+), (*), abs, signum, fromInteger, (negate | (-))
 instance Num MVal where
-  (+) (MString s1) (MString s2) = MString $ s1 ++ s2
+  (+) (MString s1 l1) (MString s2 l2) = MString (s1 ++ s2) (l1+l2) 
   (+) (MInt i1) (MInt i2) = MInt $ i1 + i2
   (+) _ _ = undefined
   (*) (MInt i1) (MInt i2) = MInt $ i1 * i2
@@ -51,7 +65,7 @@ instance Ord MVal where
 instance Eq MVal where
   (==) (MInt i1) (MInt i2) = i1 == i2
   (==) (MBool b1) (MBool b2) = b1 == b2
-  (==) (MString s1) (MString s2) = s1 == s2
+  (==) (MString s1 _) (MString s2 _) = s1 == s2
   -- to remeber to do arr pointer checking above
   (==) _ _ = undefined
 

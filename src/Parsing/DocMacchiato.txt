@@ -29,7 +29,8 @@ UIdent literals are recognized by the regular expression
 The set of reserved words is the set of terminals appearing in the grammar. Those reserved words that consist of non-letter characters are called symbols, and they are treated in a different way from those that are similar to identifiers. The lexer follows rules familiar from languages like Haskell, C, and Java, including longest match and spacing conventions.
 
 The reserved words used in macchiato are the following:
-  | ``LENGTH`` | ``MAX_VAL`` | ``bool`` | ``else``
+  | ``DIM_NUM`` | ``LENGTH`` | ``MAX_VAL`` | ``MIN_VAL``
+  | ``bool`` | ``break`` | ``continue`` | ``else``
   | ``false`` | ``if`` | ``int`` | ``new``
   | ``print`` | ``return`` | ``string`` | ``true``
   | ``while`` |  |  |
@@ -76,6 +77,8 @@ All other symbols are terminals.
   |  |  **|**  | ``while`` ``(`` //Expr// ``)`` //Stmt//
   |  |  **|**  | //Expr// ``;``
   |  |  **|**  | ``print`` //[PrintParam]// ``;``
+  |  |  **|**  | ``break`` ``;``
+  |  |  **|**  | ``continue`` ``;``
   | //Item// | -> | //UIdent//
   |  |  **|**  | //UIdent// ``=`` //Expr//
   | //[Item]// | -> | //Item//
@@ -109,6 +112,8 @@ All other symbols are terminals.
   |  |  **|**  | //DimAcc// //[DimAcc]//
   | //KeyWord// | -> | ``LENGTH``
   |  |  **|**  | ``MAX_VAL``
+  |  |  **|**  | ``MIN_VAL``
+  |  |  **|**  | ``DIM_NUM``
   | //Expr5// | -> | ``-`` //Expr6//
   |  |  **|**  | ``!`` //Expr6//
   |  |  **|**  | //Expr6//

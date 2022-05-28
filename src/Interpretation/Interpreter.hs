@@ -1,7 +1,7 @@
 {-# LANGUAGE LambdaCase #-}
 
 module Interpretation.Interpreter where
-import Generated.ParMacchiato
+import Parsing.ParMacchiato
 import StaticAnalysis.TypeCheck
 import           Control.Monad      ((<=<))
 import           System.Environment (getArgs)

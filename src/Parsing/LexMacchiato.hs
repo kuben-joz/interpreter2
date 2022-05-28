@@ -222,22 +222,27 @@ eitherResIdent tv s = treeFind resWords
 -- | The keywords and symbols of the language organized as binary search tree.
 resWords :: BTree
 resWords =
-  b ">=" 21
-    (b "-" 11
+  b "LENGTH" 23
+    (b "/" 12
        (b "(" 6
           (b "%" 3 (b "!=" 2 (b "!" 1 N N) N) (b "&&" 5 (b "&" 4 N N) N))
-          (b "+" 9 (b "*" 8 (b ")" 7 N N) N) (b "," 10 N N)))
-       (b "<<" 16
-          (b ";" 14 (b "::" 13 (b "/" 12 N N) N) (b "<" 15 N N))
-          (b "==" 19 (b "=" 18 (b "<=" 17 N N) N) (b ">" 20 N N))))
-    (b "int" 31
-       (b "]" 26
-          (b "[" 24 (b "MAX_VAL" 23 (b "LENGTH" 22 N N) N) (b "[]" 25 N N))
-          (b "false" 29 (b "else" 28 (b "bool" 27 N N) N) (b "if" 30 N N)))
-       (b "true" 36
-          (b "return" 34
-             (b "print" 33 (b "new" 32 N N) N) (b "string" 35 N N))
-          (b "||" 39 (b "{" 38 (b "while" 37 N N) N) (b "}" 40 N N))))
+          (b "+" 9 (b "*" 8 (b ")" 7 N N) N) (b "-" 11 (b "," 10 N N) N)))
+       (b "=" 18
+          (b "<" 15
+             (b ";" 14 (b "::" 13 N N) N) (b "<=" 17 (b "<<" 16 N N) N))
+          (b ">=" 21 (b ">" 20 (b "==" 19 N N) N) (b "DIM_NUM" 22 N N))))
+    (b "if" 34
+       (b "bool" 29
+          (b "[" 26
+             (b "MIN_VAL" 25 (b "MAX_VAL" 24 N N) N)
+             (b "]" 28 (b "[]" 27 N N) N))
+          (b "else" 32
+             (b "continue" 31 (b "break" 30 N N) N) (b "false" 33 N N)))
+       (b "true" 40
+          (b "print" 37
+             (b "new" 36 (b "int" 35 N N) N)
+             (b "string" 39 (b "return" 38 N N) N))
+          (b "||" 43 (b "{" 42 (b "while" 41 N N) N) (b "}" 44 N N))))
   where
   b s n = B bs (TS bs n)
     where

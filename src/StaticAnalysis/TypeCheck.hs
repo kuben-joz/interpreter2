@@ -18,7 +18,6 @@ import Mem.SymbolTable
 import StaticAnalysis.MacchiatoTypes
 import qualified Data.Map as M
 import Control.Monad.Except
-import StaticAnalysis.StaticChecks
 import Control.Monad.State
 import Data.Maybe
 
@@ -121,6 +120,9 @@ instance Checkable AType.Stmt where
     check _ (AType.Print loc print_params) = do
         mapM_ (check Nothing) print_params
         return Nothing
+-- todo add chekcign for this
+    check _ (AType.Break _) = do return Nothing
+    check _ (AType.Cont _) = do return Nothing
 
 instance Checkable AType.Item where
     check (Just t) (AType.NoInit pos (AType.UIdent id)) = do
