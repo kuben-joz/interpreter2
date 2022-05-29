@@ -18,7 +18,7 @@ import GHC.IO.Encoding (getLocaleEncoding)
 import Control.Monad.Reader
 -- import qualified Control.Monad.Reader as 
 
-type Traverser = (StateT (SymTable MFType ()) (Except Err.StaticException))
+type Traverser = StateT (SymTable MFType ()) (Except Err.StaticException)
 
 -- our static traverser
 type STraverser = Traverser (Maybe MFType)
@@ -46,8 +46,8 @@ push f = do
 
 
 -- todo check if check for prev value everywhere
-addKeyVal :: MonadState (SymTable s d) m => [Char] -> s -> m (Maybe Int)
-addKeyVal key val = do
+addKeyVal key val' = do
+    let val = makeReferencable val'
     SymTable{..} <- get
     let (prev_val, new_env) = M.insertLookupWithKey second key loc (head current_env)
     let new_state = M.insert loc val state

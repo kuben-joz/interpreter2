@@ -12,6 +12,9 @@ import Control.Monad.Except
 import Data.Either
 import GHC.RTS.Flags (RTSFlags(profilingFlags))
 import qualified StaticAnalysis.Traverser
+import Data.Maybe
+import Interpretation.Interpret
+import Parsing.AbsMacchiato (Program)
 
 
 exit :: IO (Either String a) -> IO ()
@@ -21,18 +24,24 @@ exit computation = computation >>= \case
 
 
 interpret :: String -> IO ()
-interpret s = do 
+interpret s = do
     case  ( pProgram . myLexer) s of
         Left err -> hPrint stderr err
         Right prog -> check' prog
-                    
+
+
 
 
 check' prog = do
   case startTypeCheck prog of
     Left ex -> print ex
-    Right _ -> print "success"
+    Right _ -> interpret' prog
   --return (liftIO)
 
 
- -- check' = either Left (left show . check)
+
+interpret' prog = do
+  res_val <- startInterpret prog
+  case res_val of
+    Left ex -> print ex >> exitFailure
+    Right res -> exitSuccess

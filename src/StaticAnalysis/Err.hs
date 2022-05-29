@@ -33,6 +33,7 @@ data StaticException =
     | RefFuncAsVar ErrLoc String
     | ContInvalidPos ErrLoc
     | BrkInvalidPos ErrLoc
+    | ForbiddenId ErrLoc String
 
 
 instance Show StaticException where
@@ -53,13 +54,14 @@ instance Show StaticException where
     show (AssToUndeclaredVar  _ _) = "assingment to endeclared var";
     show (UseOfUndeclaredVar _ _) = "use of undeclared var in expr";
     show (CallToUnderclaredFun loc name) = show loc ++ "calll to udneclared fun " ++ name;
-    show IncompatibleFunParams {} = "incompatbiel func params";
+    show (IncompatibleFunParams loc f_name f_type params) = show loc ++ " incompatbiel func params" ++ show f_name ++ show f_type ++ show params;
     show ArrTooShallow {} = "arr to shaloow";
     show BadRetType {} = "bad ret type";
     show ContInvalidPos {} = "invalid cont position"
     show BrkInvalidPos {} = "break outside of while loop"
     show IncompPrintParam {} = "can't print type"
     show RefFuncAsVar {} = "can't reference function as variable"
+    show ForbiddenId {} = "forbidden identifier name "
 
 
 

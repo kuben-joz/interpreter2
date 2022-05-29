@@ -9,16 +9,23 @@ import Interpretation.Err
 import qualified Data.Map as M
 import Data.Maybe
 import Parsing.AbsMacchiato
+import GHC.IO.Handle
+import System.IO
+import Debug.Trace
 
-type Traverser a = StateT(SymTable  MVal (MVal, Bool)) (ExceptT RuntimeException IO) a
+data ReturnState = RetState{cont :: Bool, brk :: Bool}
+
+type ISymTable = SymTable MVal ReturnState
+
+type Traverser a = StateT(ISymTable) (ExceptT RuntimeException IO) a
 type ITraverser = Traverser (Maybe MVal)
 
 
-initProg :: ITraverser
-initProg = do
+--initProg :: ITraverser
+initProg = initState (RetState False False)
     -- The MBool space is for the return value, bool is for wether we should continue
-    put $ initState (MBool False, False)
-    return Nothing
+ --   put $ initState (RetState False False)
+  --  return Nothing
 
 addToGlobal id params blk = do
     s@SymTable{..} <- get
@@ -27,12 +34,20 @@ addToGlobal id params blk = do
     state = M.insert loc fun state, dat=dat,loc=loc+1}
     return Nothing
 
+addKeyVal :: Id -> MVal -> Traverser Loc
 addKeyVal k v = do
     s@SymTable{..} <- get
-    let v_loc = loc
     put SymTable{global_env= global_env,current_env=M.insert k loc (head current_env): tail current_env,
     state= M.insert loc v state, dat=dat, loc=loc+1}
     return loc
+
+modifyKeyVal k v = do
+    s@SymTable{..} <- get
+    loc_temp <- getLoc k
+    let v_loc = fromJust loc_temp
+    put SymTable{global_env= global_env,current_env=M.insert k v_loc (head current_env): tail current_env,
+    state= M.insert v_loc v state, dat=dat, loc=loc}
+    return loc 
 
 
 addLocVal v = do
@@ -41,6 +56,14 @@ addLocVal v = do
     put SymTable{global_env= global_env,current_env=current_env,
     state= M.insert loc v state, dat=dat, loc=loc+1}
     return v_loc
+
+
+
+addLocVal' l v = do
+    s@SymTable{..} <- get
+    put SymTable{global_env= global_env,current_env=current_env,
+    state= M.insert l v state, dat=dat, loc=loc}
+    return Nothing
 
     -- todoput SymTable{global}
 
@@ -52,6 +75,7 @@ addKeyLoc k l = do
 
 
 getLoc key = do
+    liftIO $ print $ "the key is " ++ key
     (g_env, c_envs) <- gets getEnvs
     let main_search = listToMaybe (mapMaybe (M.lookup key) c_envs)
     case main_search of
@@ -89,6 +113,14 @@ pushPop new_env inserts f = do
     put $ SymTable (global_env s2) (current_env s) (state s2) (dat s2) (loc s)
     return ret
 
+pushPop' f = do
+    s <- get
+    put $ SymTable (global_env s) (M.empty:current_env s) (state s) (dat s) (loc s)
+    ret <- f
+    s2 <- get
+    put $ SymTable (global_env s2) (current_env s) (state s2) (dat s2) (loc s)
+    return ret
+
 
 addParamVal :: (Id, Either Loc MVal) -> ITraverser
 addParamVal (id, Left loc) = do
@@ -97,6 +129,71 @@ addParamVal (id, Left loc) = do
 addParamVal (id, Right val) = do
     addKeyVal id val
     return Nothing
+
+brkOrContCalled :: Traverser Bool
+brkOrContCalled = do 
+    RetState{..} <- gets getData
+    return $ brk || cont
+
+getAndSet :: (ISymTable -> a) -> (a -> ISymTable) -> Traverser a
+getAndSet getter setter = do
+    res <- gets getter
+    put $ setter res
+    return res
+
+
+getAndSetCont:: Bool -> Traverser Bool
+getAndSetCont b = do
+    SymTable{..} <- get
+    let RetState{..} = dat
+    let ret = cont
+    put $ SymTable {global_env=global_env, current_env=current_env, 
+    state=state, dat=RetState{cont=b, brk=brk}, loc=loc}
+    return ret
+
+getAndSetBrk:: Bool -> Traverser Bool
+getAndSetBrk b = do
+    SymTable{..} <- get
+    let RetState{..} = dat
+    let ret = brk
+    put $ SymTable {global_env=global_env, current_env=current_env, 
+    state=state, dat=RetState{cont=cont, brk=b}, loc=loc}
+    return ret
+
+getAndSetContBrk:: Bool -> Bool -> Traverser (Bool, Bool)
+getAndSetContBrk b_cont b_brk = do
+    SymTable{..} <- get
+    let RetState{..} = dat
+    let ret = (cont, brk)
+    put $ SymTable {global_env=global_env, current_env=current_env, 
+    state=state, dat=RetState{cont=b_cont, brk=b_brk}, loc=loc}
+    return ret 
+
+{-
+brkOrContCalled :: Traverser (Maybe MControlStmts)
+brkOrContCalled = do 
+    rs <- gets getData
+    return $ retStateToControlStmt rs
+    
+
+retStateToControlStmt r =
+    case r of
+        RetState True True -> undefined
+        RetState True _ -> Just MCont
+        RetState _ True -> Just MBrk
+        _               -> Nothing
+        -}
+
+printState :: ITraverser
+printState = do
+    state <- gets getState
+    trace (show state) (return Nothing)
+
+printEnv :: ITraverser
+printEnv = do
+    envs <- gets getEnvs
+    trace (show envs) (return Nothing)
+
 
 
 

@@ -1,0 +1,7 @@
+
+
+int main() {
+    print << "Is there an answer?\n" << true << "\n";
+    print << "The answer is " << 40 + 2 << "\n";
+    return 0; 
+}

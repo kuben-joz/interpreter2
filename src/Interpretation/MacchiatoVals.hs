@@ -8,12 +8,21 @@ data MArgs =
     MARef Id
     | MAVal Id
 
+
+
 data MVal =
       MString String Int
     | MInt Int
     | MBool Bool
     | MFun {env :: [Env], params :: [MArgs], instructions :: Block}
     | MArr {elems :: [Loc], len :: Int, dim_num :: Int}
+
+instance Show MVal where
+  show (MString s _) = s
+  show (MInt i) = show i
+  show (MBool b) = show b
+  show (MFun{}) = "fun"
+  show (MArr{}) = "arr"
 
 class HasLen a where
   getLen :: a -> Int
@@ -85,7 +94,7 @@ fromMVal _ = undefined
 
 toDefValue :: Type -> MVal
 toDefValue Int{} = MInt 0
-toDefValue Str{} = MString ""
+toDefValue Str{} = MString "" 0
 toDefValue Bool{} = MBool False
 toDefValue (Arr _ _ dim_bra) = MArr {elems= [], len=0, dim_num=length dim_bra}
 toDefValue _ = undefined

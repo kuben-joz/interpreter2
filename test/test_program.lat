@@ -4,25 +4,19 @@
 // Ten rowniez
 
 
-int _fun1( int aas) {
-    return 8;
+int _fun1(int i) {
+    print << i << "\n";
+    if(i == 1) return i;
+    else if(i%2 == 0)
+        return _fun1(i/2);
+    else { return _fun1(3*i+1);}
 }
 
 /*
  * Poczatek programu
 */
 int main() {
-    bool b = false;
-    if(b == false) {
-        return _fun1(1234);
-    }
-
-    int fun2(int a, int b) {
-        int c = 7;
-        return b;
-    }
-
-    return fun2(4, 8);
+    return _fun1(25);
 }
 
 

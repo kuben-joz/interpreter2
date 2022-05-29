@@ -20,7 +20,7 @@ import Prelude
   , all, elem, foldr, id, map, null, replicate, shows, span
   )
 import Data.Char ( Char, isSpace )
-import qualified AbsMacchiato
+import qualified Parsing.AbsMacchiato as AbsMacchiato
 
 -- | The top-level printing method.
 

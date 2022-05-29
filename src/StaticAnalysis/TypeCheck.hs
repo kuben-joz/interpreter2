@@ -42,7 +42,8 @@ instance Checkable AType.Program where
 
 
 instance Checkable AType.FnDef where
-    check _ fn@(AType.FunDef pos t (AType.UIdent id) args blk) = do
+    check _ fn@(AType.FunDef pos t id'@(AType.UIdent id) args blk) = do
+        checkIllegalId id' pos
         mapM_ (check Nothing) args
   --      return $ fromMaybe (throwError $ Err.NoReturn pos id) (check (Just $ toMFT t) blk)
         res_type <- check (Just $ toMFT t) blk
@@ -51,11 +52,13 @@ instance Checkable AType.FnDef where
         return Nothing
 
 instance Checkable AType.Arg where
-    check _ arg@(AType.ArgVal pos t (AType.UIdent id)) = do
+    check _ arg@(AType.ArgVal pos t id'@(AType.UIdent id)) = do
+        checkIllegalId id' pos
         key_val <- addKeyVal id (toMFT arg)
         notNothingGuard key_val (Err.FuncNameCollision pos id)
         return Nothing
-    check _ arg@(AType.ArgRef pos t (AType.UIdent id)) = do
+    check _ arg@(AType.ArgRef pos t id'@(AType.UIdent id)) = do
+        checkIllegalId id' pos
         key_val <- addKeyVal id (toMFT arg)
         notNothingGuard key_val (Err.FuncNameCollision pos id)
         return Nothing
@@ -71,7 +74,8 @@ instance Checkable AType.Block where
 instance Checkable AType.Stmt where
     check _ (AType.Empty pos) = do return Nothing
     check t (AType.BStmt pos blk) = do push $ check t blk
-    check _ (AType.FunStmt loc fn@(AType.FunDef pos t (AType.UIdent id) args blk)) = do
+    check _ (AType.FunStmt loc fn@(AType.FunDef pos t (id'@(AType.UIdent id)) args blk)) = do
+        checkIllegalId id' pos
         prev_func <- addKeyVal id (toMFT fn)
         notNothingGuard prev_func (Err.FuncNameCollision pos id)
         push $ check Nothing fn
@@ -79,7 +83,8 @@ instance Checkable AType.Stmt where
     check _ (AType.Decl loc t1 items) = do
         mapM_ (check $ Just $ toMFT t1) items
         return Nothing
-    check _ (AType.Ass loc (AType.UIdent id) expr) = do
+    check _ (AType.Ass loc id'@(AType.UIdent id) expr) = do
+        checkIllegalId id' loc
         id_temp <- getVal id
         nothingGuard id_temp (Err.AssToUndeclaredVar loc id)
         let id_type = fromJust id_temp
@@ -87,7 +92,8 @@ instance Checkable AType.Stmt where
         let expr_type = fromJust expr_temp
         if id_type == expr_type then return Nothing
         else throwError $ Err.TypeMismatch loc id_type expr_type
-    check t (AType.ArrAss loc (AType.UIdent id) dimAcc expr) = do
+    check t (AType.ArrAss loc id'@(AType.UIdent id) dimAcc expr) = do
+        checkIllegalId id' loc
         mapM_ (check t) dimAcc
         arr_type <- getVal id
         (adj_arr_type, arr_mods)  <- adjustArrType (fromJust arr_type) dimAcc
@@ -129,11 +135,13 @@ instance Checkable AType.Stmt where
             throwError $ Err.ContInvalidPos pos
 
 instance Checkable AType.Item where
-    check (Just t) (AType.NoInit pos (AType.UIdent id)) = do
+    check (Just t) (AType.NoInit pos id'@(AType.UIdent id)) = do
+        checkIllegalId id' pos
         prev_val <- addKeyVal id t
         notNothingGuard prev_val (Err.FuncNameCollision pos id)
         return Nothing
-    check (Just t) (AType.Init pos (AType.UIdent id) expr) = do
+    check (Just t) (AType.Init pos id'@(AType.UIdent id) expr) = do
+        checkIllegalId id' pos
         expr_t <- check Nothing expr
         assertType t (fromJust expr_t) pos
         prev_val <- addKeyVal id t
@@ -151,7 +159,8 @@ instance Checkable AType.PrintParam where
 -- todo check arr acc always has ref even if value as I am implementing it as locs
 
 instance Checkable AType.Expr where
-    check _ (AType.EVar pos (AType.UIdent id)) = do
+    check _ (AType.EVar pos id'@(AType.UIdent id)) = do
+        checkIllegalId id' pos
         var_type <- getVal id
         nothingGuard var_type (Err.UseOfUndeclaredVar pos id)
         case var_type of
@@ -160,7 +169,8 @@ instance Checkable AType.Expr where
     check _ (AType.ENewArr pos t dim_acc dim_bra) = do
         mapM_ (check Nothing) dim_acc
         return $ Just (fst $ toMFT t, MTypeMods{dim_num=length dim_acc+length dim_bra, has_ref = False})
-    check _ (AType.EArrAcc pos (AType.UIdent id) dim_acc) = do
+    check _ (AType.EArrAcc pos id'@(AType.UIdent id) dim_acc) = do
+        checkIllegalId id' pos
         mapM_ (check Nothing) dim_acc
         arr_t <- getVal id
         nothingGuard arr_t (Err.UseOfUndeclaredVar pos id)
@@ -169,12 +179,14 @@ instance Checkable AType.Expr where
         case compare (dim_num (snd arr_t2)) 0 of
             LT -> do throwError $ Err.ArrTooShallow pos (dim_num (snd arr_t2)) (length dim_acc)
             _  -> do return $ Just (fst arr_t1, snd arr_t2)
-    check _ (AType.EKeyWord pos (AType.UIdent id) keyword) = do
+    check _ (AType.EKeyWord pos id'@(AType.UIdent id) keyword) = do
+        checkIllegalId id' pos
         ident_t <- getVal id
         nothingGuard ident_t (Err.UseOfUndeclaredVar pos id)
         if compatibleParent keyword (fromJust ident_t) then return $ Just (toMFT keyword)
         else throwError $ Err.InvalidKeyword (AType.hasPosition keyword)
-    check _ (AType.EArrKeyWord pos (AType.UIdent id) dim_acc keyword) = do
+    check _ (AType.EArrKeyWord pos id'@(AType.UIdent id) dim_acc keyword) = do
+        checkIllegalId id' pos
         mapM_ (check $ Just (makeType'' MInt)) dim_acc
         arr_t <- getVal id
         nothingGuard arr_t (Err.UseOfUndeclaredVar pos id)
@@ -185,7 +197,8 @@ instance Checkable AType.Expr where
             _  -> do
                 if compatibleParent keyword arr_t2 then return $ Just (toMFT keyword)
                 else throwError $ Err.InvalidKeyword pos
-    check _ (AType.EApp pos (AType.UIdent id) exps) = do
+    check _ (AType.EApp pos id'@(AType.UIdent id) exps) = do
+        checkIllegalId id' pos
         exp_ts <- mapM (check Nothing) exps
         let exp_ts2 = catMaybes exp_ts
         f_t <- getVal id
@@ -303,6 +316,13 @@ oneOpCheck expr target_t lim pos op = do
             throwError $ Err.IncompatibleTypeOp pos op expr_t
 
 
+checkIllegalId (AType.UIdent id) pos = do 
+    if elem id forbiddenIds then throwError $ Err.ForbiddenId pos id
+    else return Nothing
+
+forbiddenIds = ["continue", "break", "while", "print", "return", "if", "else",
+     "new", "int", "string", "bool", "true", "false"]
+
 
 
 
@@ -329,7 +349,8 @@ assertMain fn = assertType makeMain (toMFT fn) (AType.hasPosition fn)
 
 -- todo change noMain
 initEnv :: AType.FnDef -> STraverser
-initEnv f@(AType.FunDef pos ret_type (AType.UIdent id) args blk) = do
+initEnv f@(AType.FunDef pos ret_type id'@(AType.UIdent id) args blk) = do
+    checkIllegalId id' pos
     s@SymTable{..} <- get
     if M.member id global_env then throwError $ Err.FuncNameCollision pos id
     else

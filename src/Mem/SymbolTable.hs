@@ -29,6 +29,8 @@ getEnvs SymTable{..} = (global_env, current_env)
 
 getState SymTable{..} = state
 
+getData SymTable{..} = dat
+
 
 --newEnv :: SymTable a -> SymTable a
 --newEnv SymTable {..} = SymTable{proc_envs=proc_envs, val_envs =  : val_envs, ..}

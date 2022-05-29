@@ -1,0 +1,29 @@
+
+
+int main() {
+    // literals
+    5;
+    true;
+    false;
+    "HI\n";
+    //int ops
+    5 + 2;
+    5 - 2;
+    -5;
+    5 / 2;
+    5 % 2;
+    5 < 2;
+    5 <= 2;
+    5 > 2;
+    5 >= 2;
+    5 == 2;
+    5 != 2;
+    //string ops
+    "Hello " + "world\n";
+    "zip" == "zap";
+    "zip" != "zap";
+    //bool ops
+    true == true;
+    true != false;
+    return 0;
+}
