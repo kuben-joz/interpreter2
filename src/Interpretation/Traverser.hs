@@ -41,13 +41,15 @@ addKeyVal k v = do
     state= M.insert loc v state, dat=dat, loc=loc+1}
     return loc
 
-modifyKeyVal k v = do
+addOrModifyKeyVal k v = do
     s@SymTable{..} <- get
     loc_temp <- getLoc k
-    let v_loc = fromJust loc_temp
-    put SymTable{global_env= global_env,current_env=M.insert k v_loc (head current_env): tail current_env,
-    state= M.insert v_loc v state, dat=dat, loc=loc}
-    return loc 
+    case loc_temp of
+        Nothing -> addKeyVal k v
+        Just v_loc -> do
+            put SymTable{global_env= global_env,current_env=M.insert k v_loc (head current_env): tail current_env,
+            state= M.insert v_loc v state, dat=dat, loc=loc}
+            return loc 
 
 
 addLocVal v = do
@@ -75,7 +77,6 @@ addKeyLoc k l = do
 
 
 getLoc key = do
-    liftIO $ print $ "the key is " ++ key
     (g_env, c_envs) <- gets getEnvs
     let main_search = listToMaybe (mapMaybe (M.lookup key) c_envs)
     case main_search of
@@ -102,6 +103,10 @@ getLocVal key = do
     val <- getVal' loc
     return (loc, val)
 
+getEnv::Traverser [Env]
+getEnv = do
+    (_, env) <- gets getEnvs
+    return env
 --todo I think I have to give both the values and env at the same time, or I could return env
 -- inserts are (id, Maybe Loc)
 pushPop new_env inserts f = do

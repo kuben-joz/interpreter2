@@ -68,11 +68,11 @@ Bool.      Type ::= "bool" ;
 
 token UIdent ((letter | '_') (letter | digit | '_')*) ;
 
-Arr.       Type ::= Type "[]" [DimBra];
+Arr.       Type ::= Type [DimBra];
 
 ModDimBra.    DimBra ::= "[]" ;
 
-separator DimBra "";
+separator nonempty DimBra "";
 
 -- internal   Fun. Type ::= Type "(" [Type] ")" ;
 
@@ -83,13 +83,17 @@ separator  Type "," ;
 
 EVar.      Expr6 ::= UIdent ;
 
-ENewArr.   Expr6 ::= "new" Type [DimAcc] [DimBra] ;
+ENewArr.   Expr6 ::= "new" Type [DimAcc] [DimEmpty] ;
 
 EArrAcc.    Expr6 ::= UIdent [DimAcc] ;
 
 EDimAcc.    DimAcc::= "[" Expr6 "]" ;
 
+EDimEmpty.  DimEmpty ::= "[]" ;
+
 separator  nonempty DimAcc "" ;
+
+separator DimEmpty "";
 
 -- KeyWords are something like arr::length for arrays
 KeyWordLength. KeyWord ::= "LENGTH" ;

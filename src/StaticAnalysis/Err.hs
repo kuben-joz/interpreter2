@@ -9,7 +9,6 @@ data StaticException =
       UnknownVar ErrLoc String
     | VarRedef ErrLoc String
     | NoMain
-    | NotRef   ErrLoc String
     -- expected but found
     | TypeMismatch ErrLoc MFType MFType
     | RefMismatch ErrLoc MFType MFType
@@ -40,7 +39,6 @@ instance Show StaticException where
     show (VarRedef _ _) = "Var redef"
     show (UnknownVar _ _) = "Unkown Var"
     show NoMain = "no main";
-    show (NotRef _ _) = "not ref";
     show (TypeMismatch loc t1 t2) = "tpye mismatch " ++ show t1 ++ show t2 ++ show loc;
     show RefMismatch {} = "ref mismatch";
     show (IncompatibleTypeOp  loc _ t) = "imcompatible type " ++ show loc ++ show t;

@@ -16,6 +16,7 @@ int _fun1(int i) {
  * Poczatek programu
 */
 int main() {
+    int[] a = new int[5];
     return _fun1(25);
 }
 

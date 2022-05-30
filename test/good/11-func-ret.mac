@@ -1,0 +1,32 @@
+
+// arrays don't currently work so I'm not showing their return types
+
+int main() {
+    int x = 0;
+    if(x+1 != add_one(x)) {
+        return -1;
+    }
+    string s1 = "Hello ";
+    string s2 = "world\n";
+    if(concat(s1,s2) != "Hello world\n") {
+        return -1;
+    }
+    bool b = False;
+    if(!b != not(b)) {
+        return -1;
+    }
+    return 0;
+}
+
+
+int add_one(int x) {
+    return x+1;
+}
+
+string concat(string s1, string s2) {
+    return s1 + s2;
+}
+
+bool not(bool b) {
+    return !b;
+}

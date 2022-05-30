@@ -12,7 +12,7 @@ import GHC.Float (expFloat)
 import qualified Interpretation.Err as Err
 import Interpretation.MacchiatoVals
 import Interpretation.Traverser
-import Mem.SymbolTable (Id, Loc, SymTable)
+import Mem.SymbolTable (Id, Loc, SymTable (current_env))
 import Parsing.AbsMacchiato
 import System.IO
 
@@ -27,7 +27,7 @@ instance Interpretable Program where
   interpret (ProgramS loc fndefs) = do
     mapM_ initGlobal fndefs
     res_val <- interpret (EApp loc (UIdent "main") [])
-    let res_message =  "Program terminated with exit code: " ++ (show (fromJust res_val))
+    let res_message =  "\nProgram terminated with exit code: " ++ (show (fromJust res_val))
     liftIO $ putStrLn res_message
     return res_val
 
@@ -35,7 +35,8 @@ instance Interpretable FnDef where
   interpret (FunDef _ _ (UIdent id) args blk) = do
     --todo this is we need to do a separate function for external
     params <- mapM getArg args
-    let mfun = MFun {env = [], params = params, instructions = blk}
+    current_env <- getEnv
+    let mfun = MFun {env = current_env, params = params, instructions = blk}
     addKeyVal id mfun
     return Nothing
 
@@ -85,7 +86,7 @@ instance Interpretable Stmt where
     return Nothing
   interpret (Ass _ (UIdent id) expr) = do
     val <- interpret expr
-    modifyKeyVal id (fromJust val)
+    addOrModifyKeyVal id (fromJust val)
     return Nothing
   interpret (ArrAss _ (UIdent id) dimaccs expr) = do
     val <- interpret expr
@@ -230,12 +231,11 @@ instance Interpretable Expr where
   interpret (ERel _ expl EQU {} expr) = do
     l_loc_m <- tryFindLoc expl
     r_loc_m <- tryFindLoc expr
-    case (l_loc_m, r_loc_m) of
-      (Just l_loc, Just r_loc) -> return . Just . MBool $ l_loc == r_loc
-      _ -> do
-        l <- interpret expl
-        r <- interpret expr
-        return . Just . MBool $ (fromJust l) == (fromJust r)
+    l <- interpret expl
+    r <- interpret expr
+    case (l, r) of
+      (Just (MArr {}), _) -> return . Just . MBool $ l_loc_m == r_loc_m
+      _ -> do return . Just . MBool $ (fromJust l) == (fromJust r)
   interpret (ERel pos expl (NE pos') expr) = do
     eq_res <- interpret (ERel pos expl (EQU pos') expr)
     return $ (Just . (!) . fromJust) eq_res
@@ -251,10 +251,7 @@ instance Interpretable Expr where
 
 getInsert :: (MArgs, Expr) -> Traverser (Id, Either Loc MVal)
 getInsert ((MARef id), expr) = do
-  printState
   loc_m <- tryFindLoc expr
-  liftIO $ print loc_m
-  printState
   return $ (id, Left (fromJust loc_m))
 getInsert ((MAVal id), expr) = do
   val_m <- interpret expr
@@ -262,22 +259,16 @@ getInsert ((MAVal id), expr) = do
 
 tryFindLoc :: Expr -> Traverser (Maybe Loc)
 tryFindLoc (EVar pos (UIdent id)) = do
-  printEnv
-  liftIO $ print $ "id is: " ++ id
   p@(loc_m, val_m) <- getLocVal id
-  liftIO $ print p
-  case (loc_m, val_m) of
-    (Nothing, _) -> return Nothing
-    (Just loc, Just MArr {}) -> return $ Just loc
-    _ -> return Nothing
-tryFindLoc _ = undefined
+  return loc_m
+tryFindLoc _ = return Nothing
 
 -- todo same for arr access
 
 constructArray t (as@(EDimAcc pos expr) : accs) bs = do
   l_m <- interpret expr
   let l = (fromEnum . fromJust) l_m
-  leqZeroGuard l (Err.ArrDimLEQZero pos l)
+  leqZeroGuard l (Err.ArrDimLTZero pos l)
   let d = length as + length bs
   res_elems <- mapM (insertArr (toDefValue t) accs) [d -1 | x <- [1 .. l]]
   return $ MArr {elems = res_elems, len = l, dim_num = d}
@@ -316,7 +307,7 @@ insertArr def_val (acc@(EDimAcc pos expr):accs) 0 = do
 insertArr def_val (acc@(EDimAcc pos expr) : accs) dim_num = do
   l_m <- interpret expr
   let l = (fromEnum . fromJust) l_m
-  leqZeroGuard l (Err.ArrDimLEQZero pos l)
+  leqZeroGuard l (Err.ArrDimLTZero pos l)
   res_elems <- mapM (insertArr def_val accs) [dim_num -1 | x <- [1 .. l]]
   addLocVal MArr {elems = res_elems, len = l, dim_num = dim_num}
 
@@ -359,9 +350,9 @@ getArg (ArgRef _ _ (UIdent id)) = do
 -- todo check if the symbol was GT
 intRangeGuard val pos = do
   case compare val (toInteger (minBound :: Int)) of
-    LT -> throwError $ Err.IntTooSmall pos (toInteger val)
+    LT -> throwError $ Err.IntTooSmall pos val
     _ -> case compare val (toInteger (maxBound :: Int)) of
-      GT -> throwError $ Err.IntTooLarge pos (toInteger val)
+      GT -> throwError $ Err.IntTooLarge pos val
       _ -> return Nothing
 
 -- constructArray (acc:accs) _ =

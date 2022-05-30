@@ -1,0 +1,8 @@
+
+
+
+int main() {
+    int[] a = new int[5];
+    int b = 8;
+    return 0;
+}

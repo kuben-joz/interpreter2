@@ -20,6 +20,7 @@ import qualified Data.Map as M
 import Control.Monad.Except
 import Control.Monad.State
 import Data.Maybe
+import Debug.Trace
 
 
 startTypeCheck :: AType.Program -> Either StaticException (Maybe MFType)
@@ -80,8 +81,10 @@ instance Checkable AType.Stmt where
         notNothingGuard prev_func (Err.FuncNameCollision pos id)
         push $ check Nothing fn
         return Nothing
-    check _ (AType.Decl loc t1 items) = do
+    check _ inst@(AType.Decl loc t1 items) = do
+        let t1' = toMFT t1
         mapM_ (check $ Just $ toMFT t1) items
+       -- mapM_ (check $ Just $ toMFT t1) items
         return Nothing
     check _ (AType.Ass loc id'@(AType.UIdent id) expr) = do
         checkIllegalId id' loc
@@ -90,8 +93,7 @@ instance Checkable AType.Stmt where
         let id_type = fromJust id_temp
         expr_temp <- check Nothing expr
         let expr_type = fromJust expr_temp
-        if id_type == expr_type then return Nothing
-        else throwError $ Err.TypeMismatch loc id_type expr_type
+        assertType id_type expr_type loc
     check t (AType.ArrAss loc id'@(AType.UIdent id) dimAcc expr) = do
         checkIllegalId id' loc
         mapM_ (check t) dimAcc
@@ -298,7 +300,7 @@ instance Checkable AType.RelOp where
         let t1@(tt, m) = fromJust t
         arrGuard t1 (Err.IncompatibleTypeOpRel (AType.hasPosition op) op t1 t1)
         case tt of
-            MInt -> return $ Just t1
+            MInt -> return $ Just (makeType'' MBool)
             _   -> throwError $ Err.IncompatibleTypeOpRel (AType.hasPosition op) op t1 t1
 
 

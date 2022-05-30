@@ -9,6 +9,7 @@ module StaticAnalysis.MacchiatoTypes where
 
 import qualified Data.List
 import Parsing.AbsMacchiato
+import Debug.Trace
 
 -- Macchiato Full Type with array dimensions, for now the dim um is always 0
 type MFType = (MType, MTypeMods)
@@ -79,6 +80,8 @@ instance Typable FnDef where
 
 compatibleParent (KeyWordLength _) t = (fst t) == MString || (dim_num $ snd t) > 0
 compatibleParent (KeyWordMaxVal _) t = (fst t) == MInt
+compatibleParent (KeyWordMinVal _) t = (fst t) == MInt
+compatibleParent (KeyWordDimNum _) t@(_, MTypeMods{..}) = dim_num > 0
 
 adjustArrType (t, mods) dim_acc = do
   return $
