@@ -76,7 +76,7 @@ transDimBra x = case x of
 transExpr :: Show a => AbsMacchiato.Expr' a -> Result
 transExpr x = case x of
   AbsMacchiato.EVar _ uident -> failure x
-  AbsMacchiato.ENewArr _ type_ dimaccs dimbras -> failure x
+  AbsMacchiato.ENewArr _ type_ dimaccs dimemptys -> failure x
   AbsMacchiato.EArrAcc _ uident dimaccs -> failure x
   AbsMacchiato.EKeyWord _ uident keyword -> failure x
   AbsMacchiato.EArrKeyWord _ uident dimaccs keyword -> failure x
@@ -96,6 +96,10 @@ transExpr x = case x of
 transDimAcc :: Show a => AbsMacchiato.DimAcc' a -> Result
 transDimAcc x = case x of
   AbsMacchiato.EDimAcc _ expr -> failure x
+
+transDimEmpty :: Show a => AbsMacchiato.DimEmpty' a -> Result
+transDimEmpty x = case x of
+  AbsMacchiato.EDimEmpty _ -> failure x
 
 transKeyWord :: Show a => AbsMacchiato.KeyWord' a -> Result
 transKeyWord x = case x of

@@ -212,7 +212,7 @@ instance Print (AbsMacchiato.Type' a) where
     AbsMacchiato.Int _ -> prPrec i 0 (concatD [doc (showString "int")])
     AbsMacchiato.Str _ -> prPrec i 0 (concatD [doc (showString "string")])
     AbsMacchiato.Bool _ -> prPrec i 0 (concatD [doc (showString "bool")])
-    AbsMacchiato.Arr _ type_ dimbras -> prPrec i 0 (concatD [prt 0 type_, doc (showString "[]"), prt 0 dimbras])
+    AbsMacchiato.Arr _ type_ dimbras -> prPrec i 0 (concatD [prt 0 type_, prt 0 dimbras])
 
 instance Print (AbsMacchiato.DimBra' a) where
   prt i = \case
@@ -220,6 +220,7 @@ instance Print (AbsMacchiato.DimBra' a) where
 
 instance Print [AbsMacchiato.DimBra' a] where
   prt _ [] = concatD []
+  prt _ [x] = concatD [prt 0 x]
   prt _ (x:xs) = concatD [prt 0 x, prt 0 xs]
 
 instance Print [AbsMacchiato.Type' a] where
@@ -230,7 +231,7 @@ instance Print [AbsMacchiato.Type' a] where
 instance Print (AbsMacchiato.Expr' a) where
   prt i = \case
     AbsMacchiato.EVar _ uident -> prPrec i 6 (concatD [prt 0 uident])
-    AbsMacchiato.ENewArr _ type_ dimaccs dimbras -> prPrec i 6 (concatD [doc (showString "new"), prt 0 type_, prt 0 dimaccs, prt 0 dimbras])
+    AbsMacchiato.ENewArr _ type_ dimaccs dimemptys -> prPrec i 6 (concatD [doc (showString "new"), prt 0 type_, prt 0 dimaccs, prt 0 dimemptys])
     AbsMacchiato.EArrAcc _ uident dimaccs -> prPrec i 6 (concatD [prt 0 uident, prt 0 dimaccs])
     AbsMacchiato.EKeyWord _ uident keyword -> prPrec i 6 (concatD [prt 0 uident, doc (showString "::"), prt 0 keyword])
     AbsMacchiato.EArrKeyWord _ uident dimaccs keyword -> prPrec i 6 (concatD [prt 0 uident, prt 0 dimaccs, doc (showString "::"), prt 0 keyword])
@@ -249,11 +250,19 @@ instance Print (AbsMacchiato.Expr' a) where
 
 instance Print (AbsMacchiato.DimAcc' a) where
   prt i = \case
-    AbsMacchiato.EDimAcc _ expr -> prPrec i 0 (concatD [doc (showString "["), prt 6 expr, doc (showString "]")])
+    AbsMacchiato.EDimAcc _ expr -> prPrec i 0 (concatD [doc (showString "["), prt 0 expr, doc (showString "]")])
+
+instance Print (AbsMacchiato.DimEmpty' a) where
+  prt i = \case
+    AbsMacchiato.EDimEmpty _ -> prPrec i 0 (concatD [doc (showString "[]")])
 
 instance Print [AbsMacchiato.DimAcc' a] where
   prt _ [] = concatD []
   prt _ [x] = concatD [prt 0 x]
+  prt _ (x:xs) = concatD [prt 0 x, prt 0 xs]
+
+instance Print [AbsMacchiato.DimEmpty' a] where
+  prt _ [] = concatD []
   prt _ (x:xs) = concatD [prt 0 x, prt 0 xs]
 
 instance Print (AbsMacchiato.KeyWord' a) where

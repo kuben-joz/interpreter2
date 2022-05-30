@@ -29,7 +29,7 @@ library:
   source-dirs: src
 
 executables:
-  interpreter-exe:
+  interpreter:
     main: Main.hs
     source-dirs: app
     ghc-options:

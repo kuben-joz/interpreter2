@@ -15,6 +15,7 @@ import Interpretation.Traverser
 import Mem.SymbolTable (Id, Loc, SymTable (current_env))
 import Parsing.AbsMacchiato
 import System.IO
+import Debug.Trace
 
 class Interpretable a where
   interpret :: a -> ITraverser
@@ -33,7 +34,6 @@ instance Interpretable Program where
 
 instance Interpretable FnDef where
   interpret (FunDef _ _ (UIdent id) args blk) = do
-    --todo this is we need to do a separate function for external
     params <- mapM getArg args
     current_env <- getEnv
     let mfun = MFun {env = current_env, params = params, instructions = blk}
@@ -64,8 +64,6 @@ interpretStatements (stmt : stmts) = do
 nestedInterpret (stmt : stmts) = do
   res <- interpret stmt
   brk_or_cont <- brkOrContCalled
-  -- debug could do a check on res being nothing here
-  -- todo I dont think I need this
   if brk_or_cont
     then return res
     else case res of
@@ -75,7 +73,6 @@ nestedInterpret [] = undefined
 
 instance Interpretable Stmt where
   interpret Empty {} = return Nothing
-  --todo this seems to call stmt instead of blick
   interpret (BStmt _ block) = do
     pushPop' $ interpret block
   interpret (FunStmt _ fun_def) = do
@@ -136,9 +133,10 @@ checkBrkCont stmt = do
   res@(cont, brk) <- getAndSetContBrk False False
   case res of
     (True, True) -> undefined
-    (True, _) -> interpret stmt
-    (_, True) -> return Nothing
-    (_, _) -> undefined
+--    (True, _) -> interpret stmt
+--    (_, True) -> return Nothing
+    (False, True) -> return Nothing
+    (_, _) -> interpret stmt
 
 instance Interpretable PrintParam where
   interpret (FunPrintParam _ expr) = do
@@ -155,7 +153,6 @@ instance Interpretable Expr where
   interpret (EArrAcc _ (UIdent id) dim_accs) = do
     arr <- getVal id
     getArrVal (fromJust arr) dim_accs
-  --todo check I didn't forbid arr assingment
   interpret (EKeyWord _ (UIdent id) keyw) = do
     val_m <- getVal id
     let val = fromJust val_m
@@ -227,7 +224,6 @@ instance Interpretable Expr where
     l <- interpret expl
     r <- interpret expr
     return . Just . MBool $ (fromJust l) >= (fromJust r)
-  -- todo add array loc checking
   interpret (ERel _ expl EQU {} expr) = do
     l_loc_m <- tryFindLoc expl
     r_loc_m <- tryFindLoc expr
@@ -263,9 +259,7 @@ tryFindLoc (EVar pos (UIdent id)) = do
   return loc_m
 tryFindLoc _ = return Nothing
 
--- todo same for arr access
-
-constructArray t (as@(EDimAcc pos expr) : accs) bs = do
+constructArray t as@((EDimAcc pos expr) : accs) bs = do
   l_m <- interpret expr
   let l = (fromEnum . fromJust) l_m
   leqZeroGuard l (Err.ArrDimLTZero pos l)
@@ -274,9 +268,6 @@ constructArray t (as@(EDimAcc pos expr) : accs) bs = do
   return $ MArr {elems = res_elems, len = l, dim_num = d}
 -- According to the grammar it can't be ampty, have to declare at least one dimension
 constructArray t [] bs = undefined
-
---todo check that I am passign the right dim_level maybe -1 form what it is
--- todo check I give arrays hasref at arracc
 
 insertArr def_val [] 0 = do
   addLocVal def_val
@@ -311,16 +302,22 @@ insertArr def_val (acc@(EDimAcc pos expr) : accs) dim_num = do
   res_elems <- mapM (insertArr def_val accs) [dim_num -1 | x <- [1 .. l]]
   addLocVal MArr {elems = res_elems, len = l, dim_num = dim_num}
 
+getArrVal mval dimaccs = getArr mval dimaccs getter
+  where
+    getter elems i = getVal' $ Just (elems !! i)
+
 getArr :: MVal -> [DimAcc] -> ([Loc] -> Int -> Traverser a) -> Traverser a
 getArr (MArr {..}) ((EDimAcc loc expr) : []) f = do
   i_m <- interpret expr
   let i = (fromEnum . fromJust) i_m
+  leqZeroGuard i (Err.ArrDimLTZero loc i)
   if i >= len
     then throwError $ Err.ArrOutOfBounds loc i len
     else f elems i
 getArr (MArr {..}) ((EDimAcc loc expr) : accs) f = do
   i_m <- interpret expr
   let i = (fromEnum . fromJust) i_m
+  leqZeroGuard i (Err.ArrDimLTZero loc i)
   if i >= len
     then throwError $ Err.ArrOutOfBounds loc i len
     else do
@@ -329,9 +326,7 @@ getArr (MArr {..}) ((EDimAcc loc expr) : accs) f = do
 -- getVal' $ Just (elems !! i)
 getArr _ _ _ = undefined
 
-getArrVal mval dimaccs = getArr mval dimaccs getter
-  where
-    getter elems i = getVal' $ Just (elems !! i)
+
 
 getArrLoc mval dimaccs = getArr mval dimaccs getter
   where
@@ -347,7 +342,6 @@ getArg (ArgRef _ _ (UIdent id)) = do
   return $ MARef id
 
 
--- todo check if the symbol was GT
 intRangeGuard val pos = do
   case compare val (toInteger (minBound :: Int)) of
     LT -> throwError $ Err.IntTooSmall pos val

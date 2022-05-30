@@ -26,7 +26,7 @@ exit computation = computation >>= \case
 interpret :: String -> IO ()
 interpret s = do
     case  ( pProgram . myLexer) s of
-        Left err -> hPrint stderr err
+        Left err -> hPrint stderr err >> exitFailure
         Right prog -> check' prog
 
 

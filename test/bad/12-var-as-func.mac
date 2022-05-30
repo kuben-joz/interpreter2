@@ -1,8 +1,8 @@
 
 
 
-
 int main() {
-    int break = 5;
+    int a;
+    a();
     return 0;
 }

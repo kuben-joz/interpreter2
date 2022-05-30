@@ -2,5 +2,6 @@
 
 
 int main() {
-//todo
+    int[] a = new int[5];
+    return a[1][1];
 }

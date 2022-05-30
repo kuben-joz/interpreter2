@@ -22,7 +22,7 @@ instance Show MVal where
   show (MInt i) = show i
   show (MBool b) = show b
   show (MFun{}) = "fun"
-  show (MArr{}) = "arr"
+  show (MArr{..}) = "arr"
 
 class HasLen a where
   getLen :: a -> Int

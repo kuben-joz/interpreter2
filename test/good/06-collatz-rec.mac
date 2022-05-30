@@ -16,7 +16,7 @@ int collatz(int x) {
 
 int main() {
     int x = 25;
-    printf << "Starting collatz with value: " << x << "\n";
+    print << "Starting collatz with value: " << x << "\n";
     collatz(25);
     return 0;
 }

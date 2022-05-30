@@ -16,7 +16,6 @@ import qualified Data.Map as M
 import Foreign (deRefStablePtr)
 import GHC.IO.Encoding (getLocaleEncoding)
 import Control.Monad.Reader
--- import qualified Control.Monad.Reader as 
 
 type Traverser = StateT (SymTable MFType ()) (Except Err.StaticException)
 
@@ -45,7 +44,6 @@ push f = do
 
 
 
--- todo check if check for prev value everywhere
 addKeyVal key val' = do
     let val = makeReferencable val'
     SymTable{..} <- get

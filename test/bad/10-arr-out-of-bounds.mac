@@ -2,6 +2,6 @@
 
 
 int main() {
-    int[] a = new int[5]
+    int[] a = new int[5];
     return a[5];
 }

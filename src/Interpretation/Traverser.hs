@@ -67,8 +67,6 @@ addLocVal' l v = do
     state= M.insert l v state, dat=dat, loc=loc}
     return Nothing
 
-    -- todoput SymTable{global}
-
 addKeyLoc k l = do
     s@SymTable{..} <- get
     put $ SymTable{global_env=global_env,
@@ -107,7 +105,6 @@ getEnv::Traverser [Env]
 getEnv = do
     (_, env) <- gets getEnvs
     return env
---todo I think I have to give both the values and env at the same time, or I could return env
 -- inserts are (id, Maybe Loc)
 pushPop new_env inserts f = do
     s <- get

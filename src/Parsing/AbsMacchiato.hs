@@ -71,7 +71,7 @@ data DimBra' a = ModDimBra a
 type Expr = Expr' BNFC'Position
 data Expr' a
     = EVar a UIdent
-    | ENewArr a (Type' a) [DimAcc' a] [DimBra' a]
+    | ENewArr a (Type' a) [DimAcc' a] [DimEmpty' a]
     | EArrAcc a UIdent [DimAcc' a]
     | EKeyWord a UIdent (KeyWord' a)
     | EArrKeyWord a UIdent [DimAcc' a] (KeyWord' a)
@@ -91,6 +91,10 @@ data Expr' a
 
 type DimAcc = DimAcc' BNFC'Position
 data DimAcc' a = EDimAcc a (Expr' a)
+  deriving (C.Eq, C.Ord, C.Show, C.Read, C.Functor, C.Foldable, C.Traversable)
+
+type DimEmpty = DimEmpty' BNFC'Position
+data DimEmpty' a = EDimEmpty a
   deriving (C.Eq, C.Ord, C.Show, C.Read, C.Functor, C.Foldable, C.Traversable)
 
 type KeyWord = KeyWord' BNFC'Position
@@ -208,6 +212,10 @@ instance HasPosition Expr where
 instance HasPosition DimAcc where
   hasPosition = \case
     EDimAcc p _ -> p
+
+instance HasPosition DimEmpty where
+  hasPosition = \case
+    EDimEmpty p -> p
 
 instance HasPosition KeyWord where
   hasPosition = \case

@@ -2,7 +2,7 @@
 
 
 int main() {
-    print << foo;
+    print << new int[5];
     return 0;
 }
 

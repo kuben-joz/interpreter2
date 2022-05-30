@@ -87,7 +87,7 @@ ENewArr.   Expr6 ::= "new" Type [DimAcc] [DimEmpty] ;
 
 EArrAcc.    Expr6 ::= UIdent [DimAcc] ;
 
-EDimAcc.    DimAcc::= "[" Expr6 "]" ;
+EDimAcc.    DimAcc::= "[" Expr "]" ;
 
 EDimEmpty.  DimEmpty ::= "[]" ;
 

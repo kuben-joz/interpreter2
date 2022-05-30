@@ -3,7 +3,7 @@
 */
 // Ten rowniez
 
-
+/*
 int _fun1(int i) {
     print << i << "\n";
     if(i == 1) return i;
@@ -11,13 +11,15 @@ int _fun1(int i) {
         return _fun1(i/2);
     else { return _fun1(3*i+1);}
 }
-
+*/
 /*
  * Poczatek programu
 */
 int main() {
-    int[] a = new int[5];
-    return _fun1(25);
+    int[][] a = new int[5][];
+    a[2] = new int[-2];
+    a[2][1] = 7;
+    return a[2][0];
 }
 
 
