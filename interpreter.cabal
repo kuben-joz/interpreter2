@@ -25,20 +25,19 @@ source-repository head
 
 library
   exposed-modules:
-      Interpretation.Interpret
-      Interpretation.Interpreter
-      Interpretation.MacchiatoVals
-      Interpretation.Traverser
       Main
       Mem.SymbolTable
       Parsing.AbsMacchiato
       Parsing.LexMacchiato
       Parsing.ParMacchiato
       Parsing.PrintMacchiato
+      StaticAnalysis.CFGOptim
+      StaticAnalysis.CFGTraverser
       StaticAnalysis.Environment
       StaticAnalysis.Err
       StaticAnalysis.MacchiatoTypes
-      StaticAnalysis.Traverser
+      StaticAnalysis.MacchiatoVals
+      StaticAnalysis.TCTraverser
       StaticAnalysis.TypeCheck
       Util.FieldExtractors
   other-modules:

@@ -27,7 +27,7 @@ import StaticAnalysis.Err as Err
                       FuncNameCollision, TypeMismatch),
       ErrLoc )
 import StaticAnalysis.MacchiatoTypes
-import StaticAnalysis.Traverser
+import StaticAnalysis.TCTraverser
 import Util.FieldExtractors
 
 forbiddenIds =

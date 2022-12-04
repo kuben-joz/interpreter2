@@ -5,8 +5,8 @@ module Main where
 import Data.IntMap (showTree)
 import Parsing.ParMacchiato
 import Parsing.PrintMacchiato (printTree)
+import StaticAnalysis.CFGOptim
 import StaticAnalysis.TypeCheck
-import Interpretation.Interpret
 import System.Environment (getArgs)
 import System.Exit (exitFailure, exitSuccess)
 import System.IO (hPrint, stderr)
@@ -29,7 +29,7 @@ startProg _ = do
 check''' :: String -> IO ()
 check''' s = do
   case (pProgram . myLexer) s of
-    Left err -> hPrint stderr err >> exitFailure
+    Left err -> printErr err
     Right prog -> check'' prog
 
 check'' prog = do
@@ -37,17 +37,19 @@ check'' prog = do
     Left ex -> print ex
     Right _ -> check' prog
 
-
 check' prog = do
   res_val <- startInterpret prog
-  case  res_val of
+  case res_val of
     Left ex -> print ex
     Right _ -> printTree' prog
-
 
 --return (liftIO)
 
 printTree' prog = do
-  putStrLn "OK\n"
+  putStrLn "OK"
   print prog
   putStrLn $ printTree prog
+
+printErr err_msg = do
+  putStrLn "ERROR"
+  putStrLn err_msg

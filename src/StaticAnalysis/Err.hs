@@ -100,7 +100,7 @@ instance Show StaticException where
     (errMsgStart loc) ++ "Value of " ++ show i
       ++ " is larger than Int's max of "
       ++ show (maxBound :: Int)
-  show (NoReturnCont err_stack) = (errMsgStart Nothing) ++ " No return statements on nonvoid control path: " ++ show err_stack
+  show (NoReturnCont err_stack) = (errMsgStart Nothing) ++ " No return statements on nonvoid control path: " ++ showStack err_stack
 
-showStack ((Just (line, col), fn_name) : tl) = "\nAt function " ++ fn_name ++ " line " ++ show line ++ "collumn " ++ show col ++ showStack tl
+showStack ((Just (line, col), fn_name) : tl) = "\nAt function " ++ fn_name ++ " line " ++ show line ++ " collumn " ++ show col ++ showStack tl
 showStack _ = "\n"
