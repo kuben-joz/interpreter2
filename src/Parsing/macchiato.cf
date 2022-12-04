@@ -38,7 +38,13 @@ Ass.       Stmt ::= UIdent "=" Expr  ";" ;
 
 ArrAss.    Stmt ::= UIdent [DimAcc] "=" Expr ";" ;
 
+Incr.      Stmt ::= UIdent "++"  ";" ;
+
+Decr.      Stmt ::= UIdent "--"  ";" ;
+
 Ret.       Stmt ::= "return" Expr ";" ;
+
+RetNone.   Stmt ::= "return" ";" ;
 
 Cond.      Stmt ::= "if" "(" Expr ")" Stmt  ;
 
@@ -48,15 +54,9 @@ While.     Stmt ::= "while" "(" Expr ")" Stmt ;
 
 SExp.      Stmt ::= Expr  ";" ;
 
-Print.     Stmt ::= "print" [PrintParam] ";" ;
-
 Break.     Stmt ::= "break" ";" ;
 
 Cont.      Stmt ::= "continue" ";" ;
-
-FunPrintParam. PrintParam ::= "<<" Expr ;
-
-separator nonempty PrintParam "" ;
 
 -- Types and modifiers ---------------------------------------------------
 
@@ -64,7 +64,9 @@ Int.       Type ::= "int" ;
 
 Str.       Type ::= "string" ;
 
-Bool.      Type ::= "bool" ;
+Bool.      Type ::= "boolean" ;
+
+Void.      Type ::= "void" ;
 
 token UIdent ((letter | '_') (letter | digit | '_')*) ;
 

@@ -4,10 +4,10 @@
 {-# OPTIONS_GHC -Wno-incomplete-patterns #-}
 
 module StaticAnalysis.MacchiatoTypes where
-import qualified Data.List
-import Parsing.AbsMacchiato
-import Debug.Trace
 
+import qualified Data.List
+import Debug.Trace
+import Parsing.AbsMacchiato
 
 type MFType = (MType, MTypeMods)
 
@@ -44,11 +44,13 @@ instance Show MType where
   show MString = "String"
   show MInt = "int"
   show (MFun _ params) = "fun " ++ show params
+  show MVoid = "void"
 
 data MType
   = MBool
   | MString
   | MInt
+  | MVoid
   | MFun MFType [MFType]
   deriving (Eq)
 
@@ -66,6 +68,7 @@ instance Typable Type where
   toMFT (Str _) = (MString, MTypeMods {dim_num = 0, has_ref = False, can_brk_cont = False})
   toMFT (Bool _) = (MBool, MTypeMods {dim_num = 0, has_ref = False, can_brk_cont = False})
   toMFT (Arr _ t bra) = (fst $ toMFT t, MTypeMods {dim_num = length bra, has_ref = False, can_brk_cont = False})
+  toMFT (Void _) = (MVoid, MTypeMods {dim_num = 0, has_ref = False, can_brk_cont = False})
 
 makeReferencable (mtype, MTypeMods {..}) = (mtype, MTypeMods {dim_num = dim_num, has_ref = True, can_brk_cont = can_brk_cont})
 
@@ -78,7 +81,7 @@ instance Typable FnDef where
 compatibleParent (KeyWordLength _) t = (fst t) == MString || (dim_num $ snd t) > 0
 compatibleParent (KeyWordMaxVal _) t = (fst t) == MInt
 compatibleParent (KeyWordMinVal _) t = (fst t) == MInt
-compatibleParent (KeyWordDimNum _) t@(_, MTypeMods{..}) = dim_num > 0
+compatibleParent (KeyWordDimNum _) t@(_, MTypeMods {..}) = dim_num > 0
 
 adjustArrType (t, mods) dim_acc = do
   return $

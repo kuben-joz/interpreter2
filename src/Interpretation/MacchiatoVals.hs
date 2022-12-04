@@ -1,14 +1,18 @@
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE TypeSynonymInstances #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE InstanceSigs #-}
 module Interpretation.MacchiatoVals where
 
 import Mem.SymbolTable
 import Parsing.AbsMacchiato
+import Text.Printf (vFmt)
 
 data MArgs =
     MARef Id
     | MAVal Id
 
-
+type MResVal = Maybe MVal
 
 data MVal =
       MString String Int
@@ -16,6 +20,7 @@ data MVal =
     | MBool Bool
     | MFun {env :: [Env], params :: [MArgs], instructions :: Block}
     | MArr {elems :: [Loc], len :: Int, dim_num :: Int}
+    | MVoid
 
 instance Show MVal where
   show (MString s _) = s
@@ -36,11 +41,46 @@ instance HasLen MVal where
 getDimNum MArr{..} = dim_num
 
 
+lt::MResVal -> MResVal -> MResVal
+lt (Just (MInt v1)) (Just (MInt v2)) = Just $ MBool $ v1 < v2
+lt _ _ = Nothing
 
+lte::MResVal -> MResVal -> MResVal
+lte (Just (MInt v1)) (Just (MInt v2)) = Just $ MBool $ v1 <= v2
+lte _ _ = Nothing
 
-(!) :: MVal -> MVal
-(!) (MBool b) = MBool $ not b
-(!) _ = undefined
+gt::MResVal -> MResVal -> MResVal
+gt (Just (MInt v1)) (Just (MInt v2)) = Just $ MBool $ v1 > v2
+gt _ _ = Nothing
+
+gte::MResVal -> MResVal -> MResVal
+gte (Just (MInt v1)) (Just (MInt v2)) = Just $ MBool $ v1 >= v2
+gte _ _ = Nothing
+
+myand::MResVal -> MResVal -> MResVal
+myand (Just (MBool v1)) (Just (MBool v2)) = Just $ MBool $ v1 && v2
+myand _ _ = Nothing
+
+myor::MResVal -> MResVal -> MResVal
+myor (Just (MBool v1)) (Just (MBool v2)) = Just $ MBool $ v1 || v2
+myor _ _ = Nothing
+
+eq::MResVal -> MResVal -> MResVal
+eq (Just v1) (Just v2) = Just $ MBool $ v1 == v2
+eq _ _ = Nothing
+
+class Negatable a where
+  (!) :: a -> a
+
+instance Negatable MVal where
+  (!) :: MVal -> MVal
+  (!) (MBool b) = MBool $ not b
+  (!) _ = undefined
+
+instance Negatable MResVal where
+  (!) :: MResVal -> MResVal
+  (!) (Just v) = Just $ (!) v
+  (!) Nothing = Nothing
 
 -- (+), (*), abs, signum, fromInteger, (negate | (-))
 instance Num MVal where
@@ -57,14 +97,36 @@ instance Num MVal where
   negate (MInt i) = MInt $ -i
   negate _ = undefined
 
+instance Num MResVal where
+  (+) (Just v1) (Just v2) = Just $ v1 + v2
+  (+) _ _ = Nothing
+  (*) (Just v1) (Just v2) = Just $ v1 * v2
+  (*) _ _ = Nothing
+  abs (Just v) = Just $ abs v
+  abs Nothing = Nothing
+  signum (Just v) = Just $ signum v
+  signum Nothing = Nothing
+  fromInteger i = Just $ MInt $ fromInteger i
+  negate (Just v) = Just $ negate v
+  negate Nothing = Nothing
+
+
 
 instance Enum MVal where
   toEnum = MInt
   fromEnum (MInt i) = i
   fromEnum _ = undefined
 
+instance Enum MResVal where
+  toEnum = Just . MInt
+  fromEnum (Just (MInt i)) = i
+  fromEnum _ = undefined
+
 
 instance Real MVal where
+  toRational _ = undefined
+
+instance Real MResVal where
   toRational _ = undefined
 
 instance Ord MVal where
@@ -78,18 +140,20 @@ instance Eq MVal where
   -- to remeber to do arr pointer checking above
   (==) _ _ = undefined
 
-
 instance Integral MVal where
   quotRem (MInt i1) (MInt i2) = (MInt (quot i1 i2), MInt (rem i1 i2))
   quotRem _ _ = undefined
   toInteger (MInt i) = toInteger i
   toInteger _ = undefined
 
+instance Integral MResVal where
+  quotRem (Just v1) (Just v2) = (Just (quot v1 v2), Just (rem v1 v2))
+  quotRem _ _ = (Nothing, Nothing)
+  toInteger (Just v) = toInteger v
+  toInteger Nothing = undefined
+
 fromMVal (MBool b) = b
 fromMVal _ = undefined
-
-
-
 
 
 toDefValue :: Type -> MVal

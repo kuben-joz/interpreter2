@@ -5,130 +5,129 @@
 
 module Interpretation.Interpret where
 
+import Control.Applicative
 import Control.Monad.Except
 import Control.Monad.State
-import Data.Maybe (catMaybes, fromJust, listToMaybe)
+import Data.Bool (bool)
+import Data.Maybe (catMaybes, fromJust, isNothing, listToMaybe)
+import Debug.Trace
 import GHC.Float (expFloat)
-import qualified Interpretation.Err as Err
 import Interpretation.MacchiatoVals
 import Interpretation.Traverser
-import Mem.SymbolTable (Id, Loc, SymTable (current_env))
-import Parsing.AbsMacchiato
+import Mem.SymbolTable (Id, Loc, SymTable (current_env), getData)
+import Parsing.AbsMacchiato as AType
+import StaticAnalysis.Err (StaticException (NoReturnCont))
+import qualified StaticAnalysis.Err as Err
+import StaticAnalysis.MacchiatoTypes (MType)
+import qualified StaticAnalysis.MacchiatoTypes as MTypes
 import System.IO
-import Debug.Trace
+
+data IncDec = Inc | Dec
 
 class Interpretable a where
   interpret :: a -> ITraverser
 
---startInterpret :: Program -> IO (Either Err.RuntimeException (Maybe MVal))
-startInterpret :: Interpretable a => a -> IO (Either Err.RuntimeException (Maybe MVal))
+startInterpret :: Interpretable a => a -> IO (Either StaticException MResVal)
 startInterpret prog = runExceptT $ evalStateT (interpret prog) (initProg)
 
 instance Interpretable Program where
   interpret (ProgramS loc fndefs) = do
     mapM_ initGlobal fndefs
-    res_val <- interpret (EApp loc (UIdent "main") [])
-    let res_message =  "\nProgram terminated with exit code: " ++ (show (fromJust res_val))
-    liftIO $ putStrLn res_message
-    return res_val
+    mapM_ interpret fndefs
+    return Nothing
 
 instance Interpretable FnDef where
-  interpret (FunDef _ _ (UIdent id) args blk) = do
-    params <- mapM getArg args
-    current_env <- getEnv
-    let mfun = MFun {env = current_env, params = params, instructions = blk}
-    addKeyVal id mfun
-    return Nothing
+  interpret fn@(FunDef funloc ftype (UIdent id) args blk) = do
+    fn_def_m@(Just MFun {..}) <- getVal id
+    let ftype' = MTypes.toMFT ftype
+    case ftype' of
+      (MTypes.MVoid, _) -> return $ Just MVoid
+      _ -> pushPop'' (funloc, id) (interpret instructions)
 
 instance Interpretable Block where
   -- we push the stack before getting here so we don't do it here
-  interpret (FunBlock _ stmts) = interpretStatements stmts
+  interpret (FunBlock _ stmts) = do
+    res <- interpretStatements stmts
+    StackInfo {..} <- gets getData
+    case res of
+      Nothing -> throwError $ Err.NoReturnCont calls
+      _ -> return Nothing
 
+interpretStatements ::
+  Interpretable (Stmt' a) =>
+  [Stmt' a] ->
+  StateT ISymTable (ExceptT StaticException IO) (Maybe MVal)
 interpretStatements [] = return Nothing
 interpretStatements s_arr@(BStmt {} : stmts) = nestedInterpret s_arr
-interpretStatements ((Ret _ expr) : _) = do
-  interpret expr
 interpretStatements s_arr@(Cond {} : stmts) = nestedInterpret s_arr
 interpretStatements s_arr@(CondElse {} : stmts) = nestedInterpret s_arr
 interpretStatements s_arr@(While {} : stmts) = nestedInterpret s_arr
-interpretStatements (stmt@(Break _) : _) = do
-  interpret stmt
-  return Nothing
-interpretStatements (stmt@(Cont _) : _) = do
-  interpret stmt
-  return Nothing
 interpretStatements (stmt : stmts) = do
   interpret stmt
   interpretStatements stmts
 
 nestedInterpret (stmt : stmts) = do
   res <- interpret stmt
-  brk_or_cont <- brkOrContCalled
-  if brk_or_cont
-    then return res
-    else case res of
-      Nothing -> interpretStatements stmts
-      _ -> return res
-nestedInterpret [] = undefined
+  case res of
+    Nothing -> interpretStatements stmts
+    _ -> return res
+nestedInterpret [] = do return Nothing
 
 instance Interpretable Stmt where
   interpret Empty {} = return Nothing
   interpret (BStmt _ block) = do
     pushPop' $ interpret block
-  interpret (FunStmt _ fun_def) = do
-    interpret fun_def
+  interpret (FunStmt loc fun_def@(AType.FunDef _ _ (AType.UIdent id) _ _)) = do
+    -- todo no nested funcs for now
+    return Nothing
   interpret (Decl _ t items) = do
-    let def_val = toDefValue t
-    mapM_ (addItem def_val) items
     return Nothing
   interpret (Ass _ (UIdent id) expr) = do
-    val <- interpret expr
-    addOrModifyKeyVal id (fromJust val)
     return Nothing
   interpret (ArrAss _ (UIdent id) dimaccs expr) = do
-    val <- interpret expr
-    arr <- getVal id
-    loc <- getArrLoc (fromJust arr) dimaccs
-    addLocVal' loc (fromJust val)
+    return Nothing -- todo
   interpret (Ret _ expr) = do
-    interpret expr
+    res <- interpret expr
+    return $ trace ("got here") (Just MVoid)
+  interpret (RetNone _) = do
+    return $ Just MVoid
   interpret (Cond _ expr stmt) = do
     bool_m <- interpret expr
-    if fromMVal $ fromJust bool_m
-      then interpret stmt
-      else return Nothing
+    case bool_m of
+      Just (MBool False) -> return Nothing
+      _ -> interpret stmt
   interpret (CondElse _ expr stmt_t stmt_f) = do
     bool_m <- interpret expr
-    if fromMVal $ fromJust bool_m
-      then interpret stmt_t
-      else interpret stmt_f
+    case bool_m of
+      Just (MBool False) -> interpret stmt_f
+      Just (MBool True) -> interpret stmt_t
+      Just (_) -> undefined
+      -- todo not sure why alternative doesnt work here
+      Nothing -> do
+        res1 <- interpret stmt_f
+        res2 <- interpret stmt_t
+        if isNothing res1
+          then return res2
+          else return res1
   interpret stmt'@(While _ expr stmt) = do
     bool_m <- interpret expr
-    if not $ (fromMVal . fromJust) bool_m
-      then return Nothing
-      else do
-        res <- interpret stmt
-        case res of
-          Just a -> return res
-          Nothing -> checkBrkCont stmt'
-  interpret (SExp _ expr) = do interpret expr
-  interpret (Print _ params) = do
-    mapM_ interpret params
-    liftIO $ hFlush stdout
+    case bool_m of
+      Just (MBool False) -> return Nothing
+      _ -> interpret stmt
+  interpret (SExp _ expr) = do
     return Nothing
   interpret Cont {} = do
-    getAndSetCont True
+    --getAndSetCont True
     return Nothing
   interpret Break {} = do
-    getAndSetBrk True
+    --getAndSetBrk True
+    return Nothing
+  interpret (Incr _ (UIdent id)) = do
+    return Nothing
+  interpret (Decr _ (UIdent id)) = do
     return Nothing
 
-addItem def_val (NoInit _ (UIdent id)) = do
-  addKeyVal id def_val
-addItem _ (Init _ (UIdent id) expr) = do
-  val <- interpret expr
-  addKeyVal id (fromJust val)
-
+{- todo
 checkBrkCont stmt = do
   res@(cont, brk) <- getAndSetContBrk False False
   case res of
@@ -137,128 +136,118 @@ checkBrkCont stmt = do
 --    (_, True) -> return Nothing
     (False, True) -> return Nothing
     (_, _) -> interpret stmt
-
-instance Interpretable PrintParam where
-  interpret (FunPrintParam _ expr) = do
-    res <- interpret expr
-    liftIO $ putStr (show.fromJust $ res)
-    return Nothing
-
+-}
 
 instance Interpretable Expr where
   interpret (EVar _ (UIdent id)) = do getVal id
   interpret (ENewArr loc t dim_accs dim_bra) = do
-    res_arr <- constructArray t dim_accs dim_bra
-    return $ Just res_arr
+    --res_arr <- constructArray t dim_accs dim_bra
+    --return $ Just res_arr
+    return Nothing
   interpret (EArrAcc _ (UIdent id) dim_accs) = do
-    arr <- getVal id
-    getArrVal (fromJust arr) dim_accs
+    --arr <- getVal id
+    --getArrVal (fromJust arr) dim_accs
+    return Nothing
   interpret (EKeyWord _ (UIdent id) keyw) = do
-    val_m <- getVal id
-    let val = fromJust val_m
-    case keyw of
-      (KeyWordLength _) -> return $ Just (MInt (getLen val))
-      (KeyWordMaxVal _) -> return $ Just (MInt maxBound)
-      (KeyWordMinVal _) -> return $ Just (MInt minBound)
-      (KeyWordDimNum _) -> return $ Just (MInt (getDimNum val))
+    return Nothing
   interpret (EArrKeyWord loc (UIdent id) dimaccs keyw) = do
-    val_m <- interpret (EArrAcc loc (UIdent id) dimaccs)
-    let val = fromJust val_m
-    case keyw of
-      (KeyWordLength _) -> return $ Just (MInt (getLen val))
-      (KeyWordMaxVal _) -> return $ Just (MInt maxBound)
-      (KeyWordMinVal _) -> return $ Just (MInt minBound)
-      (KeyWordDimNum _) -> return $ Just (MInt (getDimNum val))
+    return Nothing
   interpret (ELitInt pos val) = do
     intRangeGuard val pos
     return $ Just (MInt (fromInteger val))
   interpret ELitTrue {} = do return $ Just (MBool True)
   interpret ELitFalse {} = do return $ Just (MBool False)
-  interpret (EApp _ (UIdent id) exprs) = do
-    fn_def_m <- getVal id
-    let fn_def@(MFun {..}) = fromJust fn_def_m
-    inserts <- mapM getInsert (zip params exprs)
-    pushPop env inserts (interpret instructions)
+  interpret (EApp loc (UIdent id) exprs) = do
+    StackInfo {..} <- gets getData
+    if max_depth == length calls
+      then return $ Just MVoid
+      else do
+        fn_def_m <- getVal id
+        let fn_def@(MFun {..}) = fromJust fn_def_m
+        inserts <- mapM getInsert (zip params exprs)
+        pushPop env inserts (loc, id) (interpret instructions)
   interpret (EString _ s) = do return $ Just (MString s (length s))
   interpret (Neg _ expr) = do
     int_j <- interpret expr
-    return $ Just (- (fromJust int_j))
+    return $ - int_j
   interpret (Not _ expr) = do
     bool_j <- interpret expr
-    return $ Just ((!) (fromJust bool_j))
+    return $ (!) bool_j
   interpret (EMul _ expl Times {} expr) = do
     l <- interpret expl
     r <- interpret expr
-    return . Just $ (fromJust l) * (fromJust r)
+    return $ l * r
   interpret (EMul loc expl Div {} expr) = do
     l <- interpret expl
     r <- interpret expr
-    zeroGuard (fromJust r) (Err.DivByZero loc)
-    return . Just $ (fromJust l) `div` (fromJust r)
+    zeroGuard r (Err.DivByZero loc)
+    return $ l `div` r
   interpret (EMul loc expl Mod {} expr) = do
     l <- interpret expl
     r <- interpret expr
-    zeroGuard (fromJust r) (Err.ModZero loc)
-    return . Just $ (fromJust l) `mod` (fromJust r)
+    zeroGuard r (Err.ModZero loc)
+    return $ l `mod` r
   interpret (EAdd _ expl Plus {} expr) = do
     l <- interpret expl
     r <- interpret expr
-    return . Just $ (fromJust l) + (fromJust r)
+    return $ l + r
   interpret (EAdd _ expl Minus {} expr) = do
     l <- interpret expl
     r <- interpret expr
-    return . Just $ (fromJust l) - (fromJust r)
+    return $ l - r
   interpret (ERel _ expl LTH {} expr) = do
     l <- interpret expl
     r <- interpret expr
-    return . Just . MBool $ (fromJust l) < (fromJust r)
+    return $ lt l r
   interpret (ERel _ expl LE {} expr) = do
     l <- interpret expl
     r <- interpret expr
-    return . Just . MBool $ (fromJust l) <= (fromJust r)
+    return $ lte l r
   interpret (ERel _ expl GTH {} expr) = do
     l <- interpret expl
     r <- interpret expr
-    return . Just . MBool $ (fromJust l) > (fromJust r)
+    return $ gt l r
   interpret (ERel _ expl GE {} expr) = do
     l <- interpret expl
     r <- interpret expr
-    return . Just . MBool $ (fromJust l) >= (fromJust r)
+    return $ gte l r
   interpret (ERel _ expl EQU {} expr) = do
     l_loc_m <- tryFindLoc expl
     r_loc_m <- tryFindLoc expr
     l <- interpret expl
     r <- interpret expr
-    case (l, r) of
-      (Just (MArr {}), _) -> return . Just . MBool $ l_loc_m == r_loc_m
-      _ -> do return . Just . MBool $ (fromJust l) == (fromJust r)
+    return $ eq l r
+  -- todo maybe try doing arrays static checks
+  -- case (l, r) of
+  --   (Just (MArr {}), _) -> return . Just . MBool $ l_loc_m == r_loc_m
+  --   _ -> do return $ eq l r
   interpret (ERel pos expl (NE pos') expr) = do
-    eq_res <- interpret (ERel pos expl (EQU pos') expr)
-    return $ (Just . (!) . fromJust) eq_res
+    --eq_res <- interpret (ERel pos expl (EQU pos') expr)
+    --return $ (Just . (!) . fromJust) eq_res
+    l <- interpret expl
+    r <- interpret expr
+    return . (!) $ eq l r
   interpret (EAnd _ expl expr) = do
     l <- interpret expl
     r <- interpret expr
-    return . Just . MBool $ (fromMVal . fromJust) l && (fromMVal . fromJust) r
+    return $ myand l r
   interpret (EOr _ expl expr) = do
     l <- interpret expl
     r <- interpret expr
-    return . Just . MBool $ (fromMVal . fromJust) l || (fromMVal . fromJust) r
+    return $ myor l r
 
-
-getInsert :: (MArgs, Expr) -> Traverser (Id, Either Loc MVal)
+getInsert :: (MArgs, Expr) -> Traverser (Id, Either Loc MResVal)
 getInsert ((MARef id), expr) = do
   loc_m <- tryFindLoc expr
   return $ (id, Left (fromJust loc_m))
 getInsert ((MAVal id), expr) = do
   val_m <- interpret expr
-  return $ (id, Right (fromJust val_m))
+  return $ (id, Right val_m)
 
 tryFindLoc :: Expr -> Traverser (Maybe Loc)
-tryFindLoc (EVar pos (UIdent id)) = do
-  p@(loc_m, val_m) <- getLocVal id
-  return loc_m
 tryFindLoc _ = return Nothing
 
+{- todo add this back in later
 constructArray t as@((EDimAcc pos expr) : accs) bs = do
   l_m <- interpret expr
   let l = (fromEnum . fromJust) l_m
@@ -310,14 +299,14 @@ getArr :: MVal -> [DimAcc] -> ([Loc] -> Int -> Traverser a) -> Traverser a
 getArr (MArr {..}) ((EDimAcc loc expr) : []) f = do
   i_m <- interpret expr
   let i = (fromEnum . fromJust) i_m
-  leqZeroGuard i (Err.ArrDimLTZero loc i)
+  ltZeroGuard i (Err.ArrDimLTZero loc i)
   if i >= len
     then throwError $ Err.ArrOutOfBounds loc i len
     else f elems i
 getArr (MArr {..}) ((EDimAcc loc expr) : accs) f = do
   i_m <- interpret expr
   let i = (fromEnum . fromJust) i_m
-  leqZeroGuard i (Err.ArrDimLTZero loc i)
+  ltZeroGuard i (Err.ArrDimLTZero loc i)
   if i >= len
     then throwError $ Err.ArrOutOfBounds loc i len
     else do
@@ -326,22 +315,22 @@ getArr (MArr {..}) ((EDimAcc loc expr) : accs) f = do
 -- getVal' $ Just (elems !! i)
 getArr _ _ _ = undefined
 
-
-
 getArrLoc mval dimaccs = getArr mval dimaccs getter
   where
     getter elems i = return (elems !! i)
-
+ -}
+initGlobal :: FnDef' BNFC'Position -> ITraverser
 initGlobal (FunDef _ _ (UIdent id) args blk) = do
   params <- mapM getArg args
   addToGlobal id params blk
+  return Nothing
 
 getArg (ArgVal _ _ (UIdent id)) = do
   return $ MAVal id
 getArg (ArgRef _ _ (UIdent id)) = do
   return $ MARef id
 
-
+intRangeGuard :: MonadError StaticException m => Integer -> Err.ErrLoc -> m (Maybe a)
 intRangeGuard val pos = do
   case compare val (toInteger (minBound :: Int)) of
     LT -> throwError $ Err.IntTooSmall pos val
@@ -351,12 +340,18 @@ intRangeGuard val pos = do
 
 -- constructArray (acc:accs) _ =
 
-zeroGuard (MInt 0) err = throwError err
-zeroGuard MInt {} _ = return Nothing
-zeroGuard _ _ = error "problem with typecheck caused problem during interpretation"
+zeroGuard (Just (MInt 0)) err = throwError err
+zeroGuard _ _ = return Nothing
+
+-- zeroGuard _ _ = error "problem with typecheck caused problem during interpretation"
 
 leqZeroGuard val err = do
   case compare val 1 of
+    LT -> throwError err
+    _ -> return Nothing
+
+ltZeroGuard val err = do
+  case compare val 0 of
     LT -> throwError err
     _ -> return Nothing
 

@@ -30,19 +30,19 @@ The set of reserved words is the set of terminals appearing in the grammar. Thos
 
 The reserved words used in macchiato are the following:
   | ``DIM_NUM`` | ``LENGTH`` | ``MAX_VAL`` | ``MIN_VAL``
-  | ``bool`` | ``break`` | ``continue`` | ``else``
+  | ``boolean`` | ``break`` | ``continue`` | ``else``
   | ``false`` | ``if`` | ``int`` | ``new``
-  | ``print`` | ``return`` | ``string`` | ``true``
+  | ``return`` | ``string`` | ``true`` | ``void``
   | ``while`` |  |  |
 
 The symbols used in macchiato are the following:
   | ( | ) | & | ,
   | { | } | ; | =
-  | << | [] | [ | ]
-  | :: | - | ! | &&
-  | || | + | * | /
-  | % | < | <= | >
-  | >= | == | != |
+  | ++ | -- | [] | [
+  | ] | :: | - | !
+  | && | || | + | *
+  | / | % | < | <=
+  | > | >= | == | !=
 
 ===Comments===
 Single-line comments begin with //.Multiple-line comments are  enclosed with /* and */.
@@ -71,24 +71,24 @@ All other symbols are terminals.
   |  |  **|**  | //Type// //[Item]// ``;``
   |  |  **|**  | //UIdent// ``=`` //Expr// ``;``
   |  |  **|**  | //UIdent// //[DimAcc]// ``=`` //Expr// ``;``
+  |  |  **|**  | //UIdent// ``++`` ``;``
+  |  |  **|**  | //UIdent// ``--`` ``;``
   |  |  **|**  | ``return`` //Expr// ``;``
+  |  |  **|**  | ``return`` ``;``
   |  |  **|**  | ``if`` ``(`` //Expr// ``)`` //Stmt//
   |  |  **|**  | ``if`` ``(`` //Expr// ``)`` //Stmt// ``else`` //Stmt//
   |  |  **|**  | ``while`` ``(`` //Expr// ``)`` //Stmt//
   |  |  **|**  | //Expr// ``;``
-  |  |  **|**  | ``print`` //[PrintParam]// ``;``
   |  |  **|**  | ``break`` ``;``
   |  |  **|**  | ``continue`` ``;``
   | //Item// | -> | //UIdent//
   |  |  **|**  | //UIdent// ``=`` //Expr//
   | //[Item]// | -> | //Item//
   |  |  **|**  | //Item// ``,`` //[Item]//
-  | //PrintParam// | -> | ``<<`` //Expr//
-  | //[PrintParam]// | -> | //PrintParam//
-  |  |  **|**  | //PrintParam// //[PrintParam]//
   | //Type// | -> | ``int``
   |  |  **|**  | ``string``
-  |  |  **|**  | ``bool``
+  |  |  **|**  | ``boolean``
+  |  |  **|**  | ``void``
   |  |  **|**  | //Type// //[DimBra]//
   | //DimBra// | -> | ``[]``
   | //[DimBra]// | -> | //DimBra//

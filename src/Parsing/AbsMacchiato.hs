@@ -42,12 +42,14 @@ data Stmt' a
     | Decl a (Type' a) [Item' a]
     | Ass a UIdent (Expr' a)
     | ArrAss a UIdent [DimAcc' a] (Expr' a)
+    | Incr a UIdent
+    | Decr a UIdent
     | Ret a (Expr' a)
+    | RetNone a
     | Cond a (Expr' a) (Stmt' a)
     | CondElse a (Expr' a) (Stmt' a) (Stmt' a)
     | While a (Expr' a) (Stmt' a)
     | SExp a (Expr' a)
-    | Print a [PrintParam' a]
     | Break a
     | Cont a
   deriving (C.Eq, C.Ord, C.Show, C.Read, C.Functor, C.Foldable, C.Traversable)
@@ -56,12 +58,9 @@ type Item = Item' BNFC'Position
 data Item' a = NoInit a UIdent | Init a UIdent (Expr' a)
   deriving (C.Eq, C.Ord, C.Show, C.Read, C.Functor, C.Foldable, C.Traversable)
 
-type PrintParam = PrintParam' BNFC'Position
-data PrintParam' a = FunPrintParam a (Expr' a)
-  deriving (C.Eq, C.Ord, C.Show, C.Read, C.Functor, C.Foldable, C.Traversable)
-
 type Type = Type' BNFC'Position
-data Type' a = Int a | Str a | Bool a | Arr a (Type' a) [DimBra' a]
+data Type' a
+    = Int a | Str a | Bool a | Void a | Arr a (Type' a) [DimBra' a]
   deriving (C.Eq, C.Ord, C.Show, C.Read, C.Functor, C.Foldable, C.Traversable)
 
 type DimBra = DimBra' BNFC'Position
@@ -160,12 +159,14 @@ instance HasPosition Stmt where
     Decl p _ _ -> p
     Ass p _ _ -> p
     ArrAss p _ _ _ -> p
+    Incr p _ -> p
+    Decr p _ -> p
     Ret p _ -> p
+    RetNone p -> p
     Cond p _ _ -> p
     CondElse p _ _ _ -> p
     While p _ _ -> p
     SExp p _ -> p
-    Print p _ -> p
     Break p -> p
     Cont p -> p
 
@@ -174,15 +175,12 @@ instance HasPosition Item where
     NoInit p _ -> p
     Init p _ _ -> p
 
-instance HasPosition PrintParam where
-  hasPosition = \case
-    FunPrintParam p _ -> p
-
 instance HasPosition Type where
   hasPosition = \case
     Int p -> p
     Str p -> p
     Bool p -> p
+    Void p -> p
     Arr p _ _ -> p
 
 instance HasPosition DimBra where

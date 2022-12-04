@@ -179,12 +179,14 @@ instance Print (AbsMacchiato.Stmt' a) where
     AbsMacchiato.Decl _ type_ items -> prPrec i 0 (concatD [prt 0 type_, prt 0 items, doc (showString ";")])
     AbsMacchiato.Ass _ uident expr -> prPrec i 0 (concatD [prt 0 uident, doc (showString "="), prt 0 expr, doc (showString ";")])
     AbsMacchiato.ArrAss _ uident dimaccs expr -> prPrec i 0 (concatD [prt 0 uident, prt 0 dimaccs, doc (showString "="), prt 0 expr, doc (showString ";")])
+    AbsMacchiato.Incr _ uident -> prPrec i 0 (concatD [prt 0 uident, doc (showString "++"), doc (showString ";")])
+    AbsMacchiato.Decr _ uident -> prPrec i 0 (concatD [prt 0 uident, doc (showString "--"), doc (showString ";")])
     AbsMacchiato.Ret _ expr -> prPrec i 0 (concatD [doc (showString "return"), prt 0 expr, doc (showString ";")])
+    AbsMacchiato.RetNone _ -> prPrec i 0 (concatD [doc (showString "return"), doc (showString ";")])
     AbsMacchiato.Cond _ expr stmt -> prPrec i 0 (concatD [doc (showString "if"), doc (showString "("), prt 0 expr, doc (showString ")"), prt 0 stmt])
     AbsMacchiato.CondElse _ expr stmt1 stmt2 -> prPrec i 0 (concatD [doc (showString "if"), doc (showString "("), prt 0 expr, doc (showString ")"), prt 0 stmt1, doc (showString "else"), prt 0 stmt2])
     AbsMacchiato.While _ expr stmt -> prPrec i 0 (concatD [doc (showString "while"), doc (showString "("), prt 0 expr, doc (showString ")"), prt 0 stmt])
     AbsMacchiato.SExp _ expr -> prPrec i 0 (concatD [prt 0 expr, doc (showString ";")])
-    AbsMacchiato.Print _ printparams -> prPrec i 0 (concatD [doc (showString "print"), prt 0 printparams, doc (showString ";")])
     AbsMacchiato.Break _ -> prPrec i 0 (concatD [doc (showString "break"), doc (showString ";")])
     AbsMacchiato.Cont _ -> prPrec i 0 (concatD [doc (showString "continue"), doc (showString ";")])
 
@@ -198,20 +200,12 @@ instance Print [AbsMacchiato.Item' a] where
   prt _ [x] = concatD [prt 0 x]
   prt _ (x:xs) = concatD [prt 0 x, doc (showString ","), prt 0 xs]
 
-instance Print (AbsMacchiato.PrintParam' a) where
-  prt i = \case
-    AbsMacchiato.FunPrintParam _ expr -> prPrec i 0 (concatD [doc (showString "<<"), prt 0 expr])
-
-instance Print [AbsMacchiato.PrintParam' a] where
-  prt _ [] = concatD []
-  prt _ [x] = concatD [prt 0 x]
-  prt _ (x:xs) = concatD [prt 0 x, prt 0 xs]
-
 instance Print (AbsMacchiato.Type' a) where
   prt i = \case
     AbsMacchiato.Int _ -> prPrec i 0 (concatD [doc (showString "int")])
     AbsMacchiato.Str _ -> prPrec i 0 (concatD [doc (showString "string")])
-    AbsMacchiato.Bool _ -> prPrec i 0 (concatD [doc (showString "bool")])
+    AbsMacchiato.Bool _ -> prPrec i 0 (concatD [doc (showString "boolean")])
+    AbsMacchiato.Void _ -> prPrec i 0 (concatD [doc (showString "void")])
     AbsMacchiato.Arr _ type_ dimbras -> prPrec i 0 (concatD [prt 0 type_, prt 0 dimbras])
 
 instance Print (AbsMacchiato.DimBra' a) where

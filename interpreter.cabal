@@ -6,12 +6,12 @@ cabal-version: 1.12
 
 name:           interpreter
 version:        0.1.0.0
-description:    Please see the README on GitHub at <https://github.com/githubuser/interpreter#readme>
-homepage:       https://github.com/githubuser/interpreter#readme
-bug-reports:    https://github.com/githubuser/interpreter/issues
-author:         Author name here
-maintainer:     example@example.com
-copyright:      2022 Author name here
+description:    Please see the README on GitHub at <https://github.com/githubuser/interpreter2#readme>
+homepage:       https://github.com/kuben-joz/interpreter2#readme
+bug-reports:    https://github.com/kuben-joz/interpreter2/issues
+author:         Jakub Józefowicz
+maintainer:     j.jozefowicz@student.uw.edu.pl"
+copyright:      2022 Jakub Józefowicz
 license:        BSD3
 license-file:   LICENSE
 build-type:     Simple
@@ -21,21 +21,20 @@ extra-source-files:
 
 source-repository head
   type: git
-  location: https://github.com/githubuser/interpreter
+  location: https://github.com/kuben-joz/interpreter2
 
 library
   exposed-modules:
-      Interpretation.Err
       Interpretation.Interpret
       Interpretation.Interpreter
       Interpretation.MacchiatoVals
       Interpretation.Traverser
+      Main
       Mem.SymbolTable
       Parsing.AbsMacchiato
       Parsing.LexMacchiato
       Parsing.ParMacchiato
       Parsing.PrintMacchiato
-      Parsing.SkelMacchiato
       StaticAnalysis.Environment
       StaticAnalysis.Err
       StaticAnalysis.MacchiatoTypes

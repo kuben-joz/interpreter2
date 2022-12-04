@@ -1,6 +1,9 @@
 make --dry-run --always-make --keep-going --print-directory
-make: Entering directory '/home/jakub/HaskellProjects/interpreter'
-make: Leaving directory '/home/jakub/HaskellProjects/interpreter'
+make: Entering directory '/home/jakub/HaskellProjects/MRJP-frontend'
+make -C src
+make[1]: Entering directory '/home/jakub/HaskellProjects/MRJP-frontend/src'
+ghc Main
+make[1]: Leaving directory '/home/jakub/HaskellProjects/MRJP-frontend/src'
+cp src/Main ./interpreter
+make: Leaving directory '/home/jakub/HaskellProjects/MRJP-frontend'
  
-make: *** No targets specified and no makefile found.  Stop.
-
