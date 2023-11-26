@@ -1,0 +1,7 @@
+- keywords remove
+- dim and arr
+- variable names as brk cont and built in functions and main
+- boolean not bool
+- all forbiddenids
+- all predefined functions
+- check ident works correctly

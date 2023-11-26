@@ -31,8 +31,6 @@ pushPop f = do
     put s
     return res
 
---pushPopEnv f env = do 
- --   SymTable{..} <- get
 
 
 push f = do
@@ -51,8 +49,6 @@ addKeyVal key val' = do
     let new_state = M.insert loc val state
     put SymTable{global_env=global_env, current_env=new_env : tail current_env , state = new_state, dat= dat, loc= loc+1}
     return prev_val
-
-
 
 
 addKeyLoc key loc = do

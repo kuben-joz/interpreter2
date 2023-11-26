@@ -4,13 +4,11 @@ entrypoints Program ;
 
 ProgramS.   Program ::= [FnDef] ;
 
-FunDef.	   FnDef ::= Type UIdent "(" [Arg] ")" Block ;
+FunDef.	   FnDef ::= Type Ident "(" [Arg] ")" Block ;
 
 separator nonempty FnDef "" ;
 
-ArgVal. 	   Arg ::= Type UIdent;
-
-ArgRef.	   	   Arg ::= Type "&" UIdent;
+ArgVal.    Arg ::= Type Ident;
 
 separator  Arg "," ;
 
@@ -24,23 +22,19 @@ Empty.     Stmt ::= ";" ;
 
 BStmt.     Stmt ::= Block ;
 
-FunStmt.   Stmt ::= FnDef;
-
 Decl.      Stmt ::= Type [Item] ";" ;
 
-NoInit.    Item ::= UIdent ; 
+NoInit.    Item ::= Ident ; 
 
-Init.      Item ::= UIdent "=" Expr ;
+Init.      Item ::= Ident "=" Expr ;
 
 separator nonempty Item "," ;
 
-Ass.       Stmt ::= UIdent "=" Expr  ";" ;
+Ass.       Stmt ::= Ident "=" Expr  ";" ;
 
-ArrAss.    Stmt ::= UIdent [DimAcc] "=" Expr ";" ;
+Incr.      Stmt ::= Ident "++"  ";" ;
 
-Incr.      Stmt ::= UIdent "++"  ";" ;
-
-Decr.      Stmt ::= UIdent "--"  ";" ;
+Decr.      Stmt ::= Ident "--"  ";" ;
 
 Ret.       Stmt ::= "return" Expr ";" ;
 
@@ -54,10 +48,6 @@ While.     Stmt ::= "while" "(" Expr ")" Stmt ;
 
 SExp.      Stmt ::= Expr  ";" ;
 
-Break.     Stmt ::= "break" ";" ;
-
-Cont.      Stmt ::= "continue" ";" ;
-
 -- Types and modifiers ---------------------------------------------------
 
 Int.       Type ::= "int" ;
@@ -68,45 +58,12 @@ Bool.      Type ::= "boolean" ;
 
 Void.      Type ::= "void" ;
 
-token UIdent ((letter | '_') (letter | digit | '_')*) ;
-
-Arr.       Type ::= Type [DimBra];
-
-ModDimBra.    DimBra ::= "[]" ;
-
-separator nonempty DimBra "";
-
--- internal   Fun. Type ::= Type "(" [Type] ")" ;
-
 separator  Type "," ;
 
 
 -- Expressions ---------------------------------------------
 
-EVar.      Expr6 ::= UIdent ;
-
-ENewArr.   Expr6 ::= "new" Type [DimAcc] [DimEmpty] ;
-
-EArrAcc.    Expr6 ::= UIdent [DimAcc] ;
-
-EDimAcc.    DimAcc::= "[" Expr "]" ;
-
-EDimEmpty.  DimEmpty ::= "[]" ;
-
-separator  nonempty DimAcc "" ;
-
-separator DimEmpty "";
-
--- KeyWords are something like arr::length for arrays
-KeyWordLength. KeyWord ::= "LENGTH" ;
-KeyWordMaxVal. KeyWord ::= "MAX_VAL";
-KeyWordMinVal. KeyWord ::= "MIN_VAL";
-KeyWordDimNum. KeyWord ::= "DIM_NUM";
-
-
-EKeyWord.   Expr6 ::= UIdent"::"KeyWord ;
-
-EArrKeyWord. Expr6 ::= UIdent[DimAcc]"::"KeyWord ;
+EVar.      Expr6 ::= Ident ;
 
 ELitInt.   Expr6 ::= Integer ;
 
@@ -114,7 +71,7 @@ ELitTrue.  Expr6 ::= "true" ;
 
 ELitFalse. Expr6 ::= "false" ;
 
-EApp.      Expr6 ::= UIdent "(" [Expr] ")" ;
+EApp.      Expr6 ::= Ident "(" [Expr] ")" ;
 
 EString.   Expr6 ::= String ;
 

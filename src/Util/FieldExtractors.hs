@@ -12,9 +12,8 @@ class HasId a where
 
 
 instance HasId FnDef where
-    getId (FunDef _ _ (UIdent id) _ _) = id
+    getId (FunDef _ _ (Ident id) _ _) = id
 
 instance HasId Arg where
-    getId (ArgVal _ _ (UIdent id)) = id
-    getId (ArgRef _ _ (UIdent id)) = id
+    getId (ArgVal _ _ (Ident id)) = id
 

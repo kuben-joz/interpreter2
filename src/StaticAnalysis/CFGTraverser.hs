@@ -183,58 +183,11 @@ addParamVal (id, Right (Just val)) = do
 addParamVal (id, Right Nothing) = do
   return Nothing
 
-{-
-brkOrContCalled :: Traverser Bool
-brkOrContCalled = do
-    RetState{..} <- gets getData
-    return $ brk || cont
--}
 getAndSet :: (ISymTable -> a) -> (a -> ISymTable) -> Traverser a
 getAndSet getter setter = do
   res <- gets getter
   put $ setter res
   return res
-
-{-
-getAndSetCont:: Bool -> Traverser Bool
-getAndSetCont b = do
-    SymTable{..} <- get
-    let RetState{..} = dat
-    let ret = cont
-    put $ SymTable {global_env=global_env, current_env=current_env,
-    state=state, dat=RetState{cont=b, brk=brk}, loc=loc}
-    return ret
-
-getAndSetBrk:: Bool -> Traverser Bool
-getAndSetBrk b = do
-    SymTable{..} <- get
-    let RetState{..} = dat
-    let ret = brk
-    put $ SymTable {global_env=global_env, current_env=current_env,
-    state=state, dat=RetState{cont=cont, brk=b}, loc=loc}
-    return ret
-
-getAndSetContBrk:: Bool -> Bool -> Traverser (Bool, Bool)
-getAndSetContBrk b_cont b_brk = do
-    SymTable{..} <- get
-    let RetState{..} = dat
-    let ret = (cont, brk)
-    put $ SymTable {global_env=global_env, current_env=current_env,
-    state=state, dat=RetState{cont=b_cont, brk=b_brk}, loc=loc}
-    return ret
-
-brkOrContCalled :: Traverser (Maybe MControlStmts)
-brkOrContCalled = do
-    rs <- gets getData
-    return $ retStateToControlStmt rs
-
-retStateToControlStmt r =
-    case r of
-        RetState True True -> undefined
-        RetState True _ -> Just MCont
-        RetState _ True -> Just MBrk
-        _               -> Nothing
-        -}
 
 printState :: ITraverser
 printState = do

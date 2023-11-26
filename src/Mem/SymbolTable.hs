@@ -32,13 +32,6 @@ getState SymTable{..} = state
 getData SymTable{..} = dat
 
 
---newEnv :: SymTable a -> SymTable a
---newEnv SymTable {..} = SymTable{proc_envs=proc_envs, val_envs =  : val_envs, ..}
-
--- based on this https://stackoverflow.com/questions/27663084/how-can-i-decently-add-an-undo-functionality-to-state-monads
--- I also initially had an explicvit stack, but this gives better time complexity as I don't have to manually pop things off SymTable {state}
-
-
 
 
 

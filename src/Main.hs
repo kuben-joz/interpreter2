@@ -9,7 +9,7 @@ import StaticAnalysis.CFGOptim
 import StaticAnalysis.TypeCheck
 import System.Environment (getArgs)
 import System.Exit (exitFailure, exitSuccess)
-import System.IO (hPrint, stderr)
+import System.IO (hPrint, stderr, hPutStrLn)
 
 main :: IO ()
 main = do
@@ -46,10 +46,11 @@ check' prog = do
 --return (liftIO)
 
 printTree' prog = do
-  putStrLn "OK"
+  hPutStrLn stderr "OK"
   print prog
   putStrLn $ printTree prog
 
 printErr err_msg = do
-  putStrLn "ERROR"
-  putStrLn err_msg
+  hPutStrLn stderr "ERROR"
+  hPutStrLn stderr err_msg
+  exitFailure

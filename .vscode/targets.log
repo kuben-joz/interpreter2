@@ -1,13 +1,14 @@
 make all --print-data-base --no-builtin-variables --no-builtin-rules --question
 make -C src
-# GNU Make 4.3
+ 
+# GNU Make 4.4.1
 # Built for x86_64-pc-linux-gnu
-# Copyright (C) 1988-2020 Free Software Foundation, Inc.
-# License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>
+# Copyright (C) 1988-2023 Free Software Foundation, Inc.
+# License GPLv3+: GNU GPL version 3 or later <https://gnu.org/licenses/gpl.html>
 # This is free software: you are free to change and redistribute it.
 # There is NO WARRANTY, to the extent permitted by law.
 
-# Make data base, printed on Sun Dec  4 04:24:03 2022
+# Make data base, printed on Sun Nov 26 17:18:10 2023
 
 # Variables
 
@@ -20,9 +21,9 @@ NO_AT_BRIDGE = 1
 # environment
 GTK_RC_FILES = /etc/gtk/gtkrc:/home/jakub/.gtkrc:/home/jakub/.config/gtkrc
 # environment
-CSF_EXCEPTION_PROMPT = 1
+I3SOCK = /run/user/1000/i3/ipc-socket.1956
 # environment
-KONSOLE_DBUS_SERVICE = :1.46
+CSF_EXCEPTION_PROMPT = 1
 # environment
 CSF_XmlOcafResource = /usr/share/opencascade/resources/XmlOcafResource
 # environment
@@ -30,9 +31,9 @@ LC_NAME = pl_PL.UTF-8
 # environment
 LC_NUMERIC = pl_PL.UTF-8
 # environment
-VSCODE_CWD = /home/jakub/HaskellProjects/MRJP-frontend
+VSCODE_CRASH_REPORTER_PROCESS_TYPE = extensionHost
 # environment
-WINDOWID = 69206026
+VSCODE_CWD = /home/jakub
 # environment
 MMGT_CLEAR = 1
 # environment
@@ -42,15 +43,13 @@ CSF_PluginDefaults = /usr/share/opencascade/resources/StdResource
 # environment
 CASROOT = /usr
 # environment
-NVM_DIR = /home/jakub/.nvm
-# environment
 LC_ADDRESS = pl_PL.UTF-8
 # default
 MAKE_COMMAND := make
+# environment
+GTK3_MODULES = xapp-gtk3-module
 # automatic
 @D = $(patsubst %/,%,$(dir $@))
-# environment
-KONSOLE_VERSION = 220803
 # environment
 VSCODE_HANDLES_UNCAUGHT_ERRORS = true
 # default
@@ -63,14 +62,12 @@ PWD = /home/jakub/HaskellProjects/MRJP-frontend
 MAIL = /var/spool/mail/jakub
 # environment
 XDG_DATA_DIRS = /home/jakub/.local/share/flatpak/exports/share:/var/lib/flatpak/exports/share:/usr/local/share:/usr/share
-# environment
-OLDPWD = /home/jakub/HaskellProjects/MRJP-frontend/src
 # automatic
 ^D = $(patsubst %/,%,$(dir $^))
 # automatic
 %F = $(notdir $%)
 # environment
-VSCODE_CODE_CACHE_PATH = /home/jakub/.config/Code/CachedData/6261075646f055b99068d3688932416f2346dd3b
+VSCODE_CODE_CACHE_PATH = /home/jakub/.config/Code/CachedData/1a5daa3a0231a0fbba4f14db7ec463cf99d7768e
 # environment
 XDG_SESSION_PATH = /org/freedesktop/DisplayManager/Session1
 # environment
@@ -78,35 +75,35 @@ CSF_ShadersDirectory = /usr/share/opencascade/resources/Shaders
 # environment
 LANG = C
 # environment
-XAUTHORITY = /home/jakub/.Xauthority
+XAUTHORITY = /tmp/xauth_fUhAuZ
 # default
 .LOADED := 
 # default
-.INCLUDE_DIRS = /usr/include /usr/local/include /usr/include
-# environment
-COLORFGBG = 15;0
+.INCLUDE_DIRS := /usr/local/include /usr/include
 # makefile
-MAKEFLAGS = pqrRw
+MAKEFLAGS = pqrR -j12 --jobserver-auth=fifo:/tmp/GMfifo5920
 # makefile
 CURDIR := /home/jakub/HaskellProjects/MRJP-frontend/src
 # environment
 APPLICATION_INSIGHTS_NO_DIAGNOSTIC_CHANNEL = 1
+# environment
+VSCODE_L10N_BUNDLE_LOCATION = 
 # automatic
 *D = $(patsubst %/,%,$(dir $*))
 # environment
 PAM_KWALLET5_LOGIN = /run/user/1000/kwallet5.socket
 # environment
-MFLAGS = -pqrRw
+MFLAGS = -pqrR -j12 --jobserver-auth=fifo:/tmp/GMfifo5920
 # default
 .SHELLFLAGS := -c
 # environment
 CSF_MDTVTexturesDirectory = /usr/share/opencascade/resources/Textures
 # environment
-NVM_BIN = /home/jakub/.nvm/versions/node/v16.14.0/bin
-# environment
 QT_LINUX_ACCESSIBILITY_ALWAYS_ON = 1
 # environment
-XDG_CONFIG_DIRS = /home/jakub/.config/kdedefaults:/etc/xdg
+SINGULARITY_TMPDIR = /mnt/data/singularity/tmp
+# environment
+XDG_CONFIG_DIRS = /home/jakub/.config/kdedefaults:/etc/xdg:/usr/share/manjaro-kde-settings/xdg
 # automatic
 +D = $(patsubst %/,%,$(dir $+))
 # environment
@@ -115,24 +112,22 @@ XCURSOR_THEME = breeze_cursors
 XDG_SESSION_DESKTOP = KDE
 # makefile (from 'Makefile', line 1)
 MAKEFILE_LIST := Makefile
-# environment
-CONDA_SHLVL = 0
 # automatic
 @F = $(notdir $@)
 # environment
-VSCODE_PID = 202091
+VSCODE_PID = 5415
 # environment
 XDG_SESSION_TYPE = x11
+# environment
+CUDA_PATH = /opt/cuda
 # automatic
 ?D = $(patsubst %/,%,$(dir $?))
 # environment
 CSF_XSMessage = /usr/share/opencascade/resources/XSMessage
 # environment
-CONDA_PYTHON_EXE = /opt/anaconda/anaconda3/bin/python
-# environment
 DRAWDEFAULT = /usr/share/opencascade/resources/DrawResources/DrawDefault
 # environment
-SESSION_MANAGER = local/jakub-pc:@/tmp/.ICE-unix/1324,unix/jakub-pc:/tmp/.ICE-unix/1324
+SINGULARITY_CACHEDIR = /mnt/data/singularity/cache
 # automatic
 *F = $(notdir $*)
 # environment
@@ -144,15 +139,13 @@ DBUS_SESSION_BUS_ADDRESS = unix:path=/run/user/1000/bus
 # automatic
 <D = $(patsubst %/,%,$(dir $<))
 # environment
-VSCODE_NLS_CONFIG = {"locale":"en-us","availableLanguages":{},"_languagePackSupport":true}
+VSCODE_NLS_CONFIG = {"locale":"en-us","osLocale":"en-us","availableLanguages":{},"_languagePackSupport":true}
 # default
 MAKE_HOST := x86_64-pc-linux-gnu
 # makefile
 SHELL = /bin/sh
 # environment
-SHLVL = 3
-# environment
-PROFILEHOME = 
+SHLVL = 2
 # environment
 CSF_TObjDefaults = /usr/share/opencascade/resources/StdResource
 # environment
@@ -160,11 +153,9 @@ MAKELEVEL := 1
 # default
 MAKE = $(MAKE_COMMAND)
 # environment
-PATH = /opt/anaconda/anaconda3/condabin:/home/jakub/.nvm/versions/node/v16.14.0/bin:/home/jakub/.ghcup/bin:/opt/sublime_text:/home/jakub/git/mylammps/build_nvidia:/home/jakub/git/mylammps/build_intel:/opt/cuda/bin:/home/jakub/.local/UCSF-Chimera64-1.13.1/bin:/opt/WebStorm-193.6494.34/bin:/opt/idea-IU-193.6911.18/bin:/opt/clion-2020.1.1/bin:/opt/pycharm-2020.3.2/bin:/home/jakub/bin:/home/jakub/.cargo/bin:/home/jakub/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/bin:/usr/lib/jvm/default/bin:/usr/bin/site_perl:/usr/bin/vendor_perl:/usr/bin/core_perl:/home/jakub/.local/share/JetBrains/Toolbox/scripts
+PATH = /home/jakub/.cargo/bin:/home/jakub/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/bin:/opt/cuda/bin:/opt/cuda/nsight_compute:/opt/cuda/nsight_systems/bin:/usr/lib/jvm/default/bin:/usr/bin/site_perl:/usr/bin/vendor_perl:/usr/bin/core_perl:/home/jakub/.local/share/JetBrains/Toolbox/scripts
 # default
 MAKEFILES := 
-# environment
-LANGUAGE = 
 # environment
 LC_MONETARY = pl_PL.UTF-8
 # environment
@@ -175,6 +166,8 @@ MOTD_SHOWN = pam
 ^F = $(notdir $^)
 # environment
 LC_TIME = pl_PL.UTF-8
+# environment
+NVCC_PREPEND_FLAGS = -ccbin /opt/cuda/bin
 # environment
 CSF_StandardLiteDefaults = /usr/share/opencascade/resources/StdResource
 # environment
@@ -191,8 +184,6 @@ XDG_SEAT = seat0
 XDG_CURRENT_DESKTOP = KDE
 # environment
 CSF_MIGRATION_TYPES = /usr/share/opencascade/resources/StdResource/MigrationSheet.txt
-# environment
-LS_COLORS = rs=0:di=01;34:ln=01;36:mh=00:pi=40;33:so=01;35:do=01;35:bd=40;33;01:cd=40;33;01:or=01;05;37;41:mi=01;05;37;41:su=37;41:sg=30;43:ca=30;41:tw=30;42:ow=34;42:st=37;44:ex=01;32:*.tar=01;31:*.tgz=01;31:*.arc=01;31:*.arj=01;31:*.taz=01;31:*.lha=01;31:*.lz4=01;31:*.lzh=01;31:*.lzma=01;31:*.tlz=01;31:*.txz=01;31:*.tzo=01;31:*.t7z=01;31:*.zip=01;31:*.z=01;31:*.Z=01;31:*.dz=01;31:*.gz=01;31:*.lrz=01;31:*.lz=01;31:*.lzo=01;31:*.xz=01;31:*.bz2=01;31:*.bz=01;31:*.tbz=01;31:*.tbz2=01;31:*.tz=01;31:*.deb=01;31:*.rpm=01;31:*.jar=01;31:*.war=01;31:*.ear=01;31:*.sar=01;31:*.rar=01;31:*.alz=01;31:*.ace=01;31:*.zoo=01;31:*.cpio=01;31:*.7z=01;31:*.rz=01;31:*.cab=01;31:*.jpg=01;35:*.jpeg=01;35:*.gif=01;35:*.bmp=01;35:*.pbm=01;35:*.pgm=01;35:*.ppm=01;35:*.tga=01;35:*.xbm=01;35:*.xpm=01;35:*.tif=01;35:*.tiff=01;35:*.png=01;35:*.svg=01;35:*.svgz=01;35:*.mng=01;35:*.pcx=01;35:*.mov=01;35:*.mpg=01;35:*.mpeg=01;35:*.m2v=01;35:*.mkv=01;35:*.webm=01;35:*.ogm=01;35:*.mp4=01;35:*.m4v=01;35:*.mp4v=01;35:*.vob=01;35:*.qt=01;35:*.nuv=01;35:*.wmv=01;35:*.asf=01;35:*.rm=01;35:*.rmvb=01;35:*.flc=01;35:*.avi=01;35:*.fli=01;35:*.flv=01;35:*.gl=01;35:*.dl=01;35:*.xcf=01;35:*.xwd=01;35:*.yuv=01;35:*.cgm=01;35:*.emf=01;35:*.axv=01;35:*.anx=01;35:*.ogv=01;35:*.ogx=01;35:*.pdf=00;32:*.ps=00;32:*.txt=00;32:*.patch=00;32:*.diff=00;32:*.log=00;32:*.tex=00;32:*.doc=00;32:*.aac=00;36:*.au=00;36:*.flac=00;36:*.m4a=00;36:*.mid=00;36:*.midi=00;36:*.mka=00;36:*.mp3=00;36:*.mpc=00;36:*.ogg=00;36:*.ra=00;36:*.wav=00;36:*.axa=00;36:*.oga=00;36:*.spx=00;36:*.xspf=00;36:
 # automatic
 +F = $(notdir $+)
 # environment
@@ -208,12 +199,11 @@ LOGNAME = jakub
 # environment
 CSF_LANGUAGE = us
 # environment
-XDG_VTNR = 1
+XDG_VTNR = 2
 # makefile
 .DEFAULT_GOAL := all
 # environment
-SYSTEMD_EXEC_PID = 1179
-# environment
+ 
 CSF_TObjMessage = /usr/share/opencascade/resources/TObj
 # environment
 DISPLAY = :0
@@ -222,11 +212,9 @@ GTK_MODULES = canberra-gtk-module
 # environment
 USER = jakub
 # default
-MAKE_VERSION := 4.3
+MAKE_VERSION := 4.4.1
 # environment
 KDE_SESSION_UID = 1000
-# environment
-KONSOLE_DBUS_SESSION = /Sessions/1
 # environment
 LC_MEASUREMENT = pl_PL.UTF-8
 # environment
@@ -238,15 +226,9 @@ LC_PAPER = pl_PL.UTF-8
 # environment
 XDG_RUNTIME_DIR = /run/user/1000
 # environment
-COLORTERM = truecolor
-# environment
-_CE_M = 
-# environment
 CSF_DrawPluginDefaults = /usr/share/opencascade/resources/DrawResources
 # environment
 CSF_IGESDefaults = /usr/share/opencascade/resources/XSTEPResource
-# environment
-NVM_CD_FLAGS = 
 # environment
 XDG_SESSION_CLASS = user
 # environment
@@ -260,9 +242,7 @@ ELECTRON_RUN_AS_NODE = 1
 # environment
 DRAWHOME = /usr/share/opencascade/resources/DrawResources
 # environment
-VSCODE_IPC_HOOK = /run/user/1000/vscode-277831f1-1.73.1-main.sock
-# environment
-TERM = xterm-256color
+VSCODE_IPC_HOOK = /run/user/1000/vscode-277831f1-1.84-main.sock
 # environment
 KDEWM = /usr/bin/i3
 # environment
@@ -284,22 +264,15 @@ ELECTRON_NO_ATTACH_CONSOLE = 1
 # environment
 CSF_StandardDefaults = /usr/share/opencascade/resources/StdResource
 # environment
-SHELL_SESSION_ID = d4eb7f59e8e34ab6beb52e29cf384ae6
-# environment
 KDE_SESSION_VERSION = 5
 # default
- 
-.FEATURES := target-specific order-only second-expansion else-if shortest-stem undefine oneshell nocomment grouped-target extra-prereqs archives jobserver output-sync check-symlink guile load
+.FEATURES := target-specific order-only second-expansion else-if shortest-stem undefine oneshell nocomment grouped-target extra-prereqs notintermediate shell-export archives jobserver jobserver-fifo output-sync check-symlink guile load
 # environment
 KDE_FULL_SESSION = true
 # environment
-CONDA_EXE = /opt/anaconda/anaconda3/bin/conda
-# environment
-_CE_CONDA = 
-# environment
 LC_IDENTIFICATION = pl_PL.UTF-8
 # variable set hash-table stats:
-# Load=143/1024=14%, Rehash=0, Collisions=14/178=8%
+# Load=129/1024=13%, Rehash=0, Collisions=11/163=7%
 
 # Pattern-specific Variable Values
 
@@ -307,9 +280,9 @@ LC_IDENTIFICATION = pl_PL.UTF-8
 
 # Directories
 
-# . (device 66308, inode 10076599): 9 files, no impossibilities.
+# . (device 66308, inode 10076599): 11 files, no impossibilities.
 
-# 9 files, no impossibilities in 1 directories.
+# 11 files, no impossibilities in 1 directories.
 
 # Implicit Rules
 
@@ -320,6 +293,7 @@ LC_IDENTIFICATION = pl_PL.UTF-8
 # Not a target:
 Makefile:
 #  Implicit rule search has been done.
+#  File is secondary (prerequisite of .SECONDARY).
 #  Last modified 2022-12-03 11:16:50.243975151
 #  File has been updated.
 #  Successfully updated.
@@ -372,29 +346,30 @@ install:
 #  File has not been updated.
 
 # files hash-table stats:
-# Load=5/1024=0%, Rehash=0, Collisions=0/19=0%
+# Load=5/1024=0%, Rehash=0, Collisions=0/20=0%
 # VPATH Search Paths
 
 # No 'vpath' search paths.
 
 # No general ('VPATH' variable) search path.
 
-# strcache buffers: 1 (0) / strings = 16 / storage = 136 B / avg = 8 B
-# current buf: size = 8162 B / used = 136 B / count = 16 / avg = 8 B
+# strcache buffers: 1 (0) / strings = 19 / storage = 147 B / avg = 7 B
+# current buf: size = 8162 B / used = 147 B / count = 19 / avg = 7 B
 
-# strcache performance: lookups = 23 / hit rate = 30%
+# strcache performance: lookups = 25 / hit rate = 24%
 # hash-table stats:
-# Load=16/8192=0%, Rehash=0, Collisions=0/23=0%
-# Finished Make data base on Sun Dec  4 04:24:03 2022
+# Load=19/8192=0%, Rehash=0, Collisions=0/25=0%
+# Finished Make data base on Sun Nov 26 17:18:10 2023
 
-# GNU Make 4.3
+# GNU Make 4.4.1
 # Built for x86_64-pc-linux-gnu
-# Copyright (C) 1988-2020 Free Software Foundation, Inc.
-# License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>
+# Copyright (C) 1988-2023 Free Software Foundation, Inc.
+# License GPLv3+: GNU GPL version 3 or later <https://gnu.org/licenses/gpl.html>
 # This is free software: you are free to change and redistribute it.
 # There is NO WARRANTY, to the extent permitted by law.
+ 
 
-# Make data base, printed on Sun Dec  4 04:24:03 2022
+# Make data base, printed on Sun Nov 26 17:18:10 2023
 
 # Variables
 
@@ -407,9 +382,9 @@ NO_AT_BRIDGE = 1
 # environment
 GTK_RC_FILES = /etc/gtk/gtkrc:/home/jakub/.gtkrc:/home/jakub/.config/gtkrc
 # environment
-CSF_EXCEPTION_PROMPT = 1
+I3SOCK = /run/user/1000/i3/ipc-socket.1956
 # environment
-KONSOLE_DBUS_SERVICE = :1.46
+CSF_EXCEPTION_PROMPT = 1
 # environment
 CSF_XmlOcafResource = /usr/share/opencascade/resources/XmlOcafResource
 # environment
@@ -417,9 +392,9 @@ LC_NAME = pl_PL.UTF-8
 # environment
 LC_NUMERIC = pl_PL.UTF-8
 # environment
-VSCODE_CWD = /home/jakub/HaskellProjects/MRJP-frontend
+VSCODE_CRASH_REPORTER_PROCESS_TYPE = extensionHost
 # environment
-WINDOWID = 69206026
+VSCODE_CWD = /home/jakub
 # environment
 MMGT_CLEAR = 1
 # environment
@@ -429,15 +404,13 @@ CSF_PluginDefaults = /usr/share/opencascade/resources/StdResource
 # environment
 CASROOT = /usr
 # environment
-NVM_DIR = /home/jakub/.nvm
-# environment
 LC_ADDRESS = pl_PL.UTF-8
 # default
 MAKE_COMMAND := make
+# environment
+GTK3_MODULES = xapp-gtk3-module
 # automatic
 @D = $(patsubst %/,%,$(dir $@))
-# environment
-KONSOLE_VERSION = 220803
 # environment
 VSCODE_HANDLES_UNCAUGHT_ERRORS = true
 # default
@@ -450,14 +423,12 @@ PWD = /home/jakub/HaskellProjects/MRJP-frontend
 MAIL = /var/spool/mail/jakub
 # environment
 XDG_DATA_DIRS = /home/jakub/.local/share/flatpak/exports/share:/var/lib/flatpak/exports/share:/usr/local/share:/usr/share
-# environment
-OLDPWD = /home/jakub/HaskellProjects/MRJP-frontend/src
 # automatic
 ^D = $(patsubst %/,%,$(dir $^))
 # automatic
 %F = $(notdir $%)
 # environment
-VSCODE_CODE_CACHE_PATH = /home/jakub/.config/Code/CachedData/6261075646f055b99068d3688932416f2346dd3b
+VSCODE_CODE_CACHE_PATH = /home/jakub/.config/Code/CachedData/1a5daa3a0231a0fbba4f14db7ec463cf99d7768e
 # environment
 XDG_SESSION_PATH = /org/freedesktop/DisplayManager/Session1
 # environment
@@ -465,35 +436,35 @@ CSF_ShadersDirectory = /usr/share/opencascade/resources/Shaders
 # environment
 LANG = C
 # environment
-XAUTHORITY = /home/jakub/.Xauthority
+XAUTHORITY = /tmp/xauth_fUhAuZ
 # default
 .LOADED := 
 # default
-.INCLUDE_DIRS = /usr/include /usr/local/include /usr/include
-# environment
-COLORFGBG = 15;0
+.INCLUDE_DIRS := /usr/local/include /usr/include
 # makefile
-MAKEFLAGS = pqrR
+MAKEFLAGS = pqrR -j12 --jobserver-auth=fifo:/tmp/GMfifo5920
 # makefile
 CURDIR := /home/jakub/HaskellProjects/MRJP-frontend
 # environment
 APPLICATION_INSIGHTS_NO_DIAGNOSTIC_CHANNEL = 1
+# environment
+VSCODE_L10N_BUNDLE_LOCATION = 
 # automatic
 *D = $(patsubst %/,%,$(dir $*))
 # environment
 PAM_KWALLET5_LOGIN = /run/user/1000/kwallet5.socket
 # environment
-MFLAGS = -pqrR
+MFLAGS = -pqrR -j12 --jobserver-auth=fifo:/tmp/GMfifo5920
 # default
 .SHELLFLAGS := -c
 # environment
 CSF_MDTVTexturesDirectory = /usr/share/opencascade/resources/Textures
 # environment
-NVM_BIN = /home/jakub/.nvm/versions/node/v16.14.0/bin
-# environment
 QT_LINUX_ACCESSIBILITY_ALWAYS_ON = 1
 # environment
-XDG_CONFIG_DIRS = /home/jakub/.config/kdedefaults:/etc/xdg
+SINGULARITY_TMPDIR = /mnt/data/singularity/tmp
+# environment
+XDG_CONFIG_DIRS = /home/jakub/.config/kdedefaults:/etc/xdg:/usr/share/manjaro-kde-settings/xdg
 # automatic
 +D = $(patsubst %/,%,$(dir $+))
 # environment
@@ -502,24 +473,22 @@ XCURSOR_THEME = breeze_cursors
 XDG_SESSION_DESKTOP = KDE
 # makefile (from 'Makefile', line 1)
 MAKEFILE_LIST := Makefile
-# environment
-CONDA_SHLVL = 0
 # automatic
 @F = $(notdir $@)
 # environment
-VSCODE_PID = 202091
+VSCODE_PID = 5415
 # environment
 XDG_SESSION_TYPE = x11
+# environment
+CUDA_PATH = /opt/cuda
 # automatic
 ?D = $(patsubst %/,%,$(dir $?))
 # environment
 CSF_XSMessage = /usr/share/opencascade/resources/XSMessage
 # environment
-CONDA_PYTHON_EXE = /opt/anaconda/anaconda3/bin/python
-# environment
 DRAWDEFAULT = /usr/share/opencascade/resources/DrawResources/DrawDefault
 # environment
-SESSION_MANAGER = local/jakub-pc:@/tmp/.ICE-unix/1324,unix/jakub-pc:/tmp/.ICE-unix/1324
+SINGULARITY_CACHEDIR = /mnt/data/singularity/cache
 # automatic
 *F = $(notdir $*)
 # environment
@@ -531,7 +500,7 @@ DBUS_SESSION_BUS_ADDRESS = unix:path=/run/user/1000/bus
 # automatic
 <D = $(patsubst %/,%,$(dir $<))
 # environment
-VSCODE_NLS_CONFIG = {"locale":"en-us","availableLanguages":{},"_languagePackSupport":true}
+VSCODE_NLS_CONFIG = {"locale":"en-us","osLocale":"en-us","availableLanguages":{},"_languagePackSupport":true}
 # default
 MAKE_HOST := x86_64-pc-linux-gnu
 # makefile
@@ -539,9 +508,7 @@ SHELL = /bin/sh
 # default
 MAKECMDGOALS := all
 # environment
-SHLVL = 3
-# environment
-PROFILEHOME = 
+SHLVL = 2
 # environment
 CSF_TObjDefaults = /usr/share/opencascade/resources/StdResource
 # environment
@@ -549,11 +516,9 @@ MAKELEVEL := 0
 # default
 MAKE = $(MAKE_COMMAND)
 # environment
-PATH = /opt/anaconda/anaconda3/condabin:/home/jakub/.nvm/versions/node/v16.14.0/bin:/home/jakub/.ghcup/bin:/opt/sublime_text:/home/jakub/git/mylammps/build_nvidia:/home/jakub/git/mylammps/build_intel:/opt/cuda/bin:/home/jakub/.local/UCSF-Chimera64-1.13.1/bin:/opt/WebStorm-193.6494.34/bin:/opt/idea-IU-193.6911.18/bin:/opt/clion-2020.1.1/bin:/opt/pycharm-2020.3.2/bin:/home/jakub/bin:/home/jakub/.cargo/bin:/home/jakub/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/bin:/usr/lib/jvm/default/bin:/usr/bin/site_perl:/usr/bin/vendor_perl:/usr/bin/core_perl:/home/jakub/.local/share/JetBrains/Toolbox/scripts
+PATH = /home/jakub/.cargo/bin:/home/jakub/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/bin:/opt/cuda/bin:/opt/cuda/nsight_compute:/opt/cuda/nsight_systems/bin:/usr/lib/jvm/default/bin:/usr/bin/site_perl:/usr/bin/vendor_perl:/usr/bin/core_perl:/home/jakub/.local/share/JetBrains/Toolbox/scripts
 # default
 MAKEFILES := 
-# environment
-LANGUAGE = 
 # environment
 LC_MONETARY = pl_PL.UTF-8
 # environment
@@ -564,6 +529,8 @@ MOTD_SHOWN = pam
 ^F = $(notdir $^)
 # environment
 LC_TIME = pl_PL.UTF-8
+# environment
+NVCC_PREPEND_FLAGS = -ccbin /opt/cuda/bin
 # environment
 CSF_StandardLiteDefaults = /usr/share/opencascade/resources/StdResource
 # environment
@@ -580,9 +547,6 @@ XDG_SEAT = seat0
 XDG_CURRENT_DESKTOP = KDE
 # environment
 CSF_MIGRATION_TYPES = /usr/share/opencascade/resources/StdResource/MigrationSheet.txt
-# environment
- 
-LS_COLORS = rs=0:di=01;34:ln=01;36:mh=00:pi=40;33:so=01;35:do=01;35:bd=40;33;01:cd=40;33;01:or=01;05;37;41:mi=01;05;37;41:su=37;41:sg=30;43:ca=30;41:tw=30;42:ow=34;42:st=37;44:ex=01;32:*.tar=01;31:*.tgz=01;31:*.arc=01;31:*.arj=01;31:*.taz=01;31:*.lha=01;31:*.lz4=01;31:*.lzh=01;31:*.lzma=01;31:*.tlz=01;31:*.txz=01;31:*.tzo=01;31:*.t7z=01;31:*.zip=01;31:*.z=01;31:*.Z=01;31:*.dz=01;31:*.gz=01;31:*.lrz=01;31:*.lz=01;31:*.lzo=01;31:*.xz=01;31:*.bz2=01;31:*.bz=01;31:*.tbz=01;31:*.tbz2=01;31:*.tz=01;31:*.deb=01;31:*.rpm=01;31:*.jar=01;31:*.war=01;31:*.ear=01;31:*.sar=01;31:*.rar=01;31:*.alz=01;31:*.ace=01;31:*.zoo=01;31:*.cpio=01;31:*.7z=01;31:*.rz=01;31:*.cab=01;31:*.jpg=01;35:*.jpeg=01;35:*.gif=01;35:*.bmp=01;35:*.pbm=01;35:*.pgm=01;35:*.ppm=01;35:*.tga=01;35:*.xbm=01;35:*.xpm=01;35:*.tif=01;35:*.tiff=01;35:*.png=01;35:*.svg=01;35:*.svgz=01;35:*.mng=01;35:*.pcx=01;35:*.mov=01;35:*.mpg=01;35:*.mpeg=01;35:*.m2v=01;35:*.mkv=01;35:*.webm=01;35:*.ogm=01;35:*.mp4=01;35:*.m4v=01;35:*.mp4v=01;35:*.vob=01;35:*.qt=01;35:*.nuv=01;35:*.wmv=01;35:*.asf=01;35:*.rm=01;35:*.rmvb=01;35:*.flc=01;35:*.avi=01;35:*.fli=01;35:*.flv=01;35:*.gl=01;35:*.dl=01;35:*.xcf=01;35:*.xwd=01;35:*.yuv=01;35:*.cgm=01;35:*.emf=01;35:*.axv=01;35:*.anx=01;35:*.ogv=01;35:*.ogx=01;35:*.pdf=00;32:*.ps=00;32:*.txt=00;32:*.patch=00;32:*.diff=00;32:*.log=00;32:*.tex=00;32:*.doc=00;32:*.aac=00;36:*.au=00;36:*.flac=00;36:*.m4a=00;36:*.mid=00;36:*.midi=00;36:*.mka=00;36:*.mp3=00;36:*.mpc=00;36:*.ogg=00;36:*.ra=00;36:*.wav=00;36:*.axa=00;36:*.oga=00;36:*.spx=00;36:*.xspf=00;36:
 # automatic
 +F = $(notdir $+)
 # environment
@@ -598,11 +562,9 @@ LOGNAME = jakub
 # environment
 CSF_LANGUAGE = us
 # environment
-XDG_VTNR = 1
+XDG_VTNR = 2
 # makefile
 .DEFAULT_GOAL := all
-# environment
-SYSTEMD_EXEC_PID = 1179
 # environment
 CSF_TObjMessage = /usr/share/opencascade/resources/TObj
 # environment
@@ -612,11 +574,9 @@ GTK_MODULES = canberra-gtk-module
 # environment
 USER = jakub
 # default
-MAKE_VERSION := 4.3
+MAKE_VERSION := 4.4.1
 # environment
 KDE_SESSION_UID = 1000
-# environment
-KONSOLE_DBUS_SESSION = /Sessions/1
 # environment
 LC_MEASUREMENT = pl_PL.UTF-8
 # environment
@@ -628,15 +588,9 @@ LC_PAPER = pl_PL.UTF-8
 # environment
 XDG_RUNTIME_DIR = /run/user/1000
 # environment
-COLORTERM = truecolor
-# environment
-_CE_M = 
-# environment
 CSF_DrawPluginDefaults = /usr/share/opencascade/resources/DrawResources
 # environment
 CSF_IGESDefaults = /usr/share/opencascade/resources/XSTEPResource
-# environment
-NVM_CD_FLAGS = 
 # environment
 XDG_SESSION_CLASS = user
 # environment
@@ -650,9 +604,7 @@ ELECTRON_RUN_AS_NODE = 1
 # environment
 DRAWHOME = /usr/share/opencascade/resources/DrawResources
 # environment
-VSCODE_IPC_HOOK = /run/user/1000/vscode-277831f1-1.73.1-main.sock
-# environment
-TERM = xterm-256color
+VSCODE_IPC_HOOK = /run/user/1000/vscode-277831f1-1.84-main.sock
 # environment
 KDEWM = /usr/bin/i3
 # environment
@@ -674,21 +626,15 @@ ELECTRON_NO_ATTACH_CONSOLE = 1
 # environment
 CSF_StandardDefaults = /usr/share/opencascade/resources/StdResource
 # environment
-SHELL_SESSION_ID = d4eb7f59e8e34ab6beb52e29cf384ae6
-# environment
 KDE_SESSION_VERSION = 5
 # default
-.FEATURES := target-specific order-only second-expansion else-if shortest-stem undefine oneshell nocomment grouped-target extra-prereqs archives jobserver output-sync check-symlink guile load
+.FEATURES := target-specific order-only second-expansion else-if shortest-stem undefine oneshell nocomment grouped-target extra-prereqs notintermediate shell-export archives jobserver jobserver-fifo output-sync check-symlink guile load
 # environment
 KDE_FULL_SESSION = true
 # environment
-CONDA_EXE = /opt/anaconda/anaconda3/bin/conda
-# environment
-_CE_CONDA = 
-# environment
 LC_IDENTIFICATION = pl_PL.UTF-8
 # variable set hash-table stats:
-# Load=144/1024=14%, Rehash=0, Collisions=14/179=8%
+# Load=130/1024=13%, Rehash=0, Collisions=11/165=7%
 
 # Pattern-specific Variable Values
 
@@ -696,9 +642,9 @@ LC_IDENTIFICATION = pl_PL.UTF-8
 
 # Directories
 
-# . (device 66308, inode 9978266): 23 files, no impossibilities.
+# . (device 66308, inode 9978266): 25 files, no impossibilities.
 
-# 23 files, no impossibilities in 1 directories.
+# 25 files, no impossibilities in 1 directories.
 
 # Implicit Rules
 
@@ -707,9 +653,11 @@ LC_IDENTIFICATION = pl_PL.UTF-8
 # Files
 
 # Not a target:
+ 
 Makefile:
 #  Implicit rule search has been done.
-#  Last modified 2022-12-03 11:16:49.927307663
+#  File is secondary (prerequisite of .SECONDARY).
+#  Last modified 2022-12-04 20:46:56.388312693
 #  File has been updated.
 #  Successfully updated.
 
@@ -722,7 +670,7 @@ clean:
 	find . -name \*.o -type f -delete
 	find . -name \*.hi -type f -delete
 	rm src/Main
-	rm interpreter
+	rm latc
 
 # Not a target:
 .DEFAULT:
@@ -735,6 +683,7 @@ all: install
 #  Implicit rule search has been done.
 #  File does not exist.
 #  File has not been updated.
+#  Dependencies recipe running (THIS IS A BUG).
 # variable set hash-table stats:
 # Load=0/32=0%, Rehash=0, Collisions=0/5=0%
 
@@ -764,7 +713,7 @@ install:
 # Load=8/32=25%, Rehash=0, Collisions=2/13=15%
 #  recipe to execute (from 'Makefile', line 4):
 	$(MAKE) -C src
-	cp src/Main ./interpreter
+	cp src/Main ./latc
 
 # Not a target:
 .SUFFIXES:
@@ -778,19 +727,19 @@ install:
 #  File has not been updated.
 
 # files hash-table stats:
-# Load=7/1024=1%, Rehash=0, Collisions=0/24=0%
+# Load=7/1024=1%, Rehash=0, Collisions=0/25=0%
 # VPATH Search Paths
 
 # No 'vpath' search paths.
 
 # No general ('VPATH' variable) search path.
 
-# strcache buffers: 1 (0) / strings = 31 / storage = 290 B / avg = 9 B
-# current buf: size = 8162 B / used = 290 B / count = 31 / avg = 9 B
+# strcache buffers: 1 (0) / strings = 34 / storage = 308 B / avg = 9 B
+# current buf: size = 8162 B / used = 308 B / count = 34 / avg = 9 B
 
-# strcache performance: lookups = 43 / hit rate = 27%
+# strcache performance: lookups = 45 / hit rate = 24%
 # hash-table stats:
-# Load=31/8192=0%, Rehash=0, Collisions=0/43=0%
-# Finished Make data base on Sun Dec  4 04:24:03 2022
+# Load=34/8192=0%, Rehash=0, Collisions=0/45=0%
+# Finished Make data base on Sun Nov 26 17:18:10 2023
 
  

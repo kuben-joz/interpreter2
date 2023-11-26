@@ -22,7 +22,6 @@ data MVal
   | MInt Int
   | MBool Bool
   | MFun {env :: [Env], params :: [MArgs], instructions :: Block}
-  | MArr {elems :: [Loc], len :: Int, dim_num :: Int}
   | MVoid
 
 instance Show MVal where
@@ -30,7 +29,6 @@ instance Show MVal where
   show (MInt i) = show i
   show (MBool b) = show b
   show (MFun {}) = "fun"
-  show (MArr {..}) = "arr"
   show (MVoid) = "void"
 
 class HasLen a where
@@ -38,10 +36,7 @@ class HasLen a where
 
 instance HasLen MVal where
   getLen (MString _ l) = l
-  getLen MArr {..} = len
   getLen _ = undefined
-
-getDimNum MArr {..} = dim_num
 
 -- todo change to process the values once we do simplicifaction of code
 lt :: MResVal -> MResVal -> MResVal
@@ -60,12 +55,10 @@ gte :: MResVal -> MResVal -> MResVal
 gte (Just (MInt v1)) (Just (MInt v2)) = Just $ MBool $ v1 >= v2
 gte a b = (<|>) a b
 
--- todo this can break
 myand :: MResVal -> MResVal -> MResVal
 myand (Just (MBool v1)) (Just (MBool v2)) = Just $ MBool $ v1 && v2
 myand a b = (<|>) a b
 
--- todo this can break
 myor :: MResVal -> MResVal -> MResVal
 myor (Just (MBool v1)) (Just (MBool v2)) = Just $ MBool $ v1 || v2
 myor a b = (<|>) a b
@@ -147,7 +140,6 @@ instance Eq MVal where
   (==) (MInt i1) (MInt i2) = i1 == i2
   (==) (MBool b1) (MBool b2) = b1 == b2
   (==) (MString s1 _) (MString s2 _) = s1 == s2
-  -- to remeber to do arr pointer checking above
   (==) a b = trace ((show a) ++ (show b)) (undefined)
 
 instance Integral MVal where
@@ -169,5 +161,4 @@ toDefValue :: Type -> MVal
 toDefValue Int {} = MInt 0
 toDefValue Str {} = MString "" 0
 toDefValue Bool {} = MBool False
-toDefValue (Arr _ _ dim_bra) = MArr {elems = [], len = 0, dim_num = length dim_bra}
 toDefValue _ = undefined

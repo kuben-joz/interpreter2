@@ -59,7 +59,6 @@ class Typable a where
 
 instance Typable Arg where
   toMFT (ArgVal _ t _) = toMFT t
-  toMFT (ArgRef _ t _) = toArgType $ toMFT t
     where
       toArgType (base_t, mods) = (base_t, MTypeMods {dim_num = dim_num mods, has_ref = True, can_brk_cont = False})
 
@@ -67,32 +66,9 @@ instance Typable Type where
   toMFT (Int _) = (MInt, MTypeMods {dim_num = 0, has_ref = False, can_brk_cont = False})
   toMFT (Str _) = (MString, MTypeMods {dim_num = 0, has_ref = False, can_brk_cont = False})
   toMFT (Bool _) = (MBool, MTypeMods {dim_num = 0, has_ref = False, can_brk_cont = False})
-  toMFT (Arr _ t bra) = (fst $ toMFT t, MTypeMods {dim_num = length bra, has_ref = False, can_brk_cont = False})
   toMFT (Void _) = (MVoid, MTypeMods {dim_num = 0, has_ref = False, can_brk_cont = False})
 
 makeReferencable (mtype, MTypeMods {..}) = (mtype, MTypeMods {dim_num = dim_num, has_ref = True, can_brk_cont = can_brk_cont})
 
-instance Typable KeyWord where
-  toMFT a = (MInt, MTypeMods {dim_num = 0, has_ref = False, can_brk_cont = False})
-
 instance Typable FnDef where
   toMFT (FunDef _ t _ args _) = (MFun (toMFT t) (map toMFT args), MTypeMods {dim_num = 0, has_ref = True, can_brk_cont = False})
-
-compatibleParent (KeyWordLength _) t = (fst t) == MString || (dim_num $ snd t) > 0
-compatibleParent (KeyWordMaxVal _) t = (fst t) == MInt
-compatibleParent (KeyWordMinVal _) t = (fst t) == MInt
-compatibleParent (KeyWordDimNum _) t@(_, MTypeMods {..}) = dim_num > 0
-
-adjustArrType (t, mods) dim_acc = do
-  return $
-    ( t,
-      MTypeMods
-        { dim_num = dim_num mods - length dim_acc,
-          has_ref = has_ref mods,
-          can_brk_cont = can_brk_cont mods
-        }
-    )
-
-setBrkCont t = case t of
-  Nothing -> Nothing
-  Just (t, MTypeMods {..}) -> Just (t, MTypeMods {dim_num = dim_num, has_ref = has_ref, can_brk_cont = True})

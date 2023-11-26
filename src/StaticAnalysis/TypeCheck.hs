@@ -21,8 +21,8 @@ import StaticAnalysis.Err as Err
                       CallToUnderclaredFun, IncompatibleFunParams, VarAsFunc,
                       IncompatibleTypeOpMul, IncompatibleTypeOpAdd,
                       IncompatibleTypeOpRel, IncompatibleTypeOpAnd, IncompatibleTypeOpOr,
-                      VoidVar, ArrTooShallow, AssToUndeclaredVar, BadRetType,
-                      IfElseTypeMistmatch, BrkInvalidPos, ContInvalidPos, NoReturn,
+                      VoidVar, AssToUndeclaredVar, BadRetType,
+                      IfElseTypeMistmatch, NoReturn,
                       RefMismatch, IncompatibleTypeOp, ForbiddenId, NoMain,
                       FuncNameCollision, TypeMismatch),
       ErrLoc )
@@ -31,16 +31,15 @@ import StaticAnalysis.TCTraverser
 import Util.FieldExtractors
 
 forbiddenIds =
-  [ "continue",
-    "break",
-    "while",
+  [ "while",
     "return",
     "if",
     "else",
     "new",
     "int",
     "string",
-    "bool",
+    "boolean",
+    "void",
     "true",
     "false"
   ]
@@ -80,7 +79,7 @@ instance Checkable AType.Program where
     return Nothing
 
 instance Checkable AType.FnDef where
-  check _ fn@(AType.FunDef pos t id'@(AType.UIdent id) args blk) = do
+  check _ fn@(AType.FunDef pos t id'@(AType.Ident id) args blk) = do
     checkIllegalId id' pos
     mapM_ (check Nothing) args
     --      return $ fromMaybe (throwError $ Err.NoReturn pos id) (check (Just $ toMFT t) blk)
@@ -89,12 +88,7 @@ instance Checkable AType.FnDef where
     return Nothing
 
 instance Checkable AType.Arg where
-  check _ arg@(AType.ArgVal pos t id'@(AType.UIdent id)) = do
-    checkIllegalId id' pos
-    key_val <- addKeyVal id (toMFT arg)
-    notNothingGuard key_val (Err.FuncNameCollision pos id)
-    return Nothing
-  check _ arg@(AType.ArgRef pos t id'@(AType.UIdent id)) = do
+  check _ arg@(AType.ArgVal pos t id'@(AType.Ident id)) = do
     checkIllegalId id' pos
     key_val <- addKeyVal id (toMFT arg)
     notNothingGuard key_val (Err.FuncNameCollision pos id)
@@ -109,19 +103,12 @@ instance Checkable AType.Stmt where
   check _ (AType.Empty pos) = do return Nothing
   check t (AType.BStmt pos blk) = do
     push $ check t blk
-  check _ (AType.FunStmt loc fn@(AType.FunDef pos t (id'@(AType.UIdent id)) args blk)) = do
-    checkIllegalId id' pos
-    prev_func <- addKeyVal id (toMFT fn)
-    notNothingGuard prev_func (Err.FuncNameCollision pos id)
-    push $ check Nothing fn
-    return Nothing
   check _ inst@(AType.Decl loc t1 items) = do
     let t1' = toMFT t1
     voidGuard t1' (Err.VoidVar loc)
     mapM_ (check $ Just $ toMFT t1) items
-    -- mapM_ (check $ Just $ toMFT t1) items
     return Nothing
-  check _ (AType.Ass loc id'@(AType.UIdent id) expr) = do
+  check _ (AType.Ass loc id'@(AType.Ident id) expr) = do
     checkIllegalId id' loc
     id_temp <- getVal id
     nothingGuard id_temp (Err.AssToUndeclaredVar loc id)
@@ -130,19 +117,7 @@ instance Checkable AType.Stmt where
     let expr_type = fromJust expr_temp
     assertType id_type expr_type loc
     return Nothing
-  check t (AType.ArrAss loc id'@(AType.UIdent id) dimAcc expr) = do
-    checkIllegalId id' loc
-    mapM_ (check t) dimAcc
-    arr_type <- getVal id
-    (adj_arr_type, arr_mods) <- adjustArrType (fromJust arr_type) dimAcc
-    case compare (dim_num arr_mods) 0 of
-      LT -> do throwError $ Err.ArrTooShallow loc (dim_num arr_mods + length dimAcc) (length dimAcc)
-      _ -> do
-        expr_temp <- check Nothing expr
-        let expr_type = fromJust expr_temp
-        assertType (adj_arr_type, arr_mods) expr_type loc
-        return Nothing
-  check _ (AType.Incr loc id'@(AType.UIdent id)) = do
+  check _ (AType.Incr loc id'@(AType.Ident id)) = do
     checkIllegalId id' loc
     id_temp <- getVal id
     nothingGuard id_temp (Err.AssToUndeclaredVar loc id)
@@ -150,7 +125,7 @@ instance Checkable AType.Stmt where
     let expr_type = makeType'' MInt
     assertType id_type expr_type loc
     return Nothing
-  check _ (AType.Decr loc id'@(AType.UIdent id)) = do
+  check _ (AType.Decr loc id'@(AType.Ident id)) = do
     checkIllegalId id' loc
     id_temp <- getVal id
     nothingGuard id_temp (Err.AssToUndeclaredVar loc id)
@@ -186,26 +161,17 @@ instance Checkable AType.Stmt where
     expr_temp <- check Nothing expr
     let expr_type = fromJust expr_temp
     assertType (makeType'' MBool) expr_type loc
-    push $ check (setBrkCont t) stmt
   check _ (AType.SExp loc expr) = do
     check Nothing expr
     return Nothing
-  check (Just (t, MTypeMods {..})) (AType.Break pos) = do
-    if can_brk_cont
-      then return Nothing
-      else throwError $ Err.BrkInvalidPos pos
-  check (Just (t, MTypeMods {..})) (AType.Cont pos) = do
-    if can_brk_cont
-      then return Nothing
-      else throwError $ Err.ContInvalidPos pos
 
 instance Checkable AType.Item where
-  check (Just t) (AType.NoInit pos id'@(AType.UIdent id)) = do
+  check (Just t) (AType.NoInit pos id'@(AType.Ident id)) = do
     checkIllegalId id' pos
     prev_val <- addKeyVal id t
     notNothingGuard prev_val (Err.FuncNameCollision pos id)
     return Nothing
-  check (Just t) (AType.Init pos id'@(AType.UIdent id) expr) = do
+  check (Just t) (AType.Init pos id'@(AType.Ident id) expr) = do
     checkIllegalId id' pos
     expr_t <- check Nothing expr
     assertType t (fromJust expr_t) pos
@@ -214,47 +180,14 @@ instance Checkable AType.Item where
     return Nothing
 
 instance Checkable AType.Expr where
-  check _ (AType.EVar pos id'@(AType.UIdent id)) = do
+  check _ (AType.EVar pos id'@(AType.Ident id)) = do
     checkIllegalId id' pos
     var_type <- getVal id
     nothingGuard var_type (Err.UseOfUndeclaredVar pos id)
     case var_type of
       Just (MFun {}, _) -> throwError $ Err.RefFuncAsVar pos id
       _ -> return var_type
-  check _ (AType.ENewArr pos t dim_acc dim_bra) = do
-    mapM_ (check Nothing) dim_acc
-    return $ Just (fst $ toMFT t, MTypeMods {dim_num = length dim_acc + length dim_bra, has_ref = False, can_brk_cont = False})
-  check _ (AType.EArrAcc pos id'@(AType.UIdent id) dim_acc) = do
-    checkIllegalId id' pos
-    mapM_ (check Nothing) dim_acc
-    arr_t <- getVal id
-    nothingGuard arr_t (Err.UseOfUndeclaredVar pos id)
-    let arr_t1 = fromJust arr_t
-    arr_t2 <- adjustArrType arr_t1 dim_acc
-    case compare (dim_num (snd arr_t2)) 0 of
-      LT -> do throwError $ Err.ArrTooShallow pos (dim_num (snd arr_t2) + length dim_acc) (length dim_acc)
-      _ -> do return $ Just (fst arr_t1, snd arr_t2)
-  check _ (AType.EKeyWord pos id'@(AType.UIdent id) keyword) = do
-    checkIllegalId id' pos
-    ident_t <- getVal id
-    nothingGuard ident_t (Err.UseOfUndeclaredVar pos id)
-    if compatibleParent keyword (fromJust ident_t)
-      then return $ Just (toMFT keyword)
-      else throwError $ Err.InvalidKeyword (AType.hasPosition keyword)
-  check _ (AType.EArrKeyWord pos id'@(AType.UIdent id) dim_acc keyword) = do
-    checkIllegalId id' pos
-    mapM_ (check $ Just (makeType'' MInt)) dim_acc
-    arr_t <- getVal id
-    nothingGuard arr_t (Err.UseOfUndeclaredVar pos id)
-    let arr_t1 = fromJust arr_t
-    arr_t2 <- adjustArrType arr_t1 dim_acc
-    case compare (dim_num (snd arr_t2)) 0 of
-      LT -> do throwError $ Err.ArrTooShallow pos (dim_num (snd arr_t2) + length dim_acc) (length dim_acc)
-      _ -> do
-        if compatibleParent keyword arr_t2
-          then return $ Just (toMFT keyword)
-          else throwError $ Err.InvalidKeyword pos
-  check _ (AType.EApp pos id'@(AType.UIdent id) exps) = do
+  check _ (AType.EApp pos id'@(AType.Ident id) exps) = do
     checkIllegalId id' pos
     exp_ts <- mapM (check Nothing) exps
     let exp_ts2 = catMaybes exp_ts
@@ -280,7 +213,6 @@ instance Checkable AType.Expr where
     let t1 = fromJust t1t
     let t2 = fromJust t2t
     notEqGuard t1 t2 $ Err.IncompatibleTypeOpMul pos opi t1 t2
-    arrGuard t1 $ Err.IncompatibleTypeOpMul pos opi t1 t2
     check (Just t1) opi
   check _ op@(AType.EAdd pos exp1 opi exp2) = do
     t1t <- check Nothing exp1
@@ -288,7 +220,6 @@ instance Checkable AType.Expr where
     let t1 = fromJust t1t
     let t2 = fromJust t2t
     notEqGuard t1 t2 $ Err.IncompatibleTypeOpAdd pos opi t1 t2
-    arrGuard t1 $ Err.IncompatibleTypeOpAdd pos opi t1 t2
     check (Just t1) opi
   check _ op@(AType.ERel pos exp1 opi exp2) = do
     t1t <- check Nothing exp1
@@ -303,7 +234,6 @@ instance Checkable AType.Expr where
     let t1 = fromJust t1t
     let t2 = fromJust t2t
     notEqGuard t1 t2 $ Err.IncompatibleTypeOpAnd pos t1 t2
-    arrGuard t1 $ Err.IncompatibleTypeOpAnd pos t1 t2
     if fst t1 /= MBool
       then throwError $ Err.IncompatibleTypeOpAnd pos t1 t2
       else return $ Just t1
@@ -313,7 +243,6 @@ instance Checkable AType.Expr where
     let t1 = fromJust t1t
     let t2 = fromJust t2t
     notEqGuard t1 t2 $ Err.IncompatibleTypeOpOr pos t1 t2
-    arrGuard t1 $ Err.IncompatibleTypeOpOr pos t1 t2
     if fst t1 /= MBool
       then throwError $ Err.IncompatibleTypeOpOr pos t1 t2
       else return $ Just t1
@@ -338,26 +267,11 @@ instance Checkable AType.MulOp where
       MInt -> return $ Just t1
       _ -> throwError $ Err.IncompatibleTypeOpMul (AType.hasPosition op) op t1 t1
 
-{-
-    check t op@(AType.Div pos) = do
-        let t1@(tt, m) = fromJust t
-        case tt of
-            MInt -> return Nothing
-            _   -> throwError $ Err.IncompatibleTypeOpMul pos op t1 t1
-    check t op@(AType.Mod pos) = do
-        let t1@(tt, m) = fromJust t
-        case tt of
-            MInt -> return $ Just MInt
-            _   -> throwError $ Err.IncompatibleTypeOpMul pos op t1 t1
-
- -}
-
 instance Checkable AType.RelOp where
   check t op@(AType.EQU pos) = do return $ Just (makeType'' MBool)
   check t op@(AType.NE pos) = do return $ Just (makeType'' MBool)
   check t op = do
     let t1@(tt, m) = fromJust t
-    arrGuard t1 (Err.IncompatibleTypeOpRel (AType.hasPosition op) op t1 t1)
     case tt of
       MInt -> return $ Just (makeType'' MBool)
       _ -> throwError $ Err.IncompatibleTypeOpRel (AType.hasPosition op) op t1 t1
@@ -365,21 +279,14 @@ instance Checkable AType.RelOp where
 oneOpCheck expr target_t lim pos op = do
   expr_temp <- check Nothing expr
   let expr_t = fromJust expr_temp
-  --    if fst expr_t == target_t && (dim_num (snd expr_t) <= lim) then
-  if fst expr_t == target_t && (dim_num (snd expr_t) <= lim)
+  if fst expr_t == target_t
     then return $ Just expr_t
     else throwError $ Err.IncompatibleTypeOp pos op expr_t
 
-checkIllegalId (AType.UIdent id) pos = do
+checkIllegalId (AType.Ident id) pos = do
   if elem id forbiddenIds
     then throwError $ Err.ForbiddenId pos id
     else return Nothing
-
-instance Checkable AType.DimAcc where
-  check _ (AType.EDimAcc loc expr) = do
-    expr_temp <- check Nothing expr
-    let expr_t = fromJust expr_temp
-    assertType (makeType'' MInt) expr_t loc
 
 getMain :: [AType.FnDef] -> Traverser AType.FnDef
 getMain fns = do
@@ -409,7 +316,7 @@ addBuiltInFuncs (funcId, funcType) = do
   return Nothing
 
 initEnv :: AType.FnDef -> STraverser
-initEnv f@(AType.FunDef pos ret_type id'@(AType.UIdent id) args blk) = do
+initEnv f@(AType.FunDef pos ret_type id'@(AType.Ident id) args blk) = do
   checkIllegalId id' pos
   s@SymTable {..} <- get
   if M.member id global_env
@@ -466,11 +373,6 @@ nonVoidGuard (Just (MVoid, _)) (MVoid, _) _ = do return ()
 nonVoidGuard _ (MVoid, _) err = do throwError err
 nonVoidGuard Nothing _ err = do throwError err
 nonVoidGuard _ _ _ = do return ()
-
-arrGuard (_, MTypeMods {..}) err = do
-  case dim_num of
-    0 -> return ()
-    _ -> throwError err
 
 notEqGuard t1 t2 err = do
   if t1 == t2

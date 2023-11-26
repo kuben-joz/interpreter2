@@ -35,14 +35,10 @@ data StaticException
   | CallToUnderclaredFun ErrLoc String
   | -- pos, name of func, its type, parameters given
     IncompatibleFunParams ErrLoc String MFType [MFType]
-  | -- actual, how far accessed
-    ArrTooShallow ErrLoc Int Int
   | IncompPrintParam ErrLoc MFType
   | -- expected actual
     BadRetType ErrLoc MFType MFType
   | RefFuncAsVar ErrLoc String
-  | ContInvalidPos ErrLoc
-  | BrkInvalidPos ErrLoc
   | ForbiddenId ErrLoc String
   | IfElseTypeMistmatch ErrLoc MFType MFType
   | VarAsFunc ErrLoc String
@@ -76,10 +72,7 @@ instance Show StaticException where
   show (UseOfUndeclaredVar loc id) = (errMsgStart loc) ++ "Use of undeclared variable " ++ show id ++ " in expression"
   show (CallToUnderclaredFun loc name) = (errMsgStart loc) ++ "Call to undeclared function " ++ show name
   show (IncompatibleFunParams loc f_name f_type params) = (errMsgStart loc) ++ " Incompatible function params for function " ++ show f_name ++ " expected " ++ show f_type ++ " but found " ++ show params
-  show (ArrTooShallow loc size acc_i) = (errMsgStart loc) ++ "Array too shallow, access to element at dimension " ++ show acc_i ++ " but this array only has " ++ show size ++ " dimensions"
   show (BadRetType loc expected actual) = (errMsgStart loc) ++ "Bad return type from function, expected " ++ show expected ++ " but got " ++ show actual
-  show (ContInvalidPos loc) = (errMsgStart loc) ++ "Continue outside of while loop"
-  show (BrkInvalidPos loc) = (errMsgStart loc) ++ "Break outside of while loop"
   show (IncompPrintParam loc t) = (errMsgStart loc) ++ "Can't print expressions of type: " ++ show t
   show (RefFuncAsVar loc id) = (errMsgStart loc) ++ "Use of function identifier " ++ show id ++ " as a variable"
   show (ForbiddenId loc id) = (errMsgStart loc) ++ "Use of forbidden identifier name, " ++ show id
