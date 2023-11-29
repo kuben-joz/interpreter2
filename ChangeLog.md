@@ -1,3 +1,3 @@
-# Changelog for interpreter
+# Changelog for compiler
 
 ## Unreleased changes

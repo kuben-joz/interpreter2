@@ -1,4 +1,4 @@
 all: install
 
-install:
+install: 
 	ghc Main

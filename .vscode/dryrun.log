@@ -1,6 +1,7 @@
 make --dry-run --always-make --keep-going --print-directory
 make: Entering directory '/home/jakub/HaskellProjects/MRJP-frontend'
 make -C src
+ 
 make[1]: Entering directory '/home/jakub/HaskellProjects/MRJP-frontend/src'
 ghc Main
 make[1]: Leaving directory '/home/jakub/HaskellProjects/MRJP-frontend/src'
