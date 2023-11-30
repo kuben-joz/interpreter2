@@ -12,14 +12,14 @@ import Data.Bool (bool)
 import Data.Maybe (catMaybes, fromJust, isNothing, listToMaybe)
 import Debug.Trace
 import GHC.Float (expFloat)
-import StaticAnalysis.MacchiatoVals
-import StaticAnalysis.CFGTraverser
 import Mem.SymbolTable (Id, Loc, SymTable (current_env), getData)
 import Parsing.AbsMacchiato as AType
+import StaticAnalysis.CFGTraverser
 import StaticAnalysis.Err (StaticException (NoReturnCont))
 import qualified StaticAnalysis.Err as Err
 import StaticAnalysis.MacchiatoTypes (MType)
 import qualified StaticAnalysis.MacchiatoTypes as MTypes
+import StaticAnalysis.MacchiatoVals
 import System.IO
 import System.Posix.Internals (st_mtime)
 
@@ -79,7 +79,7 @@ nestedInterpret (stmt : stmts) = do
   case res of
     Nothing -> interpretStatements stmts
     _ -> return res
-nestedInterpret [] = do return Nothing
+nestedInterpret [] = do return $ Just MVoid -- todo this changed
 
 instance Interpretable Stmt where
   interpret Empty {} = return Nothing

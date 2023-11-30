@@ -43,7 +43,7 @@ The symbols used in macchiato are the following:
   | >= | == | != |
 
 ===Comments===
-Single-line comments begin with //.Multiple-line comments are  enclosed with /* and */.
+Single-line comments begin with #, //.Multiple-line comments are  enclosed with /* and */.
 
 ==The syntactic structure of macchiato==
 Non-terminals are enclosed between < and >.

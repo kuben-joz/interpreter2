@@ -1,6 +1,5 @@
 make all --print-data-base --no-builtin-variables --no-builtin-rules --question
 make -C src
- 
 # GNU Make 4.4.1
 # Built for x86_64-pc-linux-gnu
 # Copyright (C) 1988-2023 Free Software Foundation, Inc.
@@ -8,7 +7,7 @@ make -C src
 # This is free software: you are free to change and redistribute it.
 # There is NO WARRANTY, to the extent permitted by law.
 
-# Make data base, printed on Wed Nov 29 21:34:25 2023
+# Make data base, printed on Thu Nov 30 16:33:31 2023
 
 # Variables
 
@@ -21,7 +20,7 @@ NO_AT_BRIDGE = 1
 # environment
 GTK_RC_FILES = /etc/gtk/gtkrc:/home/jakub/.gtkrc:/home/jakub/.config/gtkrc
 # environment
-I3SOCK = /run/user/1000/i3/ipc-socket.1948
+I3SOCK = /run/user/1000/i3/ipc-socket.1473
 # environment
 CSF_EXCEPTION_PROMPT = 1
 # environment
@@ -75,14 +74,13 @@ CSF_ShadersDirectory = /usr/share/opencascade/resources/Shaders
 # environment
 LANG = C
 # environment
-XAUTHORITY = /tmp/xauth_DZpLUR
- 
+XAUTHORITY = /tmp/xauth_SSvMzm
 # default
 .LOADED := 
 # default
 .INCLUDE_DIRS := /usr/local/include /usr/include
 # makefile
-MAKEFLAGS = pqrR -j12 --jobserver-auth=fifo:/tmp/GMfifo8884
+MAKEFLAGS = pqrR -j12 --jobserver-auth=fifo:/tmp/GMfifo11621
 # makefile
 CURDIR := /home/jakub/HaskellProjects/MRJP-frontend/src
 # environment
@@ -92,7 +90,7 @@ APPLICATION_INSIGHTS_NO_DIAGNOSTIC_CHANNEL = 1
 # environment
 PAM_KWALLET5_LOGIN = /run/user/1000/kwallet5.socket
 # environment
-MFLAGS = -pqrR -j12 --jobserver-auth=fifo:/tmp/GMfifo8884
+MFLAGS = -pqrR -j12 --jobserver-auth=fifo:/tmp/GMfifo11621
 # default
 .SHELLFLAGS := -c
 # environment
@@ -114,7 +112,7 @@ MAKEFILE_LIST := Makefile
 # automatic
 @F = $(notdir $@)
 # environment
-VSCODE_PID = 5536
+VSCODE_PID = 3214
 # environment
 XDG_SESSION_TYPE = x11
 # environment
@@ -144,7 +142,7 @@ MAKE_HOST := x86_64-pc-linux-gnu
 # makefile
 SHELL = /bin/sh
 # environment
-SHLVL = 2
+SHLVL = 4
 # environment
 CSF_TObjDefaults = /usr/share/opencascade/resources/StdResource
 # environment
@@ -278,9 +276,9 @@ LC_IDENTIFICATION = pl_PL.UTF-8
 
 # Directories
 
-# . (device 66308, inode 10076599): 8 files, no impossibilities.
+# . (device 66308, inode 10076599): 11 files, no impossibilities.
 
-# 8 files, no impossibilities in 1 directories.
+# 11 files, no impossibilities in 1 directories.
 
 # Implicit Rules
 
@@ -292,7 +290,8 @@ LC_IDENTIFICATION = pl_PL.UTF-8
 Makefile:
 #  Implicit rule search has been done.
 #  File is secondary (prerequisite of .SECONDARY).
-#  Last modified 2022-12-03 11:16:50.243975151
+ 
+#  Last modified 2023-11-29 22:49:32.339683102
 #  File has been updated.
 #  Successfully updated.
 
@@ -303,7 +302,6 @@ Makefile:
 #  File has not been updated.
 
 all: install
- 
 #  Implicit rule search has been done.
 #  File does not exist.
 #  File has been updated.
@@ -352,15 +350,14 @@ install:
 
 # No general ('VPATH' variable) search path.
 
-# strcache buffers: 1 (0) / strings = 16 / storage = 127 B / avg = 7 B
-# current buf: size = 8162 B / used = 127 B / count = 16 / avg = 7 B
+# strcache buffers: 1 (0) / strings = 19 / storage = 147 B / avg = 7 B
+# current buf: size = 8162 B / used = 147 B / count = 19 / avg = 7 B
 
-# strcache performance: lookups = 22 / hit rate = 27%
+# strcache performance: lookups = 25 / hit rate = 24%
 # hash-table stats:
-# Load=16/8192=0%, Rehash=0, Collisions=0/22=0%
-# Finished Make data base on Wed Nov 29 21:34:25 2023
+# Load=19/8192=0%, Rehash=0, Collisions=0/25=0%
+# Finished Make data base on Thu Nov 30 16:33:31 2023
 
- 
 # GNU Make 4.4.1
 # Built for x86_64-pc-linux-gnu
 # Copyright (C) 1988-2023 Free Software Foundation, Inc.
@@ -368,7 +365,7 @@ install:
 # This is free software: you are free to change and redistribute it.
 # There is NO WARRANTY, to the extent permitted by law.
 
-# Make data base, printed on Wed Nov 29 21:34:25 2023
+# Make data base, printed on Thu Nov 30 16:33:31 2023
 
 # Variables
 
@@ -381,7 +378,7 @@ NO_AT_BRIDGE = 1
 # environment
 GTK_RC_FILES = /etc/gtk/gtkrc:/home/jakub/.gtkrc:/home/jakub/.config/gtkrc
 # environment
-I3SOCK = /run/user/1000/i3/ipc-socket.1948
+I3SOCK = /run/user/1000/i3/ipc-socket.1473
 # environment
 CSF_EXCEPTION_PROMPT = 1
 # environment
@@ -435,13 +432,13 @@ CSF_ShadersDirectory = /usr/share/opencascade/resources/Shaders
 # environment
 LANG = C
 # environment
-XAUTHORITY = /tmp/xauth_DZpLUR
+XAUTHORITY = /tmp/xauth_SSvMzm
 # default
 .LOADED := 
 # default
 .INCLUDE_DIRS := /usr/local/include /usr/include
 # makefile
-MAKEFLAGS = pqrR -j12 --jobserver-auth=fifo:/tmp/GMfifo8884
+MAKEFLAGS = pqrR -j12 --jobserver-auth=fifo:/tmp/GMfifo11621
 # makefile
 CURDIR := /home/jakub/HaskellProjects/MRJP-frontend
 # environment
@@ -451,7 +448,7 @@ APPLICATION_INSIGHTS_NO_DIAGNOSTIC_CHANNEL = 1
 # environment
 PAM_KWALLET5_LOGIN = /run/user/1000/kwallet5.socket
 # environment
-MFLAGS = -pqrR -j12 --jobserver-auth=fifo:/tmp/GMfifo8884
+MFLAGS = -pqrR -j12 --jobserver-auth=fifo:/tmp/GMfifo11621
 # default
 .SHELLFLAGS := -c
 # environment
@@ -473,7 +470,7 @@ MAKEFILE_LIST := Makefile
 # automatic
 @F = $(notdir $@)
 # environment
-VSCODE_PID = 5536
+VSCODE_PID = 3214
 # environment
 XDG_SESSION_TYPE = x11
 # environment
@@ -505,7 +502,7 @@ SHELL = /bin/sh
 # default
 MAKECMDGOALS := all
 # environment
-SHLVL = 2
+SHLVL = 4
 # environment
 CSF_TObjDefaults = /usr/share/opencascade/resources/StdResource
 # environment
@@ -595,6 +592,7 @@ VSCODE_AMD_ENTRYPOINT = vs/workbench/api/node/extensionHostProcess
 # environment
 GTK2_RC_FILES = /etc/gtk-2.0/gtkrc:/home/jakub/.gtkrc-2.0:/home/jakub/.config/gtkrc-2.0
 # environment
+ 
 HOME = /home/jakub
 # environment
 ELECTRON_RUN_AS_NODE = 1
@@ -639,22 +637,21 @@ LC_IDENTIFICATION = pl_PL.UTF-8
 
 # Directories
 
-# . (device 66308, inode 9978266): 23 files, no impossibilities.
+# . (device 66308, inode 9978266): 24 files, no impossibilities.
 
-# 23 files, no impossibilities in 1 directories.
+# 24 files, no impossibilities in 1 directories.
 
 # Implicit Rules
 
 # No implicit rules.
 
 # Files
- 
 
 # Not a target:
 Makefile:
 #  Implicit rule search has been done.
 #  File is secondary (prerequisite of .SECONDARY).
-#  Last modified 2022-12-04 20:46:56.388312693
+#  Last modified 2023-11-29 22:28:54.004758592
 #  File has been updated.
 #  Successfully updated.
 
@@ -731,12 +728,12 @@ install:
 
 # No general ('VPATH' variable) search path.
 
-# strcache buffers: 1 (0) / strings = 32 / storage = 283 B / avg = 8 B
-# current buf: size = 8162 B / used = 283 B / count = 32 / avg = 8 B
+# strcache buffers: 1 (0) / strings = 33 / storage = 288 B / avg = 8 B
+# current buf: size = 8162 B / used = 288 B / count = 33 / avg = 8 B
 
-# strcache performance: lookups = 43 / hit rate = 25%
+# strcache performance: lookups = 44 / hit rate = 25%
 # hash-table stats:
-# Load=32/8192=0%, Rehash=0, Collisions=0/43=0%
-# Finished Make data base on Wed Nov 29 21:34:25 2023
+# Load=33/8192=0%, Rehash=0, Collisions=0/44=0%
+# Finished Make data base on Thu Nov 30 16:33:31 2023
 
  

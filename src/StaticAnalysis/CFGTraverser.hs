@@ -9,10 +9,10 @@ import qualified Data.Map as M
 import Data.Maybe
 import Debug.Trace
 import GHC.IO.Handle
-import StaticAnalysis.MacchiatoVals
 import Mem.SymbolTable
 import Parsing.AbsMacchiato
 import StaticAnalysis.Err
+import StaticAnalysis.MacchiatoVals
 import System.IO
 
 data ReturnState = RetState {cont :: Bool, brk :: Bool}

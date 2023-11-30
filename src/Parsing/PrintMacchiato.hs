@@ -201,6 +201,7 @@ instance Print (AbsMacchiato.Type' a) where
     AbsMacchiato.Str _ -> prPrec i 0 (concatD [doc (showString "string")])
     AbsMacchiato.Bool _ -> prPrec i 0 (concatD [doc (showString "boolean")])
     AbsMacchiato.Void _ -> prPrec i 0 (concatD [doc (showString "void")])
+    AbsMacchiato.Fun _ type_ types -> prPrec i 0 (concatD [prt 0 type_, doc (showString "("), prt 0 types, doc (showString ")")])
 
 instance Print [AbsMacchiato.Type' a] where
   prt _ [] = concatD []

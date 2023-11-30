@@ -5,6 +5,8 @@ make -C src
 make[1]: Entering directory '/home/jakub/HaskellProjects/MRJP-frontend/src'
 ghc Main
 make[1]: Leaving directory '/home/jakub/HaskellProjects/MRJP-frontend/src'
+ 
 cp src/Main ./latc
+ 
 make: Leaving directory '/home/jakub/HaskellProjects/MRJP-frontend'
  

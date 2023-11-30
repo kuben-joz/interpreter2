@@ -16,13 +16,6 @@ Moduły Interpretation i StaticAnalysis są podobne w strukturze, oba posiadają
 
 ## Budowanie
 Mamy opcje:
-- make, która wykonuje
+- make
 - make clean
-
-
-
-##
-Todo
-- [ ] var collision instead of func name collision
-- [ ] make ssa representation first
 

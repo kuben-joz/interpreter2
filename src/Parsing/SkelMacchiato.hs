@@ -61,6 +61,7 @@ transType x = case x of
   AbsMacchiato.Str _ -> failure x
   AbsMacchiato.Bool _ -> failure x
   AbsMacchiato.Void _ -> failure x
+  AbsMacchiato.Fun _ type_ types -> failure x
 
 transExpr :: Show a => AbsMacchiato.Expr' a -> Result
 transExpr x = case x of

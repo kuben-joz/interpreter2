@@ -1,9 +1,7 @@
 
 
 int main() {
-    int bool = 0;
-    int continue = 0;
-    int break = 0;
+    int a = 5/0;
 
     return 0;
 }

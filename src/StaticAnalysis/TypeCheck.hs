@@ -48,14 +48,16 @@ builtInFuncsTypes =
   [ makeType'' (MFun (makeType'' MVoid) [makeType'' MInt]),
     makeType'' (MFun (makeType'' MVoid) [makeType'' MString]),
     makeType'' (MFun (makeType'' MInt) []),
-    makeType'' (MFun (makeType'' MString) [])
+    makeType'' (MFun (makeType'' MString) []),
+    makeType'' (MFun (makeType'' MVoid) [])
   ]
 
 builtInFuncsNames =
   [ "printInt",
     "printString",
     "readInt",
-    "readString"
+    "readString",
+    "error"
   ]
 
 startTypeCheck :: AType.Program -> Either StaticException (Maybe MFType)
@@ -97,6 +99,7 @@ instance Checkable AType.Arg where
 instance Checkable AType.Block where
   check t blk@(AType.FunBlock pos stmts) = do
     rets <- mapM (check t) stmts
+    traceM(show rets) -- todo remove
     return $ listToMaybe $ catMaybes rets
 
 instance Checkable AType.Stmt where
@@ -148,7 +151,7 @@ instance Checkable AType.Stmt where
     expr_temp <- check Nothing expr
     let expr_type = fromJust expr_temp
     assertType (makeType'' MBool) expr_type loc
-    push $ check t stmt
+    push $ check t stmt -- todo here check if always true
   check t (AType.CondElse loc expr stmt_if stmt_else) = do
     if_res <- check t (AType.Cond loc expr stmt_if)
     else_res <- push $ check t stmt_else

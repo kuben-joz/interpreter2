@@ -58,6 +58,8 @@ Bool.      Type ::= "boolean" ;
 
 Void.      Type ::= "void" ;
 
+internal   Fun. Type ::= Type "(" [Type] ")" ;
+
 separator  Type "," ;
 
 
@@ -75,6 +77,11 @@ EApp.      Expr6 ::= Ident "(" [Expr] ")" ;
 
 EString.   Expr6 ::= String ;
 
+-- if we want statements of the form `int a = - -5;` 
+-- Neg.       Expr5 ::= "-" Expr5 ;
+
+-- Not.       Expr5 ::= "!" Expr5 ;
+-- if we don't want statements of the form `int a = - -5;` 
 Neg.       Expr5 ::= "-" Expr6 ;
 
 Not.       Expr5 ::= "!" Expr6 ;
@@ -119,6 +126,8 @@ NE.        RelOp ::= "!=" ;
 
 
 -- comments ------------------------------------------------
+
+comment    "#" ;
 
 comment    "//" ;
 
