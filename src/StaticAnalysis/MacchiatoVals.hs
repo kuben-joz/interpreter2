@@ -160,7 +160,7 @@ instance Eq MVal where
   (==) (MInt i1) (MInt i2) = i1 == i2
   (==) (MBool b1) (MBool b2) = b1 == b2
   (==) (MString s1 _) (MString s2 _) = s1 == s2
-  (==) a b = trace (show a ++ " " ++ show b) undefined
+  (==) a b = undefined
 
 instance Integral MVal where
   quotRem (MInt i1) (MInt i2) = (MInt (quot i1 i2), MInt (rem i1 i2))

@@ -171,6 +171,15 @@ pushPop'' stack_el f = do
     Nothing -> throwError $ NoReturnCont $ calls (dat s2)
     _ -> return ret
 
+pushPop''' f = do
+  s <- get
+  let StackInfo {max_depth = md, calls = st, true_while = tw} = dat s
+  put $ SymTable (global_env s) (M.empty : current_env s) (state s) (StackInfo {max_depth = md, calls = st, true_while = True}) (loc s)
+  ret <- f
+  s2 <- get
+  put $ SymTable (global_env s2) (current_env s) (state s2) (dat s) (loc s)
+  return ret
+
 addParamVal :: (Id, Either Loc MResVal) -> ITraverser
 addParamVal (id, Left loc) = do
   addKeyLoc id loc

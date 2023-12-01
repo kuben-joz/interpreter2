@@ -28,9 +28,11 @@
 
 - Should I change grammar or change test for negatives of the form `int a = - -5;`
 - Same for loogical not
-- infinite loop ok?
+- infinite loop undef behaviour
+    - in additional tests we have infinite_while2 and a bad infinite loop which have different behaviours
 
 
 - multiplying to int larger than int_max is undefined behaviour for now
 - if else type mismathc even if false for a branch
 - should error be equivalent to ret
+- why is declaration in if bad in additional tests? not for semantic I think

@@ -98,7 +98,7 @@ instance Interpretable Stmt where
     return Nothing
   interpret (Ret _ expr) = do
     interpret expr
-    -- return $ Just MVoid todo check above works ok
+  -- return $ Just MVoid todo check above works ok
   interpret (RetNone _) = do
     return $ Just MVoid
   interpret (Cond _ expr stmt) = do
@@ -106,21 +106,31 @@ instance Interpretable Stmt where
     bool_m <- interpret expr
     if inf
       then do
-        case bool_m of 
-          Just (MBool False) -> return Nothing
-          _ -> interpret stmt 
+        case bool_m of
+          Just (MBool False) ->
+            return Nothing
+          _ -> interpret stmt
       else do
         case bool_m of
           Just (MBool True) -> interpret stmt
           _ -> return Nothing
   interpret (CondElse _ expr stmt_t stmt_f) = do
     inf <- isInfiniteWhile
+    bool_m <- interpret expr
     if inf
       then do
-        traceM("here")
-        return $ Just MVoid
+        case bool_m of
+          Just (MBool False) -> interpret stmt_f
+          Just (MBool True) -> interpret stmt_t
+          -- todo not sure why alternative doesnt work here
+          _ -> do
+            res1 <- interpret stmt_f
+            res2 <- interpret stmt_t
+            case (res1, res2) of
+              (Nothing, _) -> return res2
+              (_, Nothing) -> return res1
+              ((Just v1), (Just v2)) -> return $ Just MVoid
       else do
-        bool_m <- interpret expr
         case bool_m of
           Just (MBool False) -> interpret stmt_f
           Just (MBool True) -> interpret stmt_t
@@ -136,8 +146,7 @@ instance Interpretable Stmt where
     bool_m <- interpret expr
     case bool_m of
       Just (MBool True) -> do
-        getAndSetWhile True
-        interpret stmt
+        pushPop''' $ interpret stmt
       _ -> return Nothing
   interpret (SExp _ (EApp _ (Ident "error") _)) = do
     return $ Just MVoid
