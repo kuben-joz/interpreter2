@@ -9,3 +9,4 @@ src/Main
 *.code-workspace
 todo.md
 test/
+test.lat
