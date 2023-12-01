@@ -148,7 +148,7 @@ instance Interpretable Stmt where
               else return res2 -- todo this has changed
   interpret stmt'@(While loc expr stmt) = do
     -- infinite loop?
-    bool_m <- interpret expr
+    bool_m <- pushPop'''' $ interpret expr
     case bool_m of
       Just (MBool True) -> do
         res <- (pushPop''' $ interpret stmt)
@@ -174,10 +174,14 @@ instance Interpretable Stmt where
 
 instance Interpretable Expr where
   interpret (EVar _ (Ident id)) = do
-    res <- getVal id
-    case res of
-      Nothing -> return $ Just MVoid
-      _ -> return res
+    checkwhile <- isCheckingWhile
+    if checkwhile
+      then return $ Just MVoid
+      else do
+        res <- getVal id
+        case res of
+          Nothing -> return $ Just MVoid
+          _ -> return res
   --return $ Just MVoid -- todo this if we don't want to keep track of variables
   interpret (ELitInt pos val) = do
     intRangeGuard val pos
