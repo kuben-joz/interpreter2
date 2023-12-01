@@ -1,13 +1,13 @@
 /* Test arithmetic and comparisons. */
 
 int main() {
-    int x = 56;
+    int x = readInt();
     int y = -23;
     printInt(x+y);
     printInt(x-y);
     printInt(x*y);
     printInt(45/2);
-    printInt(78%3);
+    printInt(78%0);
     printBool(x-y > x+y);
     printBool(x/y <= x*y);
     printString("string"+" "+"concatenation");

@@ -1,3 +1,4 @@
+{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE RecordWildCards #-}
@@ -19,8 +20,9 @@ import StaticAnalysis.Err (StaticException (NoReturnCont))
 import qualified StaticAnalysis.Err as Err
 import StaticAnalysis.MacchiatoTypes (MType)
 import qualified StaticAnalysis.MacchiatoTypes as MTypes
-import StaticAnalysis.Params
 import StaticAnalysis.MacchiatoVals
+import StaticAnalysis.Params
+import StaticAnalysis.TypeCheck (nothingGuard)
 import System.IO
 import System.Posix.Internals (st_mtime)
 
@@ -87,39 +89,62 @@ instance Interpretable Stmt where
   interpret (BStmt _ block) = do
     pushPop' $ interpret block
   interpret (Decl _ t items) = do
+    let def_val = toDefValue t
+    mapM_ (addItem def_val) items
     return Nothing
   interpret (Ass _ (Ident id) expr) = do
-    --res <- interpret expr -- todo remove this to remove things like bounds chekcing on ints
+    val <- interpret expr -- todo remove this to remove things like bounds chekcing on ints
+    addOrModifyKeyVal id (fromJust val)
     return Nothing
   interpret (Ret _ expr) = do
     interpret expr
+    -- return $ Just MVoid todo check above works ok
   interpret (RetNone _) = do
     return $ Just MVoid
   interpret (Cond _ expr stmt) = do
+    inf <- isInfiniteWhile
     bool_m <- interpret expr
-    case bool_m of
-      Just (MBool True) -> interpret stmt
-      _ -> return Nothing
+    if inf
+      then do
+        case bool_m of 
+          Just (MBool False) -> return Nothing
+          _ -> interpret stmt 
+      else do
+        case bool_m of
+          Just (MBool True) -> interpret stmt
+          _ -> return Nothing
   interpret (CondElse _ expr stmt_t stmt_f) = do
-    bool_m <- interpret expr
-    case bool_m of
-      Just (MBool False) -> interpret stmt_f
-      Just (MBool True) -> interpret stmt_t
-      -- todo not sure why alternative doesnt work here
-      _ -> do
-        res1 <- interpret stmt_f
-        res2 <- interpret stmt_t
-        if isNothing res1
-          then return Nothing
-          else return res2 -- todo this has changed
+    inf <- isInfiniteWhile
+    if inf
+      then do
+        traceM("here")
+        return $ Just MVoid
+      else do
+        bool_m <- interpret expr
+        case bool_m of
+          Just (MBool False) -> interpret stmt_f
+          Just (MBool True) -> interpret stmt_t
+          -- todo not sure why alternative doesnt work here
+          _ -> do
+            res1 <- interpret stmt_f
+            res2 <- interpret stmt_t
+            if isNothing res1
+              then return Nothing
+              else return res2 -- todo this has changed
   interpret stmt'@(While _ expr stmt) = do
+    -- infinite loop?
     bool_m <- interpret expr
     case bool_m of
-      Just (MBool False) -> return Nothing
-      _ -> interpret stmt
-  interpret (SExp _ expr) = do
-    --res <- interpret expr -- todo remove to remove type checkign like int too big
-    return Nothing 
+      Just (MBool True) -> do
+        getAndSetWhile True
+        interpret stmt
+      _ -> return Nothing
+  interpret (SExp _ (EApp _ (Ident "error") _)) = do
+    return $ Just MVoid
+  interpret (SExp loc expr) = do
+    res <- interpret expr -- todo remove to remove type checkign like int too big
+    nothingGuard res (Err.InternalError loc)
+    return Nothing
   interpret (Incr _ (Ident id)) = do
     return Nothing
   interpret (Decr _ (Ident id)) = do
@@ -131,6 +156,7 @@ instance Interpretable Expr where
     case res of
       Nothing -> return $ Just MVoid
       _ -> return res
+  --return $ Just MVoid -- todo this if we don't want to keep track of variables
   interpret (ELitInt pos val) = do
     intRangeGuard val pos
     return $ Just (MInt (fromInteger val))
@@ -148,32 +174,32 @@ instance Interpretable Expr where
   interpret (EString _ s) = do return $ Just (MString s (length s))
   interpret (Neg _ expr) = do
     int_j <- interpret expr
-    return $ - int_j
+    return $ neg int_j
   interpret (Not _ expr) = do
     bool_j <- interpret expr
-    return $ (!) bool_j
+    return $ mynot bool_j
   interpret (EMul _ expl Times {} expr) = do
     l <- interpret expl
     r <- interpret expr
-    return $ l * r
+    return $ l `times` r
   interpret (EMul loc expl Div {} expr) = do
     l <- interpret expl
     r <- interpret expr
     zeroGuard r (Err.DivByZero loc)
-    return $ l `div` r
+    return $ l `mydiv` r
   interpret (EMul loc expl Mod {} expr) = do
     l <- interpret expl
     r <- interpret expr
     zeroGuard r (Err.ModZero loc)
-    return $ l `mod` r
+    return $ l `mymod` r
   interpret (EAdd _ expl Plus {} expr) = do
     l <- interpret expl
     r <- interpret expr
-    return $ l + r
+    return $ l `plus` r
   interpret (EAdd _ expl Minus {} expr) = do
     l <- interpret expl
     r <- interpret expr
-    return $ l - r
+    return $ l `minus` r
   interpret (ERel _ expl LTH {} expr) = do
     l <- interpret expl
     r <- interpret expr
@@ -199,7 +225,7 @@ instance Interpretable Expr where
   interpret (ERel pos expl (NE pos') expr) = do
     l <- interpret expl
     r <- interpret expr
-    return . (!) $ eq l r
+    return . mynot $ eq l r
   interpret (EAnd _ expl expr) = do
     l <- interpret expl
     r <- interpret expr
@@ -237,7 +263,7 @@ intRangeGuard val pos = do
       GT -> throwError $ Err.IntTooLarge pos val
       _ -> return Nothing
 
--- constructArray (acc:accs) _ =
+-- constructArray (acc:accs) _
 
 zeroGuard (Just (MInt 0)) err = throwError err
 zeroGuard _ _ = return Nothing
@@ -253,6 +279,15 @@ ltZeroGuard val err = do
   case compare val 0 of
     LT -> throwError err
     _ -> return Nothing
+
+notNothingGuard Nothing _ = do return ()
+notNothingGuard _ err = do throwError error
+
+addItem def_val (NoInit _ (Ident id)) = do
+  addKeyVal id def_val
+addItem _ (Init _ (Ident id) expr) = do
+  val <- interpret expr
+  addKeyVal id (fromJust val)
 
 {-
 class Convertable a where

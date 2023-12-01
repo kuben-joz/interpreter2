@@ -24,9 +24,9 @@ type Traverser a = StateT (ISymTable) (ExceptT StaticException IO) a
 
 type ITraverser = Traverser MResVal
 
-data StackInfo = StackInfo {max_depth :: Int, calls :: [(ErrLoc, String)]}
+data StackInfo = StackInfo {max_depth :: Int, calls :: [(ErrLoc, String)], true_while :: Bool}
 
-initProg = initState (StackInfo search_depth [])
+initProg = initState (StackInfo search_depth [] False)
 
 -- The MBool space is for the return value, bool is for wether we should continue
 --   put $ initState (RetState False False)
@@ -144,8 +144,8 @@ getEnv = do
 
 pushPop new_env inserts stack_el f = do
   s <- get
-  let StackInfo {max_depth = md, calls = st} = dat s
-  put $ SymTable (global_env s) (M.empty : new_env) (state s) (StackInfo {max_depth = md, calls = (stack_el : st)}) (loc s)
+  let StackInfo {max_depth = md, calls = st, true_while = tw} = dat s
+  put $ SymTable (global_env s) (M.empty : new_env) (state s) (StackInfo {max_depth = md, calls = (stack_el : st), true_while=tw}) (loc s)
   mapM_ addParamVal inserts
   ret <- f
   s2 <- get
@@ -162,8 +162,8 @@ pushPop' f = do
 
 pushPop'' stack_el f = do
   s <- get
-  let StackInfo {max_depth = md, calls = st} = dat s
-  put $ SymTable (global_env s) (M.empty : current_env s) (state s) (StackInfo {max_depth = md, calls = (stack_el : st)}) (loc s)
+  let StackInfo {max_depth = md, calls = st, true_while = tw} = dat s
+  put $ SymTable (global_env s) (M.empty : current_env s) (state s) (StackInfo {max_depth = md, calls = (stack_el : st), true_while = tw}) (loc s)
   ret <- f
   s2 <- get
   put $ SymTable (global_env s2) (current_env s) (state s2) (dat s) (loc s)
@@ -196,3 +196,17 @@ printEnv :: ITraverser
 printEnv = do
   envs <- gets getEnvs
   trace (show envs) (return Nothing)
+
+getAndSetWhile:: Bool -> Traverser Bool
+getAndSetWhile b = do
+    SymTable{..} <- get
+    let StackInfo{..} = dat
+    let ret = true_while
+    put $ SymTable {global_env=global_env, current_env=current_env, 
+    state=state, dat=StackInfo{max_depth=max_depth, calls=calls, true_while=b}, loc=loc}
+    return ret
+
+isInfiniteWhile :: Traverser Bool
+isInfiniteWhile = do
+  StackInfo{..} <- gets getData
+  return true_while

@@ -7,16 +7,19 @@ import sys
 
 def main():
     path = Path(sys.argv[1])
+    bad = len(sys.argv) > 2
     files = glob(str(path / "*.lat"))
     print(files)
-    print('')
+    print("")
     for fn in files:
         p = subprocess.run(
             ["./latc", fn],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
         )
-        if p.stderr.decode("ascii")[:6] != "ERROR\n":
+        if (bad and p.stderr.decode("ascii")[:6] != "ERROR\n") or (
+            not bad and p.stderr.decode("ascii")[:3] != "OK\n"
+        ):
             print(Path(fn).stem)
 
 

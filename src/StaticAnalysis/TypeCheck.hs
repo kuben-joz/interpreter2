@@ -17,15 +17,32 @@ import Mem.SymbolTable
 import qualified Mem.SymbolTable as ST
 import qualified Parsing.AbsMacchiato as AType
 import StaticAnalysis.Err as Err
-    ( StaticException(RefFuncAsVar, UseOfUndeclaredVar, InvalidKeyword,
-                      CallToUnderclaredFun, IncompatibleFunParams, VarAsFunc,
-                      IncompatibleTypeOpMul, IncompatibleTypeOpAdd,
-                      IncompatibleTypeOpRel, IncompatibleTypeOpAnd, IncompatibleTypeOpOr,
-                      VoidVar, AssToUndeclaredVar, BadRetType,
-                      IfElseTypeMistmatch, NoReturn,
-                      RefMismatch, IncompatibleTypeOp, ForbiddenId, NoMain,
-                      FuncNameCollision, TypeMismatch),
-      ErrLoc )
+  ( ErrLoc,
+    StaticException
+      ( AssToUndeclaredVar,
+        BadRetType,
+        CallToUnderclaredFun,
+        ForbiddenId,
+        FuncNameCollision,
+        IfElseTypeMistmatch,
+        IncompatibleFunParams,
+        IncompatibleTypeOp,
+        IncompatibleTypeOpAdd,
+        IncompatibleTypeOpAnd,
+        IncompatibleTypeOpMul,
+        IncompatibleTypeOpOr,
+        IncompatibleTypeOpRel,
+        InvalidKeyword,
+        NoMain,
+        NoReturn,
+        RefFuncAsVar,
+        RefMismatch,
+        TypeMismatch,
+        UseOfUndeclaredVar,
+        VarAsFunc,
+        VoidVar, VoidExplicitRet
+      ),
+  )
 import StaticAnalysis.MacchiatoTypes
 import StaticAnalysis.TCTraverser
 import Util.FieldExtractors
@@ -67,7 +84,7 @@ class Checkable e where
   check :: (Maybe MFType) -> e -> STraverser
 
 makeMain :: MFType
-makeMain = makeType'' (MFun (makeType'' MInt) [])
+makeMain = makeType (MFun (makeType'' MInt) []) 0 True
 
 -- catch exception here
 -- todo add built in functions to initenv
@@ -94,6 +111,7 @@ instance Checkable AType.Arg where
     checkIllegalId id' pos
     key_val <- addKeyVal id (toMFT arg)
     notNothingGuard key_val (Err.FuncNameCollision pos id)
+    voidGuard (toMFT t) (Err.VoidVar pos)
     return Nothing
 
 instance Checkable AType.Block where
@@ -136,6 +154,7 @@ instance Checkable AType.Stmt where
     assertType id_type expr_type loc
     return Nothing
   check (Just t) (AType.Ret pos expr) = do
+    voidGuard t (Err.VoidExplicitRet pos)
     expr_temp <- check Nothing expr
     let expr_type = fromJust expr_temp
     if expr_type == t
@@ -154,7 +173,6 @@ instance Checkable AType.Stmt where
   check t (AType.CondElse loc expr stmt_if stmt_else) = do
     if_res <- check t (AType.Cond loc expr stmt_if)
     else_res <- push $ check t stmt_else
-    traceM(show else_res)
     case (if_res, else_res) of
       (Nothing, Nothing) -> return Nothing
       (Just _, Nothing) -> return if_res
@@ -164,6 +182,7 @@ instance Checkable AType.Stmt where
     expr_temp <- check Nothing expr
     let expr_type = fromJust expr_temp
     assertType (makeType'' MBool) expr_type loc
+    push $ check t stmt
   check _ (AType.SExp loc expr) = do
     check Nothing expr
     return Nothing

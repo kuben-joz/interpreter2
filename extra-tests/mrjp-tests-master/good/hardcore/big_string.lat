@@ -9,10 +9,10 @@ int main() {
     int i = 0;
     while(i < 1024 * 100) {
         s1 = s1 + "a";
-        if(4 % 2 == 0)
+        if(i % 2 == 0)
             s2 = s2 + "a";
         i++;
     }
     printString("Done");
-    return i%2;
+    return 0;
 }

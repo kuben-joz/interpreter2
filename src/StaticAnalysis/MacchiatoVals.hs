@@ -41,33 +41,79 @@ instance HasLen MVal where
 -- todo change to process the values once we do simplicifaction of code
 lt :: MResVal -> MResVal -> MResVal
 lt (Just (MInt v1)) (Just (MInt v2)) = Just $ MBool $ v1 < v2
-lt a b = (<|>) a b
+lt a b = voidop a b
 
 lte :: MResVal -> MResVal -> MResVal
 lte (Just (MInt v1)) (Just (MInt v2)) = Just $ MBool $ v1 <= v2
-lte a b = (<|>) a b
+lte a b = voidop a b
 
 gt :: MResVal -> MResVal -> MResVal
 gt (Just (MInt v1)) (Just (MInt v2)) = Just $ MBool $ v1 > v2
-gt a b = (<|>) a b
+gt a b = voidop a b
 
 gte :: MResVal -> MResVal -> MResVal
 gte (Just (MInt v1)) (Just (MInt v2)) = Just $ MBool $ v1 >= v2
-gte a b = (<|>) a b
+gte a b = voidop a b
 
 myand :: MResVal -> MResVal -> MResVal
 myand (Just (MBool v1)) (Just (MBool v2)) = Just $ MBool $ v1 && v2
-myand a b = (<|>) a b
+myand a b = voidop a b
 
 myor :: MResVal -> MResVal -> MResVal
 myor (Just (MBool v1)) (Just (MBool v2)) = Just $ MBool $ v1 || v2
-myor a b = (<|>) a b
+myor a b = voidop a b
 
 eq :: MResVal -> MResVal -> MResVal
+eq Nothing _ = undefined
+eq _ Nothing = undefined
 eq (Just MVoid) _ = Just MVoid
 eq _ (Just MVoid) = Just MVoid
 eq (Just v1) (Just v2) = Just $ MBool $ v1 == v2
-eq a b = (<|>) a b
+
+mynot :: MResVal -> MResVal
+mynot (Just MVoid) = Just MVoid
+mynot (Just v) = Just $ (!) v
+mynot Nothing = undefined
+
+plus :: MResVal -> MResVal -> MResVal
+plus Nothing _ = undefined
+plus _ Nothing = undefined
+plus (Just MVoid) _ = Just MVoid
+plus _ (Just MVoid) = Just MVoid
+plus (Just v1) (Just v2) = Just $ v1 + v2
+
+minus :: MResVal -> MResVal -> MResVal
+minus Nothing _ = undefined
+minus _ Nothing = undefined
+minus (Just MVoid) _ = Just MVoid
+minus _ (Just MVoid) = Just MVoid
+minus (Just v1) (Just v2) = Just $ v1 - v2
+
+times :: MResVal -> MResVal -> MResVal
+times Nothing _ = undefined
+times _ Nothing = undefined
+times (Just MVoid) _ = (Just MVoid)
+times _ (Just MVoid) = (Just MVoid)
+times (Just v1) (Just v2) = Just $ v1 * v2
+
+mydiv :: MResVal -> MResVal -> MResVal
+mydiv Nothing _ = undefined
+mydiv _ Nothing = undefined
+mydiv (Just MVoid) _ = (Just MVoid)
+mydiv _ (Just MVoid) = (Just MVoid)
+mydiv (Just v1) (Just v2) = Just $ v1 `div` v2
+
+mymod :: MResVal -> MResVal -> MResVal
+mymod Nothing _ = undefined
+mymod _ Nothing = undefined
+mymod (Just MVoid) _ = (Just MVoid)
+mymod _ (Just MVoid) = (Just MVoid)
+mymod (Just v1) (Just v2) = Just $ v1 `mod` v2
+
+neg :: MResVal -> MResVal
+neg (Just MVoid) = Just MVoid
+neg (Just v) = Just $ negate v
+neg Nothing = undefined
 
 class Negatable a where
   (!) :: a -> a
@@ -75,25 +121,15 @@ class Negatable a where
 instance Negatable MVal where
   (!) :: MVal -> MVal
   (!) (MBool b) = MBool $ not b
-  (!) (MVoid) = MVoid
   (!) _ = undefined
-
-instance Negatable MResVal where
-  (!) :: MResVal -> MResVal
-  (!) (Just v) = Just $ (!) v
-  (!) Nothing = Nothing
 
 -- (+), (*), abs, signum, fromInteger, (negate | (-))
 instance Num MVal where
   (+) (MString s1 l1) (MString s2 l2) = MString (s1 ++ s2) (l1 + l2)
   (+) (MInt i1) (MInt i2) = MInt $ i1 + i2
-  (+) MVoid _ = MVoid
-  (+) _ MVoid = MVoid
   (+) _ _ = undefined
 
   (*) (MInt i1) (MInt i2) = MInt $ i1 * i2
-  (*) MVoid _ = MVoid
-  (*) _ MVoid = MVoid
   (*) _ _ = undefined
   abs (MInt i) = MInt $ abs i
   abs _ = undefined
@@ -102,19 +138,6 @@ instance Num MVal where
   fromInteger i = MInt $ fromInteger i
   negate (MInt i) = MInt $ - i
   negate _ = undefined
-
-instance Num MResVal where
-  (+) (Just v1) (Just v2) = Just $ v1 + v2
-  (+) _ _ = Nothing
-  (*) (Just v1) (Just v2) = Just $ v1 * v2
-  (*) _ _ = Nothing
-  abs (Just v) = Just $ abs v
-  abs Nothing = Nothing
-  signum (Just v) = Just $ signum v
-  signum Nothing = Nothing
-  fromInteger i = Just $ MInt $ fromInteger i
-  negate (Just v) = Just $ negate v
-  negate Nothing = Nothing
 
 instance Enum MVal where
   toEnum = MInt
@@ -129,9 +152,6 @@ instance Enum MResVal where
 instance Real MVal where
   toRational _ = undefined
 
-instance Real MResVal where
-  toRational _ = undefined
-
 instance Ord MVal where
   (<=) (MInt i1) (MInt i2) = i1 <= i2
   (<=) _ _ = undefined
@@ -140,19 +160,13 @@ instance Eq MVal where
   (==) (MInt i1) (MInt i2) = i1 == i2
   (==) (MBool b1) (MBool b2) = b1 == b2
   (==) (MString s1 _) (MString s2 _) = s1 == s2
-  (==) a b = trace ((show a) ++ (show b)) (undefined)
+  (==) a b = trace (show a ++ " " ++ show b) undefined
 
 instance Integral MVal where
   quotRem (MInt i1) (MInt i2) = (MInt (quot i1 i2), MInt (rem i1 i2))
-  quotRem a b = trace((show a) ++ (show b) ) return a+b
+  quotRem _ _ = undefined
   toInteger (MInt i) = toInteger i
   toInteger _ = undefined
-
-instance Integral MResVal where
-  quotRem (Just v1) (Just v2) = (Just (quot v1 v2), Just (rem v1 v2))
-  quotRem _ _ = (Nothing, Nothing)
-  toInteger (Just v) = toInteger v
-  toInteger Nothing = undefined
 
 fromMVal (MBool b) = b
 fromMVal _ = undefined
@@ -162,3 +176,10 @@ toDefValue Int {} = MInt 0
 toDefValue Str {} = MString "" 0
 toDefValue Bool {} = MBool False
 toDefValue _ = undefined
+
+voidop :: MResVal -> MResVal -> MResVal
+voidop Nothing _ = undefined
+voidop _ Nothing = undefined
+voidop (Just MVoid) _ = Just MVoid
+voidop _ (Just MVoid) = Just MVoid
+voidop _ _ = undefined

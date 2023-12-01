@@ -16,6 +16,11 @@
 - while true
 - add interpret statement even if result not used for expression type checking
 - return true in core003.lat else statement
+- mod 0 inside function call as in core012
+- min and max bound
+- store values of variables
+- should I keep variables propagation?
+- bad25
 
 # change
 
@@ -24,8 +29,8 @@
 - Should I change grammar or change test for negatives of the form `int a = - -5;`
 - Same for loogical not
 - infinite loop ok?
-- void argument in function
-- bad25
+
 
 - multiplying to int larger than int_max is undefined behaviour for now
 - if else type mismathc even if false for a branch
+- should error be equivalent to ret

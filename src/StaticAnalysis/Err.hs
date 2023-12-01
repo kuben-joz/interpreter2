@@ -38,17 +38,21 @@ data StaticException
   | IncompPrintParam ErrLoc MFType
   | -- expected actual
     BadRetType ErrLoc MFType MFType
+  | -- expected actual
+    VoidExplicitRet ErrLoc
   | RefFuncAsVar ErrLoc String
   | ForbiddenId ErrLoc String
   | IfElseTypeMistmatch ErrLoc MFType MFType
   | VarAsFunc ErrLoc String
   | VoidVar ErrLoc
+  | VoidArg ErrLoc
   | DivByZero ErrLoc
   | ModZero ErrLoc
-  | -- add minBound
+  | -- todo add minBound
     IntTooSmall ErrLoc Integer
-  | -- add maxBound in print
+  | -- todo add maxBound in print
     IntTooLarge ErrLoc Integer
+  | InternalError ErrLoc
 
 instance Show StaticException where
   show (VarRedef loc id) = (errMsgStart loc) ++ "Variable " ++ show id ++ " redefinition"
@@ -73,6 +77,7 @@ instance Show StaticException where
   show (CallToUnderclaredFun loc name) = (errMsgStart loc) ++ "Call to undeclared function " ++ show name
   show (IncompatibleFunParams loc f_name f_type params) = (errMsgStart loc) ++ " Incompatible function params for function " ++ show f_name ++ " expected " ++ show f_type ++ " but found " ++ show params
   show (BadRetType loc expected actual) = (errMsgStart loc) ++ "Bad return type from function, expected " ++ show expected ++ " but got " ++ show actual
+  show (VoidExplicitRet loc) = (errMsgStart loc) ++ "Cannot explicitly return in a void function"
   show (IncompPrintParam loc t) = (errMsgStart loc) ++ "Can't print expressions of type: " ++ show t
   show (RefFuncAsVar loc id) = (errMsgStart loc) ++ "Use of function identifier " ++ show id ++ " as a variable"
   show (ForbiddenId loc id) = (errMsgStart loc) ++ "Use of forbidden identifier name, " ++ show id
@@ -83,6 +88,7 @@ instance Show StaticException where
       ++ show t_else
   show (VarAsFunc loc id) = (errMsgStart loc) ++ "Call to " ++ show id ++ " which isn't a function"
   show (VoidVar loc) = (errMsgStart loc) ++ "Can't have variables of type void"
+  show (VoidArg loc) = (errMsgStart loc) ++ "Can't have arguments of type void"
   show (DivByZero loc) = (errMsgStart loc) ++ "Division by zero"
   show (ModZero loc) = (errMsgStart loc) ++ "Modulo zero"
   show (IntTooSmall loc i) =
@@ -94,6 +100,7 @@ instance Show StaticException where
       ++ " is larger than Int's max of "
       ++ show (maxBound :: Int)
   show (NoReturnCont err_stack) = (errMsgStart Nothing) ++ " No return statements on nonvoid control path: " ++ showStack err_stack
+  show (InternalError loc) = (errMsgStart loc) ++ "Internal error occured"
 
 showStack ((Just (line, col), fn_name) : tl) = "\nAt function " ++ fn_name ++ " line " ++ show line ++ " collumn " ++ show col ++ showStack tl
 showStack _ = "\n"

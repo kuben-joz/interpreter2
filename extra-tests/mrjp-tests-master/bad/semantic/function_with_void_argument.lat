@@ -2,7 +2,8 @@
 // void parameter type
 
 int main() {
-   return 0;
+   int i = readInt();
+   return i;
 }
 
 int f(void x) {
