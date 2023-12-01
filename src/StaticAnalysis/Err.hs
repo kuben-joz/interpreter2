@@ -10,8 +10,8 @@ import StaticAnalysis.MacchiatoTypes
 type ErrLoc = BNFC'Position
 
 errMsgStart :: ErrLoc -> String
-errMsgStart (Just (line, col)) = "ERROR\nException caught on line " ++ show line ++ ", collumn " ++ show col ++ ": "
-errMsgStart Nothing = "ERROR\nException caught: "
+errMsgStart (Just (line, col)) = "Exception caught on line " ++ show line ++ ", collumn " ++ show col ++ ": "
+errMsgStart Nothing = "Exception caught: "
 
 data StaticException
   = UnknownVar ErrLoc String

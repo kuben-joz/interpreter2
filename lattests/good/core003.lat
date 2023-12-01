@@ -1,12 +1,12 @@
 // Testing the return checker
-/*
+
 int f (int i) {
    if (true)
      return 0;
    else
      {}
 }
-*/
+
 int g () {
   if (false) 
       {}
@@ -14,10 +14,10 @@ int g () {
       return 0;
 }
 
-//void p () {}
+void p () {}
 
 
 int main() {
-  //p();
+  p();
   return 0;
 }

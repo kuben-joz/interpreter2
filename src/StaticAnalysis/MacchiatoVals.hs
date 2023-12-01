@@ -144,7 +144,7 @@ instance Eq MVal where
 
 instance Integral MVal where
   quotRem (MInt i1) (MInt i2) = (MInt (quot i1 i2), MInt (rem i1 i2))
-  quotRem _ _ = undefined
+  quotRem a b = trace((show a) ++ (show b) ) return a+b
   toInteger (MInt i) = toInteger i
   toInteger _ = undefined
 

@@ -38,6 +38,7 @@ library
       StaticAnalysis.Err
       StaticAnalysis.MacchiatoTypes
       StaticAnalysis.MacchiatoVals
+      StaticAnalysis.Params
       StaticAnalysis.TCTraverser
       StaticAnalysis.TypeCheck
       Util.FieldExtractors

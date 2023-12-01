@@ -19,6 +19,7 @@ import StaticAnalysis.Err (StaticException (NoReturnCont))
 import qualified StaticAnalysis.Err as Err
 import StaticAnalysis.MacchiatoTypes (MType)
 import qualified StaticAnalysis.MacchiatoTypes as MTypes
+import StaticAnalysis.Params
 import StaticAnalysis.MacchiatoVals
 import System.IO
 import System.Posix.Internals (st_mtime)
@@ -79,7 +80,7 @@ nestedInterpret (stmt : stmts) = do
   case res of
     Nothing -> interpretStatements stmts
     _ -> return res
-nestedInterpret [] = do return $ Just MVoid -- todo this changed
+nestedInterpret [] = do return Nothing
 
 instance Interpretable Stmt where
   interpret Empty {} = return Nothing
@@ -88,6 +89,7 @@ instance Interpretable Stmt where
   interpret (Decl _ t items) = do
     return Nothing
   interpret (Ass _ (Ident id) expr) = do
+    --res <- interpret expr -- todo remove this to remove things like bounds chekcing on ints
     return Nothing
   interpret (Ret _ expr) = do
     interpret expr
@@ -96,8 +98,8 @@ instance Interpretable Stmt where
   interpret (Cond _ expr stmt) = do
     bool_m <- interpret expr
     case bool_m of
-      Just (MBool False) -> return Nothing
-      _ -> interpret stmt
+      Just (MBool True) -> interpret stmt
+      _ -> return Nothing
   interpret (CondElse _ expr stmt_t stmt_f) = do
     bool_m <- interpret expr
     case bool_m of
@@ -108,15 +110,16 @@ instance Interpretable Stmt where
         res1 <- interpret stmt_f
         res2 <- interpret stmt_t
         if isNothing res1
-          then return res2
-          else return res1
+          then return Nothing
+          else return res2 -- todo this has changed
   interpret stmt'@(While _ expr stmt) = do
     bool_m <- interpret expr
     case bool_m of
       Just (MBool False) -> return Nothing
       _ -> interpret stmt
   interpret (SExp _ expr) = do
-    return Nothing
+    --res <- interpret expr -- todo remove to remove type checkign like int too big
+    return Nothing 
   interpret (Incr _ (Ident id)) = do
     return Nothing
   interpret (Decr _ (Ident id)) = do
@@ -228,9 +231,9 @@ getArg (ArgVal _ _ (Ident id)) = do
 
 intRangeGuard :: MonadError StaticException m => Integer -> Err.ErrLoc -> m (Maybe a)
 intRangeGuard val pos = do
-  case compare val (toInteger (minBound :: Int)) of
+  case compare val int_min of
     LT -> throwError $ Err.IntTooSmall pos val
-    _ -> case compare val (toInteger (maxBound :: Int)) of
+    _ -> case compare val int_max of
       GT -> throwError $ Err.IntTooLarge pos val
       _ -> return Nothing
 

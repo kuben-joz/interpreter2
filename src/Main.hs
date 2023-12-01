@@ -34,13 +34,13 @@ check''' s = do
 
 check'' prog = do
   case startTypeCheck prog of
-    Left ex -> print ex
+    Left ex -> printErr ex
     Right _ -> check' prog
 
 check' prog = do
   res_val <- startInterpret prog
   case res_val of
-    Left ex -> print ex
+    Left ex -> printErr ex
     Right _ -> printTree' prog
 
 --return (liftIO)
@@ -52,5 +52,5 @@ printTree' prog = do
 
 printErr err_msg = do
   hPutStrLn stderr "ERROR"
-  hPutStrLn stderr err_msg
+  hPrint stderr err_msg
   exitFailure

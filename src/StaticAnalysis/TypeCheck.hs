@@ -35,7 +35,7 @@ forbiddenIds =
     "return",
     "if",
     "else",
-    "new",
+    -- "new", only after adding arrays
     "int",
     "string",
     "boolean",
@@ -99,7 +99,6 @@ instance Checkable AType.Arg where
 instance Checkable AType.Block where
   check t blk@(AType.FunBlock pos stmts) = do
     rets <- mapM (check t) stmts
-    traceM(show rets) -- todo remove
     return $ listToMaybe $ catMaybes rets
 
 instance Checkable AType.Stmt where
@@ -155,6 +154,7 @@ instance Checkable AType.Stmt where
   check t (AType.CondElse loc expr stmt_if stmt_else) = do
     if_res <- check t (AType.Cond loc expr stmt_if)
     else_res <- push $ check t stmt_else
+    traceM(show else_res)
     case (if_res, else_res) of
       (Nothing, Nothing) -> return Nothing
       (Just _, Nothing) -> return if_res

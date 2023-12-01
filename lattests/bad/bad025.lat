@@ -1,14 +1,13 @@
 int main() {
-   return f1(3);
+   return f(3); 
 }
 
-/*
 int f(int x) {
     return f1(x);
 }
-*/
+
 int f1(int y) {
-   //if(y > 0) {
-   //   return 8;
-   //}
+   if(y < 0) {
+      return 8;
+   }
 }

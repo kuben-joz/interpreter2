@@ -13,6 +13,7 @@ import Mem.SymbolTable
 import Parsing.AbsMacchiato
 import StaticAnalysis.Err
 import StaticAnalysis.MacchiatoVals
+import StaticAnalysis.Params
 import System.IO
 
 data ReturnState = RetState {cont :: Bool, brk :: Bool}
@@ -22,9 +23,6 @@ type ISymTable = SymTable MVal StackInfo
 type Traverser a = StateT (ISymTable) (ExceptT StaticException IO) a
 
 type ITraverser = Traverser MResVal
-
-search_depth :: Int
-search_depth = 8
 
 data StackInfo = StackInfo {max_depth :: Int, calls :: [(ErrLoc, String)]}
 
