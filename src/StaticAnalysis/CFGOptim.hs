@@ -92,9 +92,10 @@ instance Interpretable Stmt where
     let def_val = toDefValue t
     mapM_ (addItem def_val) items
     return Nothing
-  interpret (Ass _ (Ident id) expr) = do
-    val <- interpret expr -- todo remove this to remove things like bounds chekcing on ints
-    addOrModifyKeyVal id (fromJust val)
+  interpret (Ass loc (Ident id) expr) = do
+    res <- interpret expr -- todo remove this to remove things like bounds chekcing on ints
+    nothingGuard res (Err.InternalError loc)
+    addOrModifyKeyVal id (fromJust res)
     return Nothing
   interpret (Ret _ expr) = do
     interpret expr
@@ -148,7 +149,7 @@ instance Interpretable Stmt where
       Just (MBool True) -> do
         pushPop''' $ interpret stmt
       _ -> return Nothing
-  interpret (SExp _ (EApp _ (Ident "error") _)) = do
+  interpret (SExp _ (EApp _ (Ident "error") _)) = do -- this is special because it always results in program ending
     return $ Just MVoid
   interpret (SExp loc expr) = do
     res <- interpret expr -- todo remove to remove type checkign like int too big
@@ -171,7 +172,21 @@ instance Interpretable Expr where
     return $ Just (MInt (fromInteger val))
   interpret ELitTrue {} = do return $ Just (MBool True)
   interpret ELitFalse {} = do return $ Just (MBool False)
+  interpret (EApp loc (Ident "printInt") exprs) = do
+    res <- mapM interpret exprs -- todo remove to remove type checkign like int too big
+    mapM_  (`nothingGuard` Err.InternalError loc) res
+    return $ Just MVoid
+  interpret (EApp loc (Ident "printString") exprs) = do
+    res <- mapM interpret exprs -- todo remove to remove type checkign like int too big
+    mapM_  (`nothingGuard` Err.InternalError loc) res
+    return $ Just MVoid
+  interpret (EApp loc (Ident "readInt") exprs) = do
+    return $ Just MVoid
+  interpret (EApp loc (Ident "readString") exprs) = do
+    return $ Just MVoid
   interpret (EApp loc (Ident id) exprs) = do
+    res <- mapM interpret exprs -- todo remove to remove type checkign like int too big
+    mapM_  (`nothingGuard` Err.InternalError loc) res
     StackInfo {..} <- gets getData
     if max_depth == length calls
       then return $ Just MVoid
@@ -251,6 +266,9 @@ getInsert ((MARef id), expr) = do
 getInsert ((MAVal id), expr) = do
   val_m <- interpret expr
   return $ (id, Right val_m)
+
+
+
 
 tryFindLoc :: Expr -> Traverser (Maybe Loc)
 tryFindLoc _ = return Nothing

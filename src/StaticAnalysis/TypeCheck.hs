@@ -46,6 +46,7 @@ import StaticAnalysis.Err as Err
 import StaticAnalysis.MacchiatoTypes
 import StaticAnalysis.TCTraverser
 import Util.FieldExtractors
+import StaticAnalysis.Params
 
 forbiddenIds =
   [ "while",
@@ -61,6 +62,14 @@ forbiddenIds =
     "false"
   ]
 
+builtInFuncsNames =
+  [ "printInt",
+    "printString",
+    "readInt",
+    "readString",
+    "error"
+  ]
+
 builtInFuncsTypes =
   [ makeType'' (MFun (makeType'' MVoid) [makeType'' MInt]),
     makeType'' (MFun (makeType'' MVoid) [makeType'' MString]),
@@ -69,13 +78,7 @@ builtInFuncsTypes =
     makeType'' (MFun (makeType'' MVoid) [])
   ]
 
-builtInFuncsNames =
-  [ "printInt",
-    "printString",
-    "readInt",
-    "readString",
-    "error"
-  ]
+
 
 startTypeCheck :: AType.Program -> Either StaticException (Maybe MFType)
 startTypeCheck prog = runExcept $ evalStateT (check Nothing prog) (initState ())

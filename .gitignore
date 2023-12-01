@@ -5,3 +5,7 @@
 dist-newstyle/
 latc
 src/Main
+.vscode/
+*.code-workspace
+todo.md
+test/
