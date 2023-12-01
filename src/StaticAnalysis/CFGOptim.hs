@@ -110,7 +110,11 @@ instance Interpretable Stmt where
         case bool_m of
           Just (MBool False) ->
             return Nothing
-          _ -> interpret stmt
+          _ -> do
+            res <- interpret stmt
+            if isNothing res
+              then return Nothing
+              else return $ Just MVoid
       else do
         case bool_m of
           Just (MBool True) -> interpret stmt
@@ -142,15 +146,23 @@ instance Interpretable Stmt where
             if isNothing res1
               then return Nothing
               else return res2 -- todo this has changed
-  interpret stmt'@(While _ expr stmt) = do
+  interpret stmt'@(While loc expr stmt) = do
     -- infinite loop?
     bool_m <- interpret expr
     case bool_m of
       Just (MBool True) -> do
-        pushPop''' $ interpret stmt
+        res <- (pushPop''' $ interpret stmt)
+        nothingGuard res (Err.NoReturnInf loc)
+        return res
       _ -> return Nothing
-  interpret (SExp _ (EApp _ (Ident "error") _)) = do -- this is special because it always results in program ending
+  interpret (SExp _ (EApp _ (Ident "error") _)) = do
+    -- this is special because it always results in program ending
     return $ Just MVoid
+  interpret (SExp loc (EApp _ (Ident _) exprs)) = do
+    -- this is special because it always results in program ending
+    res <- mapM interpret exprs -- todo remove to remove type checkign like int too big
+    mapM_ (`nothingGuard` Err.InternalError loc) res
+    return Nothing
   interpret (SExp loc expr) = do
     res <- interpret expr -- todo remove to remove type checkign like int too big
     nothingGuard res (Err.InternalError loc)
@@ -173,12 +185,14 @@ instance Interpretable Expr where
   interpret ELitTrue {} = do return $ Just (MBool True)
   interpret ELitFalse {} = do return $ Just (MBool False)
   interpret (EApp loc (Ident "printInt") exprs) = do
+    -- I think this is unreachable because of the case for Sexp Sapp above
     res <- mapM interpret exprs -- todo remove to remove type checkign like int too big
-    mapM_  (`nothingGuard` Err.InternalError loc) res
+    mapM_ (`nothingGuard` Err.InternalError loc) res
     return $ Just MVoid
   interpret (EApp loc (Ident "printString") exprs) = do
+    -- I think this is unreachable because of the case for Sexp Sapp above
     res <- mapM interpret exprs -- todo remove to remove type checkign like int too big
-    mapM_  (`nothingGuard` Err.InternalError loc) res
+    mapM_ (`nothingGuard` Err.InternalError loc) res
     return $ Just MVoid
   interpret (EApp loc (Ident "readInt") exprs) = do
     return $ Just MVoid
@@ -186,7 +200,7 @@ instance Interpretable Expr where
     return $ Just MVoid
   interpret (EApp loc (Ident id) exprs) = do
     res <- mapM interpret exprs -- todo remove to remove type checkign like int too big
-    mapM_  (`nothingGuard` Err.InternalError loc) res
+    mapM_ (`nothingGuard` Err.InternalError loc) res
     StackInfo {..} <- gets getData
     if max_depth == length calls
       then return $ Just MVoid
@@ -266,9 +280,6 @@ getInsert ((MARef id), expr) = do
 getInsert ((MAVal id), expr) = do
   val_m <- interpret expr
   return $ (id, Right val_m)
-
-
-
 
 tryFindLoc :: Expr -> Traverser (Maybe Loc)
 tryFindLoc _ = return Nothing

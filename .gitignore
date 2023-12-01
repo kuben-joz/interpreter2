@@ -8,5 +8,5 @@ src/Main
 .vscode/
 *.code-workspace
 todo.md
-test/
+tests/
 test.lat

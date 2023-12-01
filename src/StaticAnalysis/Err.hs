@@ -30,6 +30,7 @@ data StaticException
   | FuncNameCollision ErrLoc String
   | NoReturn ErrLoc String
   | NoReturnCont [(ErrLoc, String)]
+  | NoReturnInf ErrLoc
   | AssToUndeclaredVar ErrLoc String
   | UseOfUndeclaredVar ErrLoc String
   | CallToUnderclaredFun ErrLoc String
@@ -72,6 +73,8 @@ instance Show StaticException where
   show (InvalidKeyword loc) = (errMsgStart loc) ++ "Invalid keyword"
   show (FuncNameCollision loc name) = (errMsgStart loc) ++ " Function name collison for " ++ show name
   show (NoReturn loc name) = (errMsgStart loc) ++ " No return in function " ++ show name
+  show (NoReturnCont err_stack) = (errMsgStart Nothing) ++ " No return statements on nonvoid control path: " ++ showStack err_stack
+  show (NoReturnInf loc) = (errMsgStart loc) ++ " No possible return form infinite loop "
   show (AssToUndeclaredVar loc id) = (errMsgStart loc) ++ "Assingment to undeclared variable " ++ show id
   show (UseOfUndeclaredVar loc id) = (errMsgStart loc) ++ "Use of undeclared variable " ++ show id ++ " in expression"
   show (CallToUnderclaredFun loc name) = (errMsgStart loc) ++ "Call to undeclared function " ++ show name
@@ -99,7 +102,6 @@ instance Show StaticException where
     (errMsgStart loc) ++ "Value of " ++ show i
       ++ " is larger than Int's max of "
       ++ show (maxBound :: Int)
-  show (NoReturnCont err_stack) = (errMsgStart Nothing) ++ " No return statements on nonvoid control path: " ++ showStack err_stack
   show (InternalError loc) = (errMsgStart loc) ++ "Internal error occured"
 
 showStack ((Just (line, col), fn_name) : tl) = "\nAt function " ++ fn_name ++ " line " ++ show line ++ " collumn " ++ show col ++ showStack tl
