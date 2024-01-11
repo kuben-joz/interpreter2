@@ -139,13 +139,12 @@ instance Interpretable Stmt where
         case bool_m of
           Just (MBool False) -> interpret stmt_f
           Just (MBool True) -> interpret stmt_t
-          -- todo not sure why alternative doesnt work here
           _ -> do
             res1 <- interpret stmt_f
             res2 <- interpret stmt_t
             if isNothing res1
               then return Nothing
-              else return res2 -- todo this has changed
+              else return res2
   interpret stmt'@(While loc expr stmt) = do
     -- infinite loop?
     bool_m <- pushPop'''' $ interpret expr
