@@ -10,3 +10,6 @@ src/Main
 todo.md
 tests/
 test.lat
+scratch*
+test
+*.lat

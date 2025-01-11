@@ -48,7 +48,7 @@ check' prog = do
 printTree' prog = do
   hPutStrLn stderr "OK"
   print prog
-  putStrLn $ printTree prog
+  --putStrLn $ printTree prog
 
 printErr err_msg = do
   hPutStrLn stderr "ERROR"
