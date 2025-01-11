@@ -1,6 +1,7 @@
 #include <cassert>
 #include <cctype>
 #include <cstring>
+#include <iterator>
 #include <memory>
 #include <sstream>
 #include <stdexcept>
@@ -8,7 +9,6 @@
 #include <utility>
 #include <vector>
 
-#include "skel.cpp"
 #include "skel.h"
 
 namespace treeparse {
@@ -286,12 +286,10 @@ std::vector<std::unique_ptr<ast::Stmt>> build_stmt(std::stringstream &ss) {
       res.emplace_back(std::make_unique<ast::WhileStmt>(
           std::move(expr), std::move(if_stmt), meta));
     }
-  }
-  else if(s == "SExp"){
+  } else if (s == "SExp") {
     std::unique_ptr<ast::Expr> expr = build_expr(ss);
     res.emplace_back(std::make_unique<ast::ExprStmt>(std::move(expr), meta));
-  }
-  else {
+  } else {
     throw std::runtime_error("unkown statement");
   }
   return res;
@@ -307,7 +305,9 @@ std::vector<std::unique_ptr<ast::Stmt>> build_block(std::stringstream &ss) {
   ss >> delim;
   assert(delim == '[');
   while (delim != ']') {
-    res.emplace_back(build_stmt(ss));
+    std::vector<std::unique_ptr<ast::Stmt>> temp_stmts = build_stmt(ss);
+    res.insert(res.end(), std::make_move_iterator(temp_stmts.begin()),
+               std::make_move_iterator(temp_stmts.end()));
     ss >> delim;
   }
   char c;
@@ -327,7 +327,7 @@ std::unique_ptr<ast::FnDef> build_func(std::stringstream &ss) {
   char delim;
   ss >> delim;
   assert(delim == '[');
-  while(delim != ']') {
+  while (delim != ']') {
     ss >> s;
     assert(s == "ArgVal");
     build_meta(ss);
@@ -336,7 +336,8 @@ std::unique_ptr<ast::FnDef> build_func(std::stringstream &ss) {
     params.emplace_back(param_type, param_ident);
   }
   std::vector<std::unique_ptr<ast::Stmt>> stmts = build_block(ss);
-  return std::make_unique<ast::FnDef>(ret_type, ident, std::move(params), std::move(stmts), meta);
+  return std::make_unique<ast::FnDef>(ret_type, ident, std::move(params),
+                                      std::move(stmts), meta);
 }
 
 std::vector<std::unique_ptr<ast::FnDef>> build_funcs(std::stringstream &ss) {
@@ -358,7 +359,7 @@ std::unique_ptr<ast::Program> build_prog(std::string s_in) {
   assert(s == "ProgramS");
   ast::metadata meta = build_meta(ss);
   std::vector<std::unique_ptr<ast::FnDef>> funcs = build_funcs(ss);
-  return std::make_unique<ast::Program>(funcs, meta);
+  return std::make_unique<ast::Program>(std::move(funcs), meta);
 }
 
 } // namespace treeparse

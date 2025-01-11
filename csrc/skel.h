@@ -24,6 +24,7 @@ struct metadata {
 struct param {
   Type type;
   std::string ident;
+  param(Type type, const std::string &ident) : type(type), ident(ident) {}
 };
 
 class AST;
@@ -67,7 +68,6 @@ class Program : public AST {
 public:
   std::vector<std::unique_ptr<FnDef>> fn_defs;
   Program(std::vector<std::unique_ptr<FnDef>> fn_defs, metadata meta);
-  ;
 };
 
 class FnDef : public AST {

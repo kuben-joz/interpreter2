@@ -1,5 +1,4 @@
 #include <memory>
-#include <sstream>
 #include <vector>
 
 #include "skel.h"
