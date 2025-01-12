@@ -1,6 +1,7 @@
 #include <cassert>
 #include <cctype>
 #include <cstring>
+#include <iostream>
 #include <iterator>
 #include <memory>
 #include <sstream>
@@ -53,7 +54,7 @@ std::string read_string(std::stringstream &ss_in) {
     }
     c = ss_in.get();
   }
-  return ss_in.str();
+  return ss_out.str();
 }
 
 ast::Type get_type(std::stringstream &ss) {
@@ -63,6 +64,8 @@ ast::Type get_type(std::stringstream &ss) {
   std::string s;
   ss >> s;
   build_meta(ss);
+  ss >> c;
+  assert(c == ')');
   if (s == "Int") {
     return ast::INT;
   } else if (s == "Str") {
@@ -183,6 +186,9 @@ std::unique_ptr<ast::Expr> build_expr(std::stringstream &ss) {
     char delim;
     ss >> delim;
     assert(delim == '[');
+    delim = ss.peek();
+    if (delim == ']')
+      ss.get();
     while (delim != ']') {
       args.emplace_back(build_expr(ss));
       ss >> delim;
@@ -242,6 +248,9 @@ std::vector<std::unique_ptr<ast::Stmt>> build_stmt(std::stringstream &ss) {
     char delim;
     ss >> delim;
     assert(delim == '[');
+    delim = ss.peek();
+    if (delim == ']')
+      ss.get();
     while (delim != ']') {
       ss >> s;
       meta = build_meta(ss);
@@ -304,7 +313,11 @@ std::vector<std::unique_ptr<ast::Stmt>> build_block(std::stringstream &ss) {
   char delim;
   ss >> delim;
   assert(delim == '[');
+  delim = ss.peek();
+  if (delim == ']')
+    ss.get();
   while (delim != ']') {
+
     std::vector<std::unique_ptr<ast::Stmt>> temp_stmts = build_stmt(ss);
     res.insert(res.end(), std::make_move_iterator(temp_stmts.begin()),
                std::make_move_iterator(temp_stmts.end()));
@@ -327,6 +340,9 @@ std::unique_ptr<ast::FnDef> build_func(std::stringstream &ss) {
   char delim;
   ss >> delim;
   assert(delim == '[');
+  delim = ss.peek();
+  if (delim == ']')
+    ss.get();
   while (delim != ']') {
     ss >> s;
     assert(s == "ArgVal");
@@ -334,6 +350,7 @@ std::unique_ptr<ast::FnDef> build_func(std::stringstream &ss) {
     ast::Type param_type = get_type(ss);
     std::string param_ident = get_ident(ss);
     params.emplace_back(param_type, param_ident);
+    ss >> delim;
   }
   std::vector<std::unique_ptr<ast::Stmt>> stmts = build_block(ss);
   return std::make_unique<ast::FnDef>(ret_type, ident, std::move(params),
@@ -345,6 +362,9 @@ std::vector<std::unique_ptr<ast::FnDef>> build_funcs(std::stringstream &ss) {
   char delim;
   ss >> delim;
   assert(delim == '[');
+  delim = ss.peek();
+  if (delim == ']')
+    ss.get();
   while (delim != ']') {
     res.emplace_back(build_func(ss));
     ss >> delim;
