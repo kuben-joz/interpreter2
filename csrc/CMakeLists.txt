@@ -3,10 +3,10 @@ cmake_minimum_required(VERSION 3.20.0)
 
 project(
   Compiler
-  LANGUAGES CXX)
+  LANGUAGES CXX C)
 
 
-find_package(LLVM REQUIRED CONFIG)
+find_package(LLVM 14.0.6 REQUIRED CONFIG)
 
 message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
 message(STATUS "Using LLVMConfig.cmake in: ${LLVM_DIR}")
@@ -26,7 +26,7 @@ separate_arguments(LLVM_DEFINITIONS_LIST NATIVE_COMMAND ${LLVM_DEFINITIONS})
 add_definitions(${LLVM_DEFINITIONS_LIST})
 
 # Now build our tools
-add_executable(compiler reader.cpp skel.cpp skel.h util.cpp util.h visitor.h syntax.h)
+add_executable(compiler reader.cpp skel.cpp skel.h util.cpp util.h visitor.h syntax.h ir_builder.cpp)
 
 # Find the libraries that correspond to the LLVM components
 # that we wish to use

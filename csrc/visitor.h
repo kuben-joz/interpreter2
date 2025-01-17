@@ -33,9 +33,8 @@ public:
 };
 
 /*
-class BStmtCleaner : public Visitor {
+class Visitortemplate : public Visitor {
 private:
-  int child_blk_single = false;
 
 
 public:

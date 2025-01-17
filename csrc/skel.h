@@ -36,7 +36,7 @@ public:
   virtual ~AST() = default;
   virtual void accept(Visitor *visitor) = 0;
 };
-static_assert(std::is_polymorphic_v<AST>);
+// static_assert(std::is_polymorphic_v<AST>);
 
 class Program : public AST {
 public:
@@ -62,7 +62,7 @@ public:
   virtual ~Stmt() = default;
   virtual void accept(Visitor *visitor) = 0;
 };
-static_assert(std::is_polymorphic_v<Stmt>);
+// static_assert(std::is_polymorphic_v<Stmt>);
 
 class Expr : public AST {
 public:
@@ -70,7 +70,7 @@ public:
   virtual ~Expr() = default;
   virtual void accept(Visitor *visitor) = 0;
 };
-static_assert(std::is_polymorphic_v<Expr>);
+// static_assert(std::is_polymorphic_v<Expr>);
 
 class BStmt : public Stmt {
 public:

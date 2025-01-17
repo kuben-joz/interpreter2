@@ -1,4 +1,5 @@
 #include "skel.h"
+#include "visitor.h"
 #include <iterator>
 #include <memory>
 
@@ -39,8 +40,8 @@ public:
           std::move(child->stmts));
       stmt.stmts.clear();
       stmt.stmts.insert(stmt.stmts.end(),
-                      std::make_move_iterator(stmt_children.begin()),
-                      std::make_move_iterator(stmt_children.end()));
+                        std::make_move_iterator(stmt_children.begin()),
+                        std::make_move_iterator(stmt_children.end()));
     }
     is_blk = true;
   }
@@ -48,8 +49,17 @@ public:
   void visit_ass(ast::AssStmt &stmt) override { is_blk = false; }
   void visit_incdec(ast::IncDecStmt &stmt) override { is_blk = false; }
   void visit_ret(ast::RetStmt &stmt) override { is_blk = false; }
-  void visit_cond(ast::CondStmt &stmt) override { is_blk = false; }
-  void visit_while(ast::WhileStmt &stmt) override { is_blk = false; }
+  void visit_cond(ast::CondStmt &stmt) override {
+    stmt.if_stmt->accept(this);
+    if (stmt.else_stmt) { // todo check this is how it works for nullptr
+      stmt.else_stmt->accept(this);
+    }
+    is_blk = false;
+  }
+  void visit_while(ast::WhileStmt &stmt) override {
+    stmt.body->accept(this);
+    is_blk = false;
+  }
   void visit_expr(ast::ExprStmt &stmt) override { is_blk = false; }
 
   void visit_var(ast::VarExpr &var) override {}
