@@ -93,7 +93,7 @@ public:
       llvm::FunctionType *fn_typ =
           llvm::FunctionType::get(ret_type, param_types, false);
       llvm::Function *res_fn = llvm::Function::Create(
-          fn_typ, llvm::Function::InternalLinkage, fn->ident,
+          fn_typ, llvm::Function::ExternalLinkage, fn->ident,
           module.get()); // todo check linkage is good
       int idx = 0;
       for (auto &arg : res_fn->args()) {
@@ -101,6 +101,7 @@ public:
         arg.setName(ident);
       }
       funcs[fn->ident] = res_fn;
+      
     }
     // first time just gets function signature, second time actually generates
     // code for them
