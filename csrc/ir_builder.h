@@ -1,5 +1,5 @@
 #pragma once
-//todo remove and split into cpp and h
+// todo remove and split into cpp and h
 
 #include <llvm-14/llvm/IR/BasicBlock.h>
 #include <llvm-14/llvm/IR/DerivedTypes.h>
@@ -46,7 +46,7 @@ private:
 
   // todo true jump and false jump
 
-  llvm::Type *convert_type(ast::Type &t) {
+  llvm::Type *convert_type(ast::Type t) {
     llvm::Type *res = nullptr;
     switch (t) {
     case ast::VOID:
@@ -184,6 +184,7 @@ public:
       builder->CreateStore(ret_val, alloc);
     }
     vals[stmt.ident].push_back(alloc);
+    to_pop.insert(stmt.ident);
     ret_val = nullptr;
   }
 

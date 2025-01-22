@@ -13,5 +13,6 @@ int main(int argc, char *argv[]) {
   std::unique_ptr<ast::Program> prog_ast = treeparse::build_prog(res);
   IRGen visitor;
   prog_ast->accept(&visitor);
+  visitor.module->print(std::cout, nullptr);
   return 0;
 }
