@@ -26,7 +26,8 @@ separate_arguments(LLVM_DEFINITIONS_LIST NATIVE_COMMAND ${LLVM_DEFINITIONS})
 add_definitions(${LLVM_DEFINITIONS_LIST})
 
 # Now build our tools
-add_executable(compiler reader.cpp skel.cpp skel.h util.cpp util.h visitor.h syntax.h ir_builder.cpp)
+add_executable(compiler reader.cpp skel.cpp skel.h util.cpp util.h visitor.h syntax.h ir_builder.h)
+target_compile_options(compiler PRIVATE -Wall -Wextra -Wpedantic)
 
 # Find the libraries that correspond to the LLVM components
 # that we wish to use

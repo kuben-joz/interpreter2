@@ -45,7 +45,33 @@ std::string read_string(std::stringstream &ss_in) {
   c = ss_in.get();
   while (c != '"' || escaped) {
     if (escaped) {
-      ss_out << c;
+      char c_conv;
+      switch (c) {
+      case 'a':
+        c_conv = '\a';
+        break;
+      case 'b':
+        c_conv = '\b';
+        break;
+      case 't':
+        c_conv = '\t';
+        break;
+      case 'n':
+        c_conv = '\n';
+        break;
+      case 'v':
+        c_conv = '\v';
+        break;
+      case 'f':
+        c_conv = '\f';
+        break;
+      case 'r':
+        c_conv = '\r';
+        break;
+      default:
+        c_conv = c;
+      }
+      ss_out << c_conv;
       escaped = false;
     } else if (c == '\\') {
       escaped = true;
