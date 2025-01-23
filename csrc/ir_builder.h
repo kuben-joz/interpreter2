@@ -44,6 +44,8 @@ private:
   llvm::BasicBlock *jmp_end = nullptr;
   std::vector<std::pair<llvm::Value *, llvm::BasicBlock *>> jmp_end_vals;
 
+  llvm::BasicBlock *start_blk = nullptr; // for adding allocas
+
   // todo true jump and false jump
 
   llvm::Type *convert_type(ast::Type t) {
@@ -101,7 +103,6 @@ public:
         arg.setName(ident);
       }
       funcs[fn->ident] = res_fn;
-      
     }
     // first time just gets function signature, second time actually generates
     // code for them
@@ -112,6 +113,7 @@ public:
 
   void visit_fndef(ast::FnDef &fn)
       override { // todo create stores for args, eliminated in mem2reg
+    assert(!start_blk);
     assert(!ret_val);
     assert(!jmp_true);
     assert(!jmp_false);
@@ -121,8 +123,7 @@ public:
     assert(vals.empty());
     assert(funcs.count(fn.ident) && "Function doesn't exist");
     llvm::Function *cur_fn = funcs[fn.ident];
-    llvm::BasicBlock *start_blk =
-        llvm::BasicBlock::Create(*context, "start", cur_fn);
+    start_blk = llvm::BasicBlock::Create(*context, "start", cur_fn);
     builder->SetInsertPoint(start_blk);
     int idx = 0;
     for (auto &arg : cur_fn->args()) {
@@ -141,6 +142,7 @@ public:
     assert(to_pop.size() == vals.size());
     to_pop.clear();
     vals.clear();
+    start_blk = nullptr;
   }
 
   void visit_blk(ast::BStmt &stmt) override {
@@ -166,6 +168,7 @@ public:
     to_pop = std::move(to_pop_bak);
   }
 
+  // LLVM convention is to add all alloca at beginning of first block
   void visit_decl(ast::DeclStmt &stmt) override {
     assert(!ret_val);
     assert(!jmp_true);
@@ -179,8 +182,11 @@ public:
       stmt.init_val->accept(this);
       assert(ret_val);
     }
+    llvm::BasicBlock *bb_bak = builder->GetInsertBlock();
+    builder->SetInsertPoint(&(start_blk->front()));
     llvm::AllocaInst *alloc =
         builder->CreateAlloca(convert_type(stmt.type), nullptr, stmt.ident);
+    builder->SetInsertPoint(bb_bak);
     if (ret_val) {
       builder->CreateStore(ret_val, alloc);
     }
