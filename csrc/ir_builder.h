@@ -12,6 +12,7 @@
 #include <map>
 #include <memory>
 #include <stdexcept>
+#include <utility>
 #include <vector>
 
 #include "skel.h"
@@ -30,14 +31,29 @@ public:
   std::unique_ptr<llvm::IRBuilder<>> builder;
 
 private:
+  struct var {
+    ast::Type type;
+    llvm::AllocaInst *ptr;
+
+    var(ast::Type typ, llvm::AllocaInst *alloc) : type(typ), ptr(alloc) {}
+  };
+
+  struct func {
+    ast::Type ret_type;
+    llvm::Function *ptr;
+
+    func(ast::Type typ, llvm::Function *fn) : ret_type(typ), ptr(fn) {}
+  };
+
   llvm::IntegerType *int_type = nullptr;
   llvm::IntegerType *bool_type = nullptr;
-  std::map<std::string, std::vector<llvm::AllocaInst *>> vals; // named values
-  std::map<std::string, llvm::Function *> funcs;
+  std::map<std::string, std::vector<var>> vars;
+  std::map<std::string, func> funcs;
   std::set<std::string>
       to_pop; // variables in current block that should be popped out
 
   llvm::Value *ret_val = nullptr;
+  ast::Type ret_type = ast::VOID;
 
   llvm::BasicBlock *jmp_true = nullptr;
   llvm::BasicBlock *jmp_false = nullptr;
@@ -64,7 +80,7 @@ private:
       assert(false && "not implemented type for string");
       break;
     default:
-      assert(false && "unkown funciton parameter type");
+      assert(false && "unknown type");
     }
     return res;
   }
@@ -80,6 +96,7 @@ public:
 
   void visit_prog(ast::Program &prog) override {
     assert(!ret_val);
+    assert(ret_type == ast::VOID);
     assert(!jmp_true);
     assert(!jmp_false);
     assert(!jmp_end);
@@ -102,7 +119,7 @@ public:
         const std::string &ident = fn->params[idx++].ident;
         arg.setName(ident);
       }
-      funcs[fn->ident] = res_fn;
+      funcs[fn->ident] = func(fn->ret_type, res_fn);
     }
     // first time just gets function signature, second time actually generates
     // code for them
@@ -115,14 +132,16 @@ public:
       override { // todo create stores for args, eliminated in mem2reg
     assert(!start_blk);
     assert(!ret_val);
+    assert(ret_type == ast::VOID);
     assert(!jmp_true);
     assert(!jmp_false);
     assert(!jmp_end);
     assert(jmp_end_vals.empty());
     assert(to_pop.empty());
-    assert(vals.empty());
+    assert(vars.empty());
     assert(funcs.count(fn.ident) && "Function doesn't exist");
-    llvm::Function *cur_fn = funcs[fn.ident];
+
+    llvm::Function *cur_fn = funcs[fn.ident].ptr;
     start_blk = llvm::BasicBlock::Create(*context, "start", cur_fn);
     builder->SetInsertPoint(start_blk);
     int idx = 0;
@@ -134,19 +153,20 @@ public:
           builder->CreateAlloca(convert_type(arg_typ), nullptr, arg_id);
       // store argument for mem2reg purposes
       builder->CreateStore(&arg, alloc);
-      vals[arg_id].push_back(alloc);
+      vars[arg_id].emplace_back(arg_typ, alloc);
     }
     for (auto &stmt : fn.stmts) {
       stmt->accept(this);
     }
-    assert(to_pop.size() == vals.size());
+    assert(to_pop.size() == vars.size());
     to_pop.clear();
-    vals.clear();
+    vars.clear();
     start_blk = nullptr;
   }
 
   void visit_blk(ast::BStmt &stmt) override {
     assert(!ret_val);
+    assert(ret_type == ast::VOID);
     assert(!jmp_true);
     assert(!jmp_false);
     assert(!jmp_end);
@@ -157,12 +177,12 @@ public:
       sub_stmt->accept(this);
     }
     for (const std::string &id : to_pop) {
-      auto cur_pop = vals.find(id);
-      assert(cur_pop != vals.end());
+      auto cur_pop = vars.find(id);
+      assert(cur_pop != vars.end());
       assert(cur_pop->second.size());
       cur_pop->second.pop_back();
       if (cur_pop->second.size() == 0) {
-        vals.erase(cur_pop);
+        vars.erase(cur_pop);
       }
     }
     to_pop = std::move(to_pop_bak);
@@ -171,6 +191,7 @@ public:
   // LLVM convention is to add all alloca at beginning of first block
   void visit_decl(ast::DeclStmt &stmt) override {
     assert(!ret_val);
+    assert(ret_type == ast::VOID);
     assert(!jmp_true);
     assert(!jmp_false);
     assert(!jmp_end);
@@ -181,24 +202,40 @@ public:
     if (stmt.init_val) {
       stmt.init_val->accept(this);
       assert(ret_val);
+      assert(ret_type == stmt.type);
+    } else {
+      ret_type = stmt.type;
+      assert(ret_type != ast::VOID && "Declaration of void variable");
+      switch (ret_type) {
+      case ast::INT:
+        ret_val = llvm::ConstantInt::getSigned(convert_type(ret_type), 0);
+        break;
+      case ast::BOOL:
+        ret_val = llvm::ConstantInt::getFalse(bool_type);
+        break;
+      case ast::STR:
+        assert(false && "string declaration not yet implemented");
+        break;
+      }
     }
     llvm::BasicBlock *bb_bak = builder->GetInsertBlock();
     builder->SetInsertPoint(&(start_blk->front()));
     llvm::AllocaInst *alloc =
         builder->CreateAlloca(convert_type(stmt.type), nullptr, stmt.ident);
     builder->SetInsertPoint(bb_bak);
-    if (ret_val) {
-      builder->CreateStore(ret_val, alloc);
-    }
-    vals[stmt.ident].push_back(alloc);
+    builder->CreateStore(ret_val,
+                         alloc); // we always have default value for variable
+    vars[stmt.ident].emplace_back(stmt.type, alloc);
     to_pop.insert(stmt.ident);
     ret_val = nullptr;
+    ret_type = ast::VOID;
   }
 
   void visit_ass(ast::AssStmt &stmt)
       override { // todo make sure it calcualtes val before assingment for int
                  // a = 5; {int a = a;}, chekc this is well tested in frontend
     assert(!ret_val);
+    assert(ret_type == ast::VOID);
     assert(!jmp_true);
     assert(!jmp_false);
     assert(!jmp_end);
@@ -206,27 +243,32 @@ public:
     // calculate new val
     stmt.ass_expr->accept(this);
     assert(ret_val);
-    auto ident_v = vals.find(stmt.ident);
-    assert(ident_v != vals.end() && "Ident not found in values");
+    auto ident_v = vars.find(stmt.ident);
+    assert(ident_v != vars.end() && "Ident not found in values");
     assert(!ident_v->second.empty() &&
            "ident found in values but values are empty");
+    assert(ret_type != ident_v->second.back().type);
     // store new value
-    builder->CreateStore(ret_val, ident_v->second.back());
+    builder->CreateStore(ret_val, ident_v->second.back().ptr);
     ret_val = nullptr;
+    ret_type = ast::VOID;
   }
 
   void visit_incdec(ast::IncDecStmt &stmt) override { // todo add load and store
     assert(!ret_val);
+    assert(ret_type == ast::VOID);
     assert(!jmp_true);
     assert(!jmp_false);
     assert(!jmp_end);
     assert(jmp_end_vals.empty());
     // load prev value
-    auto vec = vals.find(stmt.ident);
-    assert(vec != vals.end() && "val not found");
+    auto vec = vars.find(stmt.ident);
+    assert(vec != vars.end() && "val not found");
     assert(vec->second.size() != 0 && "Val registered but vector is empty");
-    assert(vec->second.back() && "Val was declared but is nullptr");
-    llvm::AllocaInst *alloc = vec->second.back();
+    assert(vec->second.back().ptr && "Val was declared but is nullptr");
+
+    assert(vec->second.back().type == ast::INT && "can only incdec an INT");
+    llvm::AllocaInst *alloc = vec->second.back().ptr;
     llvm::Value *val =
         builder->CreateLoad(alloc->getAllocatedType(), alloc, "to_inc");
     // add or substract one
@@ -239,19 +281,26 @@ public:
 
   void visit_ret(ast::RetStmt &stmt) override {
     assert(!ret_val);
+    assert(ret_type == ast::VOID);
     assert(!jmp_true);
     assert(!jmp_false);
     assert(!jmp_end);
     assert(jmp_end_vals.empty());
 
-    stmt.ret_expr->accept(this);
-    assert(ret_val);
-    builder->CreateRet(ret_val);
+    if (stmt.ret_expr) {
+      stmt.ret_expr->accept(this);
+      assert(ret_val);
+      builder->CreateRet(ret_val);
+    } else {
+      builder->CreateRetVoid();
+    }
     ret_val = nullptr;
+    ret_type = ast::VOID;
   }
 
   void visit_cond(ast::CondStmt &stmt) override {
     assert(!ret_val);
+    assert(ret_type == ast::VOID);
     assert(!jmp_true);
     assert(!jmp_false);
     assert(!jmp_end);
@@ -268,8 +317,10 @@ public:
     }
     stmt.cond_expr->accept(this);
     assert(ret_val);
+    assert(ret_type != ast::VOID);
     builder->CreateCondBr(ret_val, jmp_if, jmp_else);
     ret_val = nullptr;
+    ret_type = ast::VOID;
     // if cond
     llvm::Function *cur_func = builder->GetInsertBlock()->getParent();
     jmp_if->insertInto(cur_func);
@@ -279,12 +330,12 @@ public:
     stmt.if_stmt->accept(this);
     builder->CreateBr(jmp_after);
     for (const std::string &id : to_pop) {
-      auto cur_pop = vals.find(id);
-      assert(cur_pop != vals.end());
+      auto cur_pop = vars.find(id);
+      assert(cur_pop != vars.end());
       assert(cur_pop->second.size());
       cur_pop->second.pop_back();
       if (cur_pop->second.size() == 0) {
-        vals.erase(cur_pop);
+        vars.erase(cur_pop);
       }
     }
     // else cond
@@ -295,12 +346,12 @@ public:
       stmt.else_stmt->accept(this);
       builder->CreateBr(jmp_after);
       for (const std::string &id : to_pop) {
-        auto cur_pop = vals.find(id);
-        assert(cur_pop != vals.end());
+        auto cur_pop = vars.find(id);
+        assert(cur_pop != vars.end());
         assert(cur_pop->second.size());
         cur_pop->second.pop_back();
         if (cur_pop->second.size() == 0) {
-          vals.erase(cur_pop);
+          vars.erase(cur_pop);
         }
       }
     }
@@ -313,6 +364,7 @@ public:
   void visit_while(ast::WhileStmt &stmt)
       override { // do it in the do while structure for conversion to assembly
     assert(!ret_val);
+    assert(ret_type == ast::VOID);
     assert(!jmp_true);
     assert(!jmp_false);
     assert(!jmp_end);
@@ -331,12 +383,12 @@ public:
     stmt.body->accept(this);
     builder->CreateBr(jmp_cond);
     for (const std::string &id : to_pop) {
-      auto cur_pop = vals.find(id);
-      assert(cur_pop != vals.end());
+      auto cur_pop = vars.find(id);
+      assert(cur_pop != vars.end());
       assert(cur_pop->second.size());
       cur_pop->second.pop_back();
       if (cur_pop->second.size() == 0) {
-        vals.erase(cur_pop);
+        vars.erase(cur_pop);
       }
     }
     to_pop = std::move(to_pop_bak);
@@ -345,8 +397,10 @@ public:
     builder->SetInsertPoint(jmp_cond);
     stmt.cond->accept(this);
     assert(ret_val);
+    assert(ret_type != ast::VOID);
     builder->CreateCondBr(ret_val, jmp_body, jmp_after);
     ret_val = nullptr;
+    ret_type = ast::VOID;
     // after
     jmp_after->insertInto(cur_func);
     builder->SetInsertPoint(jmp_after);
@@ -354,43 +408,54 @@ public:
 
   void visit_expr(ast::ExprStmt &stmt) override {
     assert(!ret_val);
+    assert(ret_type == ast::VOID);
     assert(!jmp_true);
     assert(!jmp_false);
     assert(!jmp_end);
     assert(jmp_end_vals.empty());
     stmt.expr->accept(this);
     ret_val = nullptr;
+    ret_type = ast::VOID;
   }
 
   void visit_var(ast::VarExpr &var) override {
     assert(!ret_val);
-    auto vec = vals.find(var.ident);
-    assert(vec != vals.end() && "val not found");
+    assert(ret_type == ast::VOID);
+    auto vec = vars.find(var.ident);
+    assert(vec != vars.end() && "val not found");
     assert(vec->second.size() != 0 && "Val registered but vector is empty");
-    assert(vec->second.back() && "Val was declared but is nullptr");
-    llvm::AllocaInst *alloc = vec->second.back();
+    assert(vec->second.back().ptr && "Val was declared but is nullptr");
+    llvm::AllocaInst *alloc = vec->second.back().ptr;
     ret_val = builder->CreateLoad(alloc->getAllocatedType(), alloc, "loadvar");
+    ret_type = vec->second.back().type;
   }
 
   void visit_int(ast::LIntExpr &i) override {
     assert(!ret_val);
-    ret_val = llvm::ConstantInt::getSigned(
-        int_type,
-        i.val); // todo check canonilization as it's stored as unsigned int
+    assert(ret_type == ast::VOID);
+    // todo check canonilization as it's stored as unsigned int
+    ret_val = llvm::ConstantInt::getSigned(int_type, i.val);
+    ret_type = ast::INT;
   }
 
   void visit_bool(ast::LBoolExpr &b) override {
     assert(!ret_val);
+    assert(ret_type == ast::VOID);
     ret_val = llvm::ConstantInt::getBool(*context, b.val);
+    ret_type = ast::STR;
   }
 
   void visit_string(ast::LStringExpr &s) override {
     assert(!ret_val);
+    assert(ret_type == ast::VOID);
+    // todo change this to string implementation like others
     ret_val = builder->CreateGlobalString(s.val);
+    ret_type = ast::STR;
   }
 
   void visit_fnapp(ast::FunAppExpr &fn) override {
     assert(!ret_val);
+    assert(ret_type == ast::VOID);
     std::vector<llvm::Value *> args;
     for (auto &arg_exp : fn.args) {
       arg_exp->accept(this);
@@ -399,15 +464,18 @@ public:
       ret_val = nullptr;
     }
     assert(funcs.count(fn.ident) && "Called function doesn't exist");
-    llvm::Function *call_fn = funcs[fn.ident];
+    auto &func_node = funcs[fn.ident];
+    llvm::Function *call_fn = func_node.ptr;
     assert(call_fn->arg_size() == args.size() &&
            "wrong number of args for call");
 
     ret_val = builder->CreateCall(call_fn, args, "fn call");
+    ret_type = func_node.ret_type;
   }
 
   void visit_neg(ast::NegExpr &neg) override {
     assert(!ret_val);
+    assert(ret_type == ast::VOID);
     neg.sub_expr->accept(this);
     assert(ret_val);
     // todo check ret_val not null
@@ -426,6 +494,7 @@ public:
 
   void visit_mul(ast::MulExpr &mul) override {
     assert(!ret_val);
+    assert(ret_type == ast::VOID);
     mul.l_sub_expr->accept(this);
     assert(ret_val);
     llvm::Value *l_val = ret_val;
@@ -451,29 +520,42 @@ public:
 
   void visit_add(ast::AddExpr &add) override {
     assert(!ret_val);
+    assert(ret_type == ast::VOID);
     add.l_sub_expr->accept(this);
     assert(ret_val);
+    assert(ret_type != ast::VOID);
     llvm::Value *l_val = ret_val;
+    ast::Type l_type = ret_type;
     ret_val = nullptr;
+    ret_type = ast::VOID;
     add.r_sub_expr->accept(this);
     assert(ret_val);
+    assert(ret_type != ast::VOID);
     llvm::Value *r_val = ret_val;
+    ast::Type r_type = ret_type;
     ret_val = nullptr;
-    switch (add.op) {
-    case ast::PLUS:
-      // todo if string then concat
-      ret_val = builder->CreateAdd(l_val, r_val);
-      break;
-    case ast::MINUS:
+    assert(l_type == r_type);
+    if(add.op == ast::PLUS) {
+      if(l_type == ast::INT) {
+        ret_val = builder->CreateAdd(l_val, r_val);
+        ret_type = l_type;
+      }
+      else {
+        assert(l_type == ast::STR);
+        assert(false && "string addition not implemented");
+      }
+    }
+    else {
+      assert(add.op == ast::MINUS && "unkown add operation");
+      assert(l_type == ast::INT);
       ret_val = builder->CreateSub(l_val, r_val);
-      break;
-    default:
-      throw std::runtime_error("unkown add op");
+      ret_type = l_type;
     }
   }
 
   void visit_rel(ast::RelExpr &rel) override {
     assert(!ret_val);
+    assert(ret_type == ast::VOID);
     rel.l_sub_expr->accept(this);
     assert(ret_val);
     llvm::Value *l_val = ret_val;
@@ -504,10 +586,12 @@ public:
     default:
       throw std::runtime_error("unkown rel op");
     }
+    ret_type = ast::BOOL;
   }
 
   void visit_log(ast::LogExpr &log) override {
     assert(!ret_val);
+    assert(ret_type == ast::VOID);
     llvm::BasicBlock *jmp_true_bak = nullptr;
     llvm::BasicBlock *jmp_false_bak = nullptr;
     llvm::BasicBlock *jmp_end_bak = nullptr;
@@ -556,6 +640,7 @@ public:
                                   builder->GetInsertBlock());
       }
       ret_val = nullptr;
+      ret_type = ast::VOID;
     }
 
     // RHS
@@ -606,6 +691,7 @@ public:
         phi->addIncoming(v_b.first, v_b.second);
       }
       ret_val = phi;
+      ret_type = ast::BOOL;
     } else if (ret_val) {
       builder->CreateCondBr(ret_val, jmp_true, jmp_false);
       if (jmp_true == jmp_end) {
@@ -616,6 +702,7 @@ public:
                                   builder->GetInsertBlock());
       }
       ret_val = nullptr;
+      ret_type = ast::VOID;
     }
   }
 };
