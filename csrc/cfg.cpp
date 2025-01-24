@@ -1,4 +1,5 @@
 #include "cfg.h"
+#include <algorithm>
 #include <llvm-14/llvm/IR/BasicBlock.h>
 #include <llvm-14/llvm/IR/Function.h>
 #include <llvm-14/llvm/IR/Instruction.h>
@@ -6,7 +7,6 @@
 #include <llvm-14/llvm/Support/Casting.h>
 #include <utility>
 #include <vector>
-#include <algorithm>
 
 CFG::CFG(llvm::Function *fn) : func(fn) { update(); }
 
@@ -59,3 +59,4 @@ std::vector<llvm::BasicBlock *> CFG::get_rev_postorder() {
   std::reverse(res.begin(), res.end());
   return res;
 }
+
