@@ -5,7 +5,7 @@
 
 #include "ir_builder.h"
 #include "skel.h"
-#include "util.h"
+#include "treeparse.h"
 
 int main(int argc, char *argv[]) {
   // int code = strtol(argv[1], nullptr, 0);

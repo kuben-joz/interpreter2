@@ -4,34 +4,19 @@
 #include <cstdint>
 #include <vector>
 
+#define bs_type uint64_t
+
 class DynamicBitset {
-private:
-  uint64_t sz;
-  uint64_t mod = 64;
-  std::vector<uint64_t> bits;
-
 public:
-  DynamicBitset(uint64_t sz) : sz(sz), bits((sz + mod - 1) / mod) {}
-  uint64_t size();
-  void do_and(DynamicBitset &other) {
-    uint64_t min_sz = std::min(sz, other.sz);
-    uint64_t i = 0;
-    for (; i < min_sz; i++) {
-      bits[i] &= other.bits[i];
-    }
-    for (; i < sz; i++) {
-      bits[i] = 0;
-    }
-  }
+  uint64_t sz;
+  const uint64_t mod = sizeof(bs_type) * 8;
+  std::vector<bs_type> bits;
 
-  void set(uint64_t idx) {
-    assert((idx / mod) < bits.size() && "Bit out of range");
-    bits[idx / mod] |= 1ULL << (idx % mod);
-  }
+  DynamicBitset(uint64_t sz);
 
-  void set(std::vector<uint64_t> &idxs) {
-    for (auto idx : idxs) {
-      set(idx);
-    }
-  }
+  void do_and(const DynamicBitset &other);
+  void do_or(const DynamicBitset &other);
+  bool do_or_with_checks(const DynamicBitset &other);
+
+  void set(uint64_t idx);
 };

@@ -8,6 +8,7 @@
 #include <vector>
 
 #include "cfg.h"
+#include "dom_tree.h"
 
 class Mem2Reg {
   struct var {

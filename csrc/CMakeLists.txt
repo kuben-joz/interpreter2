@@ -25,8 +25,10 @@ include_directories(${LLVM_INCLUDE_DIRS})
 separate_arguments(LLVM_DEFINITIONS_LIST NATIVE_COMMAND ${LLVM_DEFINITIONS})
 add_definitions(${LLVM_DEFINITIONS_LIST})
 
+set(source_files cfg.cpp cfg.h dom_tree.cpp dom_tree.h ir_builder.h main.cpp mem2reg.h skel.cpp skel.h syntax.h treeparse.cpp treeparse.h util.cpp util.h visitor.h)
+
 # Now build our tools
-add_executable(compiler reader.cpp skel.cpp skel.h util.cpp util.h visitor.h syntax.h ir_builder.h)
+add_executable(compiler ${source_files})
 target_compile_options(compiler PRIVATE -Wall -Wextra -Wpedantic)
 
 # Find the libraries that correspond to the LLVM components

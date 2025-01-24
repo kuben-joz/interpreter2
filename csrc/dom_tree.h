@@ -7,6 +7,7 @@
 #include <llvm-14/llvm/IR/BasicBlock.h>
 
 #include "cfg.h"
+#include "util.h"
 
 struct DomTree {
 public:
@@ -15,11 +16,11 @@ public:
   std::vector<llvm::BasicBlock *> idx_to_blk;
   std::vector<int> dom_pred;
   std::vector<std::vector<int>> dom_succ;
-  std::vector<std::set<int>> dom_front;
+  std::vector<DynamicBitset> dom_front;
 
   DomTree(CFG &cfg);
 
-  std::set<llvm::BasicBlock *> it_dom_front(std::set<llvm::BasicBlock *> &in_bbs);
+  std::vector<llvm::BasicBlock *> it_dom_front(std::set<llvm::BasicBlock *> &in_bbs);
 
 private:
   void dom_frontier(std::vector<std::vector<int>> &preds);
