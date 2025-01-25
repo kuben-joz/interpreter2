@@ -23,11 +23,9 @@ void DynamicBitset::do_or(const DynamicBitset &other) {
 bool DynamicBitset::do_or_with_checks(const DynamicBitset &other) {
   assert(sz == other.sz && "DynBitset sizes differ");
   uint64_t i = 0;
-  bool res = false;
-  while(!res && i < bits.size()) {
-    if(bits[i] ^ other.bits[i]) {
-      res = true;
-    }
+  bs_type change = 0;
+  while(!change && i < bits.size()) {
+    change = bits[i] ^ other.bits[i];
     bits[i] |= other.bits[i];
     i++;
   }
@@ -35,11 +33,15 @@ bool DynamicBitset::do_or_with_checks(const DynamicBitset &other) {
     bits[i] |= other.bits[i];
     i++;
   }
-  return res;
+  return change;
 }
 
 void DynamicBitset::set(uint64_t idx) {
   assert(idx < sz && "Bit out of range");
   bits[idx / mod] |= 1ULL << (idx % mod);
+}
+
+void DynamicBitset::clear() {
+  std::fill(bits.begin(), bits.end(), 0);
 }
 

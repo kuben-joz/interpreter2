@@ -14,17 +14,22 @@ DomTree::it_dom_front(std::set<llvm::BasicBlock *> &in_bbs) {
   }
 
   // iteration until fixed-point
-  bool change = true;
-  while (change) {
-    change = false;
+  DynamicBitset temp_bs(res_bs.bits.size());
+  while(true) {
     for (uint64_t i = 0; i < res_bs.bits.size(); i++) {
       bs_type bit = res_bs.bits[i];
       while (bit != 0) {
-        bs_type temp = bit & ~bit;
+        bs_type temp = bit & -bit;
         int r = __builtin_ctzl(bit);
-        change |= res_bs.do_or_with_checks(dom_front[i * res_bs.mod + r]);
+        temp_bs.do_or(dom_front[i * res_bs.mod + r]);
         bit ^= temp;
       }
+    }
+    if(res_bs.do_or_with_checks(temp_bs)) {
+      temp_bs.clear();
+    }
+    else {
+      break;
     }
   }
 
@@ -33,9 +38,9 @@ DomTree::it_dom_front(std::set<llvm::BasicBlock *> &in_bbs) {
   for (uint64_t i = 0; i < res_bs.bits.size(); i++) {
     bs_type bit = res_bs.bits[i];
     while (bit != 0) {
-      bs_type temp = bit & ~bit;
+      bs_type temp = bit & -bit;
       int r = __builtin_ctzl(bit);
-      res.emplace_back(idx_to_blk[i*res_bs.mod + r]);
+      res.emplace_back(idx_to_blk[i * res_bs.mod + r]);
       bit ^= temp;
     }
   }

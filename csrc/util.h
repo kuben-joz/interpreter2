@@ -19,4 +19,5 @@ public:
   bool do_or_with_checks(const DynamicBitset &other);
 
   void set(uint64_t idx);
+  void clear();
 };

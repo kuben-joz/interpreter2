@@ -13,49 +13,46 @@ CFG::CFG(llvm::Function *fn) : func(fn) { update(); }
 void CFG::update() {
   succ.clear();
   pred.clear();
-  start_blk = &(func->getEntryBlock());
+  start_blks.emplace_back(&(func->getEntryBlock()));
   for (auto &blk_ref : func->getBasicBlockList()) {
     llvm::BasicBlock *blk = &blk_ref;
-    std::pair<llvm::BasicBlock *, llvm::BasicBlock *> cur_succ =
-        std::make_pair(nullptr, nullptr);
     if (!blk->empty()) {
       llvm::Instruction *instr = &(blk->back());
       if (auto *br = llvm::dyn_cast<llvm::BranchInst>(instr)) {
-        cur_succ.first = br->getSuccessor(0);
-        if (br->isConditional()) {
-          cur_succ.second = br->getSuccessor(1);
+        for(auto *s : br->successors()) {
+          assert(succ[blk].empty() || succ[blk].back() != s);
+          succ[blk].emplace_back(s);
+          assert(pred[s].empty() || pred[s].back() != blk);
+          pred[s].emplace_back(blk);
         }
-        assert(cur_succ.first != cur_succ.second);
+      }
+      else { //todo maybe add a case for switch blocks
+        end_blks.emplace_back(blk);
       }
     }
-    if (cur_succ.first) {
-      pred[cur_succ.first].emplace_back(blk);
+    else {
+      end_blks.emplace_back(blk);
     }
-    if (cur_succ.second) {
-      pred[cur_succ.second].emplace_back(blk);
-    }
-    succ[blk] = std::move(cur_succ);
   }
 }
 
 void CFG::postorder_rec(llvm::BasicBlock *blk_in,
                         std::set<llvm::BasicBlock *> &visited,
                         std::vector<llvm::BasicBlock *> &res) {
-  visited.insert(blk_in);
-  std::pair<llvm::BasicBlock *, llvm::BasicBlock *> cur_succ = succ[blk_in];
-  if (cur_succ.first && !visited.count(cur_succ.first)) {
-    postorder_rec(cur_succ.first, visited, res);
-  }
-  if (cur_succ.second && !visited.count(cur_succ.second)) {
-    postorder_rec(cur_succ.second, visited, res);
+  visited.insert(blk_in); // this has to be at beginnign to handle self-loops
+  for(auto *succ_blk : succ[blk_in]) {
+    if(!visited.count(succ_blk)) {
+      postorder_rec(succ_blk, visited, res);
+    }
   }
   res.emplace_back(blk_in);
 }
 
 std::vector<llvm::BasicBlock *> CFG::get_rev_postorder() {
+  assert(start_blks.size() == 1 && "We need exactly 1 start blk, this is probably a reverse cfg");
   std::vector<llvm::BasicBlock *> res;
   std::set<llvm::BasicBlock *> visited;
-  postorder_rec(start_blk, visited, res);
+  postorder_rec(start_blks.front(), visited, res);
   std::reverse(res.begin(), res.end());
   return res;
 }

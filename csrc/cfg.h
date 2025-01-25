@@ -4,11 +4,11 @@
 #include <map>
 #include <vector>
 struct CFG {
+  // todo add vector of start blk and end blk for reverse cfg?
   llvm::Function *func;
-  llvm::BasicBlock *start_blk;
-  std::map<llvm::BasicBlock *,
-           std::pair<llvm::BasicBlock *, llvm::BasicBlock *>>
-      succ;
+  std::vector<llvm::BasicBlock *> start_blks;
+  std::vector<llvm::BasicBlock *> end_blks;
+  std::map<llvm::BasicBlock *, std::vector<llvm::BasicBlock *>> succ;
   std::map<llvm::BasicBlock *, std::vector<llvm::BasicBlock *>> pred;
 
   CFG(llvm::Function *func);
