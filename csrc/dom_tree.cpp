@@ -47,7 +47,7 @@ DomTree::it_dom_front(std::set<llvm::BasicBlock *> &in_bbs) {
   return res;
 }
 
-// https://www.cs.tufts.edu/~nr/cs257/archive/keith-cooper/dom14.pdf
+
 DomTree::DomTree(CFG &cfg)
     : dom_pred(cfg.succ.size()),
       dom_front(cfg.succ.size(), DynamicBitset(cfg.succ.size())) {

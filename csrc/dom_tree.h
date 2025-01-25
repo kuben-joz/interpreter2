@@ -9,9 +9,9 @@
 #include "cfg.h"
 #include "util.h"
 
+// https://repository.rice.edu/items/99a574c3-90fe-4a00-adf9-ce73a21df2ed
 struct DomTree {
 public:
-  // todo change this to initilizer
   std::map<llvm::BasicBlock *, int> blk_to_idx;
   std::vector<llvm::BasicBlock *> idx_to_blk;
   std::vector<int> dom_pred;
