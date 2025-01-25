@@ -29,7 +29,7 @@ set(source_files cfg.cpp cfg.h dom_tree.cpp dom_tree.h ir_builder.h main.cpp mem
 
 # Now build our tools
 add_executable(compiler ${source_files})
-target_compile_options(compiler PRIVATE -Wall -Wextra -Wpedantic)
+#target_compile_options(compiler PRIVATE -Wall -Wextra -Wpedantic)
 
 # Find the libraries that correspond to the LLVM components
 # that we wish to use

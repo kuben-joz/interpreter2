@@ -8,7 +8,6 @@
 #include <llvm-14/llvm/IR/Value.h>
 
 #include <cassert>
-#include <cstddef>
 #include <map>
 #include <memory>
 #include <stdexcept>
@@ -17,7 +16,6 @@
 
 #include "skel.h"
 #include "visitor.h"
-#include "llvm/ADT/APSInt.h"
 #include "llvm/IR/Constants.h"
 #include "llvm/IR/Function.h"
 #include "llvm/IR/IRBuilder.h"
@@ -32,10 +30,12 @@ public:
 
 private:
   struct var {
-    ast::Type type;
+    const ast::Type type;
     llvm::AllocaInst *ptr;
 
     var(ast::Type typ, llvm::AllocaInst *alloc) : type(typ), ptr(alloc) {}
+
+    var() : type(ast::VOID), ptr(nullptr) {}
   };
 
   struct func {
@@ -43,6 +43,8 @@ private:
     llvm::Function *ptr;
 
     func(ast::Type typ, llvm::Function *fn) : ret_type(typ), ptr(fn) {}
+
+    func() : ret_type(ast::VOID), ptr(nullptr) {}
   };
 
   llvm::IntegerType *int_type = nullptr;
@@ -370,9 +372,10 @@ public:
     assert(!jmp_end);
     assert(jmp_end_vals.empty());
 
-    llvm::BasicBlock *jmp_cond = llvm::BasicBlock::Create(*context);
-    llvm::BasicBlock *jmp_body = llvm::BasicBlock::Create(*context);
-    llvm::BasicBlock *jmp_after = llvm::BasicBlock::Create(*context);
+    llvm::BasicBlock *jmp_cond = llvm::BasicBlock::Create(*context, "jmp_cond");
+    llvm::BasicBlock *jmp_body = llvm::BasicBlock::Create(*context, "jmp_body");
+    llvm::BasicBlock *jmp_after =
+        llvm::BasicBlock::Create(*context, "jmp_after");
     builder->CreateBr(jmp_cond);
     // body
     llvm::Function *cur_func = builder->GetInsertBlock()->getParent();
@@ -497,12 +500,17 @@ public:
     assert(ret_type == ast::VOID);
     mul.l_sub_expr->accept(this);
     assert(ret_val);
+    assert(ret_type == ast::INT);
     llvm::Value *l_val = ret_val;
     ret_val = nullptr;
+    ret_type = ast::VOID;
     mul.r_sub_expr->accept(this);
     assert(ret_val);
+    assert(ret_type == ast::INT);
     llvm::Value *r_val = ret_val;
     ret_val = nullptr;
+
+    ret_type = ast::INT;
     switch (mul.op) {
     case ast::TIMES:
       ret_val = builder->CreateMul(l_val, r_val);
@@ -535,17 +543,15 @@ public:
     ast::Type r_type = ret_type;
     ret_val = nullptr;
     assert(l_type == r_type);
-    if(add.op == ast::PLUS) {
-      if(l_type == ast::INT) {
+    if (add.op == ast::PLUS) {
+      if (l_type == ast::INT) {
         ret_val = builder->CreateAdd(l_val, r_val);
         ret_type = l_type;
-      }
-      else {
+      } else {
         assert(l_type == ast::STR);
         assert(false && "string addition not implemented");
       }
-    }
-    else {
+    } else {
       assert(add.op == ast::MINUS && "unkown add operation");
       assert(l_type == ast::INT);
       ret_val = builder->CreateSub(l_val, r_val);
@@ -558,12 +564,16 @@ public:
     assert(ret_type == ast::VOID);
     rel.l_sub_expr->accept(this);
     assert(ret_val);
+    assert(ret_type == ast::INT);
     llvm::Value *l_val = ret_val;
     ret_val = nullptr;
+    ret_type = ast::VOID;
     rel.r_sub_expr->accept(this);
     assert(ret_val);
+    assert(ret_type == ast::INT);
     llvm::Value *r_val = ret_val;
     ret_val = nullptr;
+    ret_type = ast::VOID;
     switch (rel.op) {
     case ast::LTH:
       ret_val = builder->CreateICmpSLT(l_val, r_val);

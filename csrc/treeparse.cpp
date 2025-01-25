@@ -309,9 +309,15 @@ std::vector<std::unique_ptr<ast::Stmt>> build_stmt(std::stringstream &ss) {
     assert(c == '(');
     std::unique_ptr<ast::Stmt> if_stmt =
         std::make_unique<ast::BStmt>(build_stmt(ss), meta);
+    ss >> c;
+    assert(c == ')');
     if (s == "CondElse") {
+      ss >> c;
+      assert(c == '(');
       std::unique_ptr<ast::Stmt> else_stmt =
           std::make_unique<ast::BStmt>(build_stmt(ss), meta);
+      ss >> c;
+      assert(c == ')');
       res.emplace_back(std::make_unique<ast::CondStmt>(
           std::move(expr), std::move(if_stmt), std::move(else_stmt), meta));
     } else if (s == "Cond") {

@@ -15,7 +15,7 @@ DomTree::it_dom_front(std::set<llvm::BasicBlock *> &in_bbs) {
 
   // iteration until fixed-point
   DynamicBitset temp_bs(res_bs.bits.size());
-  while(true) {
+  while (true) {
     for (uint64_t i = 0; i < res_bs.bits.size(); i++) {
       bs_type bit = res_bs.bits[i];
       while (bit != 0) {
@@ -25,10 +25,9 @@ DomTree::it_dom_front(std::set<llvm::BasicBlock *> &in_bbs) {
         bit ^= temp;
       }
     }
-    if(res_bs.do_or_with_checks(temp_bs)) {
+    if (res_bs.do_or_with_checks(temp_bs)) {
       temp_bs.clear();
-    }
-    else {
+    } else {
       break;
     }
   }
@@ -47,11 +46,10 @@ DomTree::it_dom_front(std::set<llvm::BasicBlock *> &in_bbs) {
   return res;
 }
 
-
 DomTree::DomTree(CFG &cfg)
-    : dom_pred(cfg.succ.size()),
-      dom_front(cfg.succ.size(), DynamicBitset(cfg.succ.size())) {
-  idx_to_blk = cfg.get_rev_postorder();
+    : dom_pred(cfg.succ.size(), -1), dom_succ(cfg.succ.size()),
+      dom_front(cfg.succ.size(), DynamicBitset(cfg.succ.size())),
+      idx_to_blk(cfg.get_rev_postorder()) {
   std::vector<std::vector<int>> preds(idx_to_blk.size());
   {
     for (int i = 0; i < idx_to_blk.size(); i++) {
@@ -65,9 +63,6 @@ DomTree::DomTree(CFG &cfg)
     }
   }
   assert(preds[0].size() == 0);
-  // todo move to initializer
-  dom_pred = std::vector<int>(idx_to_blk.size(), -1);
-  dom_succ = std::vector<std::vector<int>>(idx_to_blk.size());
   dom_pred[0] = 0;
   bool changed = true;
   while (changed) {
@@ -103,12 +98,14 @@ DomTree::DomTree(CFG &cfg)
   dom_frontier(preds);
 }
 
+// in original algorithm it's i < j and j < i because they
+// number nodes by postorder, but traverse them in reverse post order
 inline int DomTree::intersect(int i, int j) {
   while (i != j) {
-    while (i < j) {
+    while (i > j) {
       i = dom_pred[i];
     }
-    while (j < i) {
+    while (j > i) {
       j = dom_pred[j];
     }
   }

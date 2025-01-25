@@ -14,3 +14,5 @@ test
 *.lat
 build
 .cache
+output.ll
+*cfg.out
