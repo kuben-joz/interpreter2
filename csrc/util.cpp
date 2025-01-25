@@ -25,8 +25,8 @@ bool DynamicBitset::do_or_with_checks(const DynamicBitset &other) {
   uint64_t i = 0;
   bs_type change = 0;
   while(!change && i < bits.size()) {
-    change = bits[i] ^ other.bits[i];
-    bits[i] |= other.bits[i];
+    change = ~bits[i] & other.bits[i];
+    bits[i] |= change;
     i++;
   }
   while(i < bits.size()) {

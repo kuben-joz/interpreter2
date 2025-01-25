@@ -14,7 +14,7 @@ DomTree::it_dom_front(std::set<llvm::BasicBlock *> &in_bbs) {
   }
 
   // iteration until fixed-point
-  DynamicBitset temp_bs(res_bs.bits.size());
+  DynamicBitset temp_bs(res_bs.sz);
   while (true) {
     for (uint64_t i = 0; i < res_bs.bits.size(); i++) {
       bs_type bit = res_bs.bits[i];

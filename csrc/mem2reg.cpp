@@ -1,4 +1,5 @@
 #include "mem2reg.h"
+#include <cstddef>
 
 namespace mem2reg {
 struct var {
@@ -39,17 +40,32 @@ void add_alloca(llvm::AllocaInst *alloc,
 
 // Search(X) in paper
 void rename_rec(const int blk_idx,
-                std::map<llvm::Instruction *, var *> inst_to_var, CFG &cfg,
+                std::map<llvm::Instruction *, var *> &inst_to_var, CFG &cfg,
                 DomTree &dom_tree) {
   llvm::BasicBlock *blk = dom_tree.idx_to_blk[blk_idx];
-  // first loop
   for (auto &inst_ref : blk->getInstList()) {
     llvm::Instruction *inst = &inst_ref;
-    if (llvm::isa<llvm::StoreInst>(inst)) {
+    if (llvm::isa<llvm::LoadInst>(inst)) {
       auto var_it = inst_to_var.find(inst);
       if (var_it == inst_to_var.end()) {
         continue;
       }
+      if (var_it->second->repl_val_stack.empty()) {
+        // todo, how do we deal with this???
+        assert(false && "Edge case todo");
+      } else {
+        // This is equivalent to the C(V) renaming in the paper
+        // We take last store and teleport it to everywhere the next load is used
+        // note to self, assinging to next store works as intended
+        assert(!var_it->second->repl_val_stack.empty());
+        inst->replaceAllUsesWith(var_it->second->repl_val_stack.back());
+      }
+    } else if (llvm::isa<llvm::StoreInst>(inst)) {
+      auto var_it = inst_to_var.find(inst);
+      if (var_it == inst_to_var.end()) {
+        continue;
+      }
+      // The value we stored is instead remembered at top of stack and used until next phi or store
       llvm::Value *new_repl_val = inst->getOperand(0);
       var_it->second->repl_val_stack.emplace_back(new_repl_val);
 
@@ -60,50 +76,46 @@ void rename_rec(const int blk_idx,
       }
       llvm::Value *new_repl_val = inst;
       var_it->second->repl_val_stack.emplace_back(new_repl_val);
-    } else if (llvm::isa<llvm::LoadInst>(inst)) {
-      auto var_it = inst_to_var.find(inst);
-      if (var_it == inst_to_var.end()) {
-        continue;
-      }
-      std::vector<llvm::Value *> stack = var_it->second->repl_val_stack;
-      if (stack.empty()) {
-        // todo, how do we deal with this???
-
-      } else {
-        // This is equivalent to the C(V) renaming in the paper
-        inst->replaceAllUsesWith(stack.back());
-      }
     }
-  }
-  // second loop
+  } // end of first loop
+
+  // all children, not just dominated
+  // note to self, this is for something like while loops to have phis both ways
   for (llvm::BasicBlock *cfg_child : cfg.succ[blk]) {
     for (auto &inst_ref : cfg_child->getInstList()) {
-
       if (auto *phi_inst = llvm::dyn_cast<llvm::PHINode>(&inst_ref)) {
         auto var_it = inst_to_var.find(phi_inst);
         if (var_it == inst_to_var.end()) {
           continue;
         }
-        std::vector<llvm::Value *> var_stack = var_it->second->repl_val_stack;
-        phi_inst->addIncoming(var_stack.back(), blk);
+        assert(!var_it->second->repl_val_stack.empty());
+        phi_inst->addIncoming(var_it->second->repl_val_stack.back(), blk);
       } else { // nothing between phi nodes in block
         break;
       }
     }
-  }
-  // visit children in dom tree
+  } // end of second loop
+
+  // recurse down dominator tree
   for (int dom_child : dom_tree.dom_succ[blk_idx]) {
     rename_rec(dom_child, inst_to_var, cfg, dom_tree);
-  }
-  // final loop
+  } // return from dfs
+
   for (auto &inst_ref : blk->getInstList()) {
     llvm::Instruction *inst = &inst_ref;
-    if (llvm::isa<llvm::StoreInst>(inst)) {
+    if (llvm::isa<llvm::LoadInst>(inst)) {
       auto var_it = inst_to_var.find(inst);
       if (var_it == inst_to_var.end()) {
         continue;
       }
-
+      // todo check if empty stack here is a problem
+      // we don't pop since we haven't pushed
+      var_it->second->replaced_insts.emplace_back(inst);
+    } else if (llvm::isa<llvm::StoreInst>(inst)) {
+      auto var_it = inst_to_var.find(inst);
+      if (var_it == inst_to_var.end()) {
+        continue;
+      }
       var_it->second->repl_val_stack.pop_back();
       var_it->second->replaced_insts.emplace_back(inst);
 
@@ -114,20 +126,8 @@ void rename_rec(const int blk_idx,
       }
       var_it->second->repl_val_stack.pop_back();
       // we dont remove phi nodes we added
-    } else if (llvm::isa<llvm::LoadInst>(inst)) {
-      auto var_it = inst_to_var.find(inst);
-      if (var_it == inst_to_var.end()) {
-        continue;
-      }
-      std::vector<llvm::Value *> stack = var_it->second->repl_val_stack;
-      if (stack.empty()) {
-        // todo, how do we deal with this???
-
-      } else {
-        var_it->second->replaced_insts.emplace_back(inst);
-      }
     }
-  }
+  } // end of loop after return
 }
 
 void transform(CFG &cfg, DomTree &dom) {
@@ -152,10 +152,16 @@ void transform(CFG &cfg, DomTree &dom) {
     for (auto *blk : it_dom_front) {
       // todo maybe assert blk not empty
       assert(!blk->empty());
-      llvm::Instruction *insert_ptr = blk->empty() ? nullptr : &blk->front();
-      llvm::PHINode *phi =
-          llvm::PHINode::Create(v->alloc->getAllocatedType(),
-                                cfg.pred[blk].size(), "allocphi", insert_ptr);
+      llvm::PHINode *phi = nullptr;
+      if (blk->empty()) { // todo check if, when and why this case can occur
+        phi = llvm::PHINode::Create(v->alloc->getAllocatedType(),
+                                    cfg.pred[blk].size(), "allocphi", blk);
+      } else {
+        phi = llvm::PHINode::Create(v->alloc->getAllocatedType(),
+                                    cfg.pred[blk].size(), "allocphi",
+                                    &blk->front());
+      }
+      assert(phi);
       inst_to_var[phi] = v.get();
     }
   }

@@ -79,8 +79,8 @@ int main() {
   for (auto &fn_ref : module->getFunctionList()) {
     llvm::Function *fn = &fn_ref;
     CFG cfg(fn);
-    //draw_cfg(module.get(), cfg, i);
-    //draw_rev_cfg(module.get(), cfg, 1000+i);
+    // draw_cfg(module.get(), cfg, i);
+    // draw_rev_cfg(module.get(), cfg, 1000+i);
     DomTree dom(cfg);
     mem2reg::transform(cfg, dom);
     i++;

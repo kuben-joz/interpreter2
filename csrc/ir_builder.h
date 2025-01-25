@@ -147,15 +147,21 @@ public:
     start_blk = llvm::BasicBlock::Create(*context, "start", cur_fn);
     builder->SetInsertPoint(start_blk);
     int idx = 0;
+    std::vector<llvm::AllocaInst *> allocs;
     for (auto &arg : cur_fn->args()) {
       std::string arg_id = fn.params[idx].ident;
       ast::Type arg_typ = fn.params[idx++].type;
       to_pop.insert(arg_id);
       llvm::AllocaInst *alloc =
           builder->CreateAlloca(convert_type(arg_typ), nullptr, arg_id);
+      allocs.emplace_back(alloc);
       // store argument for mem2reg purposes
-      builder->CreateStore(&arg, alloc);
       vars[arg_id].emplace_back(arg_typ, alloc);
+    }
+    // stores after all allocs
+    idx = 0;
+    for (auto &arg : cur_fn->args()) {
+      builder->CreateStore(&arg, allocs[idx++]);
     }
     for (auto &stmt : fn.stmts) {
       stmt->accept(this);
@@ -249,7 +255,7 @@ public:
     assert(ident_v != vars.end() && "Ident not found in values");
     assert(!ident_v->second.empty() &&
            "ident found in values but values are empty");
-    assert(ret_type != ident_v->second.back().type);
+    assert(ret_type == ident_v->second.back().type && "type mismatch");
     // store new value
     builder->CreateStore(ret_val, ident_v->second.back().ptr);
     ret_val = nullptr;
