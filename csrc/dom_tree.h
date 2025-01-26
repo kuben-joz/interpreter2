@@ -17,6 +17,8 @@ public:
   std::vector<int> dom_pred;
   std::vector<std::vector<int>> dom_succ;
   std::vector<DynamicBitset> dom_front;
+  std::vector<std::vector<int>> cfg_preds;
+  std::vector<std::vector<int>> cfg_succs;
 
   DomTree(CFG &cfg);
 

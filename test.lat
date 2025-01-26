@@ -10,18 +10,18 @@ boolean test(boolean a) {
 
 // todo , need to make sure it works correctly
 // this one breaks
-//int test(int a, int b) {
-//	int c;
-//	if(a < 5) {
-//		int d; // it's this, we added nullptr to phi functions so we can later eliminate them
-//		c = a / b;
-//		a = 0;
-//	}
-//	else {
-//		a = a * 2;
-//	}
-//	int e = a + c;
-//	while(a != 0) {
-//	}
-//	return a*b*c*e;
-//}
+int test1(int a, int b) {
+	int c;
+	if(a < 5) {
+		int d = a*5; // it's this, we added nullptr to phi functions so we can later eliminate them
+		c = a / b;
+		a = 0;
+	}
+	else {
+		a = a * 2;
+	}
+	int e = a + c;
+	while(a != 0) {
+	}
+	return a*b*c*e;
+}

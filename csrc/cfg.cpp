@@ -53,7 +53,6 @@ std::vector<llvm::BasicBlock *> CFG::get_postorder() {
   std::vector<llvm::BasicBlock *> res;
   std::set<llvm::BasicBlock *> visited;
   postorder_rec(start_blks.front(), visited, res);
-  std::reverse(res.begin(), res.end());
   return res;
 }
 

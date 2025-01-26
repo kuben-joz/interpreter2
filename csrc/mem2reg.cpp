@@ -7,7 +7,7 @@ struct var {
   // todo maybe chagne to ints for var to int
   std::set<llvm::BasicBlock *> store_blks;
   std::vector<llvm::Value *> repl_val_stack;
-  std::vector<llvm::Instruction *> replaced_insts;
+  std::vector<llvm::Instruction *> to_remove_insts;
   var(llvm::AllocaInst *alloc) : alloc(alloc), repl_val_stack(1, nullptr) {}
 };
 
@@ -24,11 +24,13 @@ void add_alloca(llvm::AllocaInst *alloc,
         insts.emplace_back(store_use);
         v->store_blks.insert(store_use->getParent());
       } else {
-        assert(false && "I don't think we ever store alloca pointers into others");
+        assert(false &&
+               "I don't think we ever store alloca pointers into others");
         return;
       }
     } else {
-      assert(false && "I don't think any alloca pointers have other uses than load and store");
+      assert(false && "I don't think any alloca pointers have other uses than "
+                      "load and store");
       return;
     }
   }
@@ -55,9 +57,9 @@ void rename_rec(const int blk_idx,
         assert(false && "Edge case todo");
       } else {
         // This is equivalent to the C(V) renaming in the paper
-        // We take last store and teleport it to everywhere the next load is used
-        // note to self, assinging to next store works as intended
-        //assert(!var_it->second->repl_val_stack.empty());
+        // We take last store and teleport it to everywhere the next load is
+        // used note to self, assinging to next store works as intended
+        // assert(!var_it->second->repl_val_stack.empty());
         // todo we should onyl insert where the live in set is true
         // that takes too long to calculate, prune it afterwards
         inst->replaceAllUsesWith(var_it->second->repl_val_stack.back());
@@ -67,7 +69,8 @@ void rename_rec(const int blk_idx,
       if (var_it == inst_to_var.end()) {
         continue;
       }
-      // The value we stored is instead remembered at top of stack and used until next phi or store
+      // The value we stored is instead remembered at top of stack and used
+      // until next phi or store
       llvm::Value *new_repl_val = inst->getOperand(0);
       var_it->second->repl_val_stack.emplace_back(new_repl_val);
 
@@ -83,7 +86,7 @@ void rename_rec(const int blk_idx,
 
   // all children, not just dominated
   // note to self, this is for something like while loops to have phis both ways
-  // successors in papaer are CFG, children are Dom Tree 
+  // successors in papaer are CFG, children are Dom Tree
   for (llvm::BasicBlock *cfg_child : cfg.succ[blk]) {
     for (auto &inst_ref : cfg_child->getInstList()) {
       if (auto *phi_inst = llvm::dyn_cast<llvm::PHINode>(&inst_ref)) {
@@ -91,8 +94,12 @@ void rename_rec(const int blk_idx,
         if (var_it == inst_to_var.end()) {
           continue;
         }
-        //assert(var_it->second->repl_val_stack.back!= nullptr); 
-        phi_inst->addIncoming(var_it->second->repl_val_stack.back(), blk);
+        // phi node is dead in this block, todo make a pass to check for this
+        if (var_it->second->repl_val_stack.back() == nullptr) { 
+          var_it->second->to_remove_insts.emplace_back(phi_inst);
+        } else {
+          phi_inst->addIncoming(var_it->second->repl_val_stack.back(), blk);
+        }
       } else { // nothing between phi nodes in block
         break;
       }
@@ -113,14 +120,14 @@ void rename_rec(const int blk_idx,
       }
       // todo check if empty stack here is a problem
       // we don't pop since we haven't pushed
-      var_it->second->replaced_insts.emplace_back(inst);
+      var_it->second->to_remove_insts.emplace_back(inst);
     } else if (llvm::isa<llvm::StoreInst>(inst)) {
       auto var_it = inst_to_var.find(inst);
       if (var_it == inst_to_var.end()) {
         continue;
       }
       var_it->second->repl_val_stack.pop_back();
-      var_it->second->replaced_insts.emplace_back(inst);
+      var_it->second->to_remove_insts.emplace_back(inst);
 
     } else if (llvm::isa<llvm::PHINode>(inst)) {
       auto var_it = inst_to_var.find(inst);
@@ -174,9 +181,9 @@ void transform(CFG &cfg, DomTree &dom) {
 
   // remove unneeded isntructions
   for (auto &v : vars) {
-    assert(v->repl_val_stack.empty());
+    assert(v->repl_val_stack.back() == nullptr);
     v->alloc->eraseFromParent();
-    for (auto *inst : v->replaced_insts) {
+    for (auto *inst : v->to_remove_insts) {
       inst->eraseFromParent();
     }
   }

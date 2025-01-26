@@ -495,6 +495,7 @@ public:
     std::swap(jmp_true, jmp_false);
     no.sub_expr->accept(this);
     if (ret_val) {
+      // this actually does a xor with 1 if a variable, otherwise a constant is updated
       ret_val = builder->CreateNot(
           ret_val); // todo check this works with short circuit
     }
@@ -551,6 +552,7 @@ public:
     assert(l_type == r_type);
     if (add.op == ast::PLUS) {
       if (l_type == ast::INT) {
+        // todo check nuwn instr does correct overflow
         ret_val = builder->CreateAdd(l_val, r_val);
         ret_type = l_type;
       } else {

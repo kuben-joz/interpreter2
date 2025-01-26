@@ -50,8 +50,8 @@ DomTree::it_dom_front(std::set<llvm::BasicBlock *> &in_bbs) {
 DomTree::DomTree(CFG &cfg)
     : dom_pred(cfg.succ.size(), -1), dom_succ(cfg.succ.size()),
       dom_front(cfg.succ.size(), DynamicBitset(cfg.succ.size())),
-      idx_to_blk(cfg.get_postorder()) {
-  std::vector<std::vector<int>> preds(idx_to_blk.size());
+      idx_to_blk(cfg.get_postorder()), cfg_preds(cfg.succ.size()),
+      cfg_succs(cfg.succ.size()) {
   // todo maybe extract out the whole structure so we don't hav eto recalculate
   // with liveness
   std::reverse(idx_to_blk.begin(), idx_to_blk.end());
@@ -59,19 +59,23 @@ DomTree::DomTree(CFG &cfg)
     blk_to_idx[idx_to_blk[i]] = i;
   }
   for (int i = 0; i < idx_to_blk.size(); i++) {
-    auto &cur_preds = preds[i];
+    auto &cur_preds = cfg_preds[i];
     for (auto cur_pred : cfg.pred[idx_to_blk[i]]) {
       cur_preds.emplace_back(blk_to_idx[cur_pred]);
     }
+    auto &cur_succs = cfg_succs;
+    for (auto cur_succ : cfg.succ[idx_to_blk[i]]) {
+      cur_succs.emplace_back(blk_to_idx[cur_succ]);
+    }
   }
 
-  assert(preds[0].size() == 0);
+  assert(cfg_preds[0].size() == 0);
   dom_pred[0] = 0;
   bool changed = true;
   while (changed) {
     changed = false;
     for (int cur_idx = 1; cur_idx < idx_to_blk.size(); cur_idx++) {
-      std::vector<int> &pred_idxs = preds[cur_idx];
+      std::vector<int> &pred_idxs = cfg_preds[cur_idx];
       int new_idom_idx = -1;
       for (int cur_pred_idx : pred_idxs) {
         if (dom_pred[cur_pred_idx] >= 0) {
@@ -98,7 +102,7 @@ DomTree::DomTree(CFG &cfg)
     dom_succ[dom_pred[cur_idx]].emplace_back(cur_idx);
   }
   // construct dominance frontiers
-  dom_frontier(preds);
+  dom_frontier(cfg_preds);
 }
 
 // in original algorithm it's i < j and j < i because they

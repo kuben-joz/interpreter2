@@ -78,11 +78,11 @@ int main() {
   int i = 0;
   for (auto &fn_ref : module->getFunctionList()) {
     llvm::Function *fn = &fn_ref;
-    // CFG cfg(fn);
+    CFG cfg(fn);
     //  draw_cfg(module.get(), cfg, i);
     //  draw_rev_cfg(module.get(), cfg, 1000+i);
-    // DomTree dom(cfg);
-    //  mem2reg::transform(cfg, dom);
+    DomTree dom(cfg);
+    mem2reg::transform(cfg, dom);
     i++;
   }
   module->dump();
