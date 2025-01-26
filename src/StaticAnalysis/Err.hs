@@ -80,7 +80,7 @@ instance Show StaticException where
   show (CallToUnderclaredFun loc name) = (errMsgStart loc) ++ "Call to undeclared function " ++ show name
   show (IncompatibleFunParams loc f_name f_type params) = (errMsgStart loc) ++ " Incompatible function params for function " ++ show f_name ++ " expected " ++ show f_type ++ " but found " ++ show params
   show (BadRetType loc expected actual) = (errMsgStart loc) ++ "Bad return type from function, expected " ++ show expected ++ " but got " ++ show actual
-  show (VoidExplicitRet loc) = (errMsgStart loc) ++ "Cannot explicitly return in a void function"
+  show (VoidExplicitRet loc) = (errMsgStart loc) ++ "Cannot return with value in a void function"
   show (IncompPrintParam loc t) = (errMsgStart loc) ++ "Can't print expressions of type: " ++ show t
   show (RefFuncAsVar loc id) = (errMsgStart loc) ++ "Use of function identifier " ++ show id ++ " as a variable"
   show (ForbiddenId loc id) = (errMsgStart loc) ++ "Use of forbidden identifier name, " ++ show id

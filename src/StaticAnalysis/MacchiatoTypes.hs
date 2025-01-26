@@ -13,8 +13,10 @@ type MFType = (MType, MTypeMods)
 
 data MTypeMods = MTypeMods {dim_num :: Int, has_ref :: Bool, can_brk_cont :: Bool}
 
+--instance Show MTypeMods where
+--  show (MTypeMods {..}) = "dimensions: " ++ show dim_num ++ ", can be referenced:" ++ show has_ref
 instance Show MTypeMods where
-  show (MTypeMods {..}) = "dimensions: " ++ show dim_num ++ ", can be referenced:" ++ show has_ref
+  show (MTypeMods {..}) = ""
 
 instance Eq MTypeMods where
   (==) m1@(MTypeMods dim_num1 _ _) m2@(MTypeMods dim_num2 _ _) =
@@ -43,7 +45,7 @@ instance Show MType where
   show MBool = "bool"
   show MString = "String"
   show MInt = "int"
-  show (MFun _ params) = "fun " ++ show params
+  show (MFun ret params) = "fun " ++ show ret ++ " " ++ show params
   show MVoid = "void"
 
 data MType

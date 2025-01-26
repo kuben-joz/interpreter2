@@ -4,6 +4,7 @@
 @lf  = internal constant [4 x i8] c"%lf\00"	
 
 ; make sure this doesn't conflict
+; just add garbage to name until doesn't conflict maybe
 declare i32 @printf(i8*, ...) 
 declare i32 @scanf(i8*, ...)
 declare i32 @puts(i8*)
@@ -11,6 +12,8 @@ declare i32 @malloc(i32)
 declare i32 @strlen(i8*)
 declare i8* @strcpy(i8*, i8*)
 declare i8* @strcat(i8*, i8*)
+
+; todo define 
 
 define void @printInt(i32 %x) {
 	%t0 = getelementptr [4 x i8], [4 x i8]* @dnl, i32 0, i32 0

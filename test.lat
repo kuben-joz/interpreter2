@@ -3,7 +3,19 @@ int main() {
 }
 
 
-
+void test(void a) {
+    while (true) {
+        int x;
+        x = readInt();
+        if (x == 1)
+					while(x == 1) {
+            //return;
+					}
+        else
+            printString("jeszcze raz");
+    }
+		return;
+}
 
 // todo , need to make sure it works correctly
 // this one breaks

@@ -40,7 +40,7 @@ import StaticAnalysis.Err as Err
         TypeMismatch,
         UseOfUndeclaredVar,
         VarAsFunc,
-        VoidVar, VoidExplicitRet
+        VoidVar, VoidArg, VoidExplicitRet
       ),
   )
 import StaticAnalysis.MacchiatoTypes
@@ -114,7 +114,7 @@ instance Checkable AType.Arg where
     checkIllegalId id' pos
     key_val <- addKeyVal id (toMFT arg)
     notNothingGuard key_val (Err.FuncNameCollision pos id)
-    voidGuard (toMFT t) (Err.VoidVar pos)
+    voidGuard (toMFT t) (Err.VoidArg pos)
     return Nothing
 
 instance Checkable AType.Block where
