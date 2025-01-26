@@ -22,11 +22,23 @@
 #include "llvm/IR/LLVMContext.h"
 #include "llvm/IR/Type.h"
 
+struct ProtoFunc {
+  std::string name;
+  ast::Type ret_type;
+  std::vector<ast::Type> param_types;
+
+  ProtoFunc(const std::string &name, ast::Type ret_type,
+             std::vector<ast::Type> param_types)
+      : name(name), ret_type(ret_type), param_types(param_types) {}
+};
+
 class IRGen : public Visitor {
 public:
   std::unique_ptr<llvm::LLVMContext> context;
   std::unique_ptr<llvm::Module> module;
   std::unique_ptr<llvm::IRBuilder<>> builder;
+  std::vector<ProtoFunc> proto_funcs;
+  std::set<llvm::Function *> extern_funcs;
 
 private:
   struct var {
@@ -495,7 +507,8 @@ public:
     std::swap(jmp_true, jmp_false);
     no.sub_expr->accept(this);
     if (ret_val) {
-      // this actually does a xor with 1 if a variable, otherwise a constant is updated
+      // this actually does a xor with 1 if a variable, otherwise a constant is
+      // updated
       ret_val = builder->CreateNot(
           ret_val); // todo check this works with short circuit
     }

@@ -1,0 +1,7 @@
+6
+PrintInt void 1 int
+PrintString void 1 string
+error void 0
+readInt int 0
+readString string 0
+mergeStrings string 2 string string
