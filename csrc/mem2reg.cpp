@@ -8,7 +8,7 @@ struct var {
   std::set<llvm::BasicBlock *> store_blks;
   std::vector<llvm::Value *> repl_val_stack;
   std::vector<llvm::Instruction *> replaced_insts;
-  var(llvm::AllocaInst *alloc) : alloc(alloc) {}
+  var(llvm::AllocaInst *alloc) : alloc(alloc), repl_val_stack(1, nullptr) {}
 };
 
 void add_alloca(llvm::AllocaInst *alloc,
@@ -24,11 +24,11 @@ void add_alloca(llvm::AllocaInst *alloc,
         insts.emplace_back(store_use);
         v->store_blks.insert(store_use->getParent());
       } else {
-        assert(false && "I don't think we ever store alloca pointers");
+        assert(false && "I don't think we ever store alloca pointers into others");
         return;
       }
     } else {
-      assert(false && "I don't think any alloca pointers have other uses");
+      assert(false && "I don't think any alloca pointers have other uses than load and store");
       return;
     }
   }
@@ -50,14 +50,16 @@ void rename_rec(const int blk_idx,
       if (var_it == inst_to_var.end()) {
         continue;
       }
-      if (var_it->second->repl_val_stack.empty()) {
+      if (var_it->second->repl_val_stack.back() == nullptr) {
         // todo, how do we deal with this???
         assert(false && "Edge case todo");
       } else {
         // This is equivalent to the C(V) renaming in the paper
         // We take last store and teleport it to everywhere the next load is used
         // note to self, assinging to next store works as intended
-        assert(!var_it->second->repl_val_stack.empty());
+        //assert(!var_it->second->repl_val_stack.empty());
+        // todo we should onyl insert where the live in set is true
+        // that takes too long to calculate, prune it afterwards
         inst->replaceAllUsesWith(var_it->second->repl_val_stack.back());
       }
     } else if (llvm::isa<llvm::StoreInst>(inst)) {
@@ -81,6 +83,7 @@ void rename_rec(const int blk_idx,
 
   // all children, not just dominated
   // note to self, this is for something like while loops to have phis both ways
+  // successors in papaer are CFG, children are Dom Tree 
   for (llvm::BasicBlock *cfg_child : cfg.succ[blk]) {
     for (auto &inst_ref : cfg_child->getInstList()) {
       if (auto *phi_inst = llvm::dyn_cast<llvm::PHINode>(&inst_ref)) {
@@ -88,7 +91,7 @@ void rename_rec(const int blk_idx,
         if (var_it == inst_to_var.end()) {
           continue;
         }
-        assert(!var_it->second->repl_val_stack.empty());
+        //assert(var_it->second->repl_val_stack.back!= nullptr); 
         phi_inst->addIncoming(var_it->second->repl_val_stack.back(), blk);
       } else { // nothing between phi nodes in block
         break;

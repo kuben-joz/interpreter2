@@ -15,7 +15,7 @@ struct CFG {
 
   void update();
 
-  std::vector<llvm::BasicBlock *> get_rev_postorder();
+  std::vector<llvm::BasicBlock *> get_postorder();
 
 private:
   void postorder_rec(llvm::BasicBlock *blk_in,

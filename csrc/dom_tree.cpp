@@ -1,5 +1,6 @@
 #include "dom_tree.h"
 #include "util.h"
+#include <algorithm>
 #include <llvm-14/llvm/IR/BasicBlock.h>
 
 // {REF} bit twiddling adapted from
@@ -49,19 +50,21 @@ DomTree::it_dom_front(std::set<llvm::BasicBlock *> &in_bbs) {
 DomTree::DomTree(CFG &cfg)
     : dom_pred(cfg.succ.size(), -1), dom_succ(cfg.succ.size()),
       dom_front(cfg.succ.size(), DynamicBitset(cfg.succ.size())),
-      idx_to_blk(cfg.get_rev_postorder()) {
+      idx_to_blk(cfg.get_postorder()) {
   std::vector<std::vector<int>> preds(idx_to_blk.size());
-  {
-    for (int i = 0; i < idx_to_blk.size(); i++) {
-      blk_to_idx[idx_to_blk[i]] = i;
-    }
-    for (int i = 0; i < idx_to_blk.size(); i++) {
-      auto &cur_preds = preds[i];
-      for (auto cur_pred : cfg.pred[idx_to_blk[i]]) {
-        cur_preds.emplace_back(blk_to_idx[cur_pred]);
-      }
+  // todo maybe extract out the whole structure so we don't hav eto recalculate
+  // with liveness
+  std::reverse(idx_to_blk.begin(), idx_to_blk.end());
+  for (int i = 0; i < idx_to_blk.size(); i++) {
+    blk_to_idx[idx_to_blk[i]] = i;
+  }
+  for (int i = 0; i < idx_to_blk.size(); i++) {
+    auto &cur_preds = preds[i];
+    for (auto cur_pred : cfg.pred[idx_to_blk[i]]) {
+      cur_preds.emplace_back(blk_to_idx[cur_pred]);
     }
   }
+
   assert(preds[0].size() == 0);
   dom_pred[0] = 0;
   bool changed = true;

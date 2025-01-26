@@ -605,7 +605,7 @@ public:
     ret_type = ast::BOOL;
   }
 
-  void visit_log(ast::LogExpr &log) override {
+  /*void visit_log(ast::LogExpr &log) override {
     assert(!ret_val);
     assert(ret_type == ast::VOID);
     llvm::BasicBlock *jmp_true_bak = nullptr;
@@ -719,6 +719,121 @@ public:
       }
       ret_val = nullptr;
       ret_type = ast::VOID;
+    }
+  }
+*/
+  // todo maybe change to this
+  void visit_log(ast::LogExpr &log) override {
+    assert(!ret_val);
+    assert(ret_type == ast::VOID);
+    llvm::BasicBlock *jmp_true_bak = nullptr;
+    llvm::BasicBlock *jmp_false_bak = nullptr;
+    bool is_root = false;
+    if (!jmp_end) {
+      is_root = true;
+      assert(!jmp_true);
+      assert(!jmp_false);
+      assert(jmp_end_vals.empty());
+      jmp_true = llvm::BasicBlock::Create(*context, "jmp_true");
+      jmp_false = llvm::BasicBlock::Create(*context, "jmp_false");
+      if (log.op == ast::OR) {
+        jmp_end = jmp_true;
+      } else { // log.op == ast::AND
+        assert(log.op == ast::AND);
+        jmp_end = jmp_false;
+      }
+    } else { // jmp_end
+      assert(jmp_true);
+      assert(jmp_false);
+      assert((jmp_true == jmp_end) || (jmp_false == jmp_end));
+      if (log.op == ast::OR) {
+        jmp_false_bak = llvm::BasicBlock::Create(*context, "jmp_false");
+        std::swap(jmp_false, jmp_false_bak);
+      } else { // log.op == ast::AND
+        assert(log.op == ast::AND);
+        jmp_true_bak = llvm::BasicBlock::Create(*context, "jmp_true");
+        std::swap(jmp_true, jmp_true_bak);
+      }
+    }
+    assert(jmp_true != jmp_false);
+
+    // LHS
+    log.l_sub_expr->accept(this);
+    if (ret_val) { // lhs isn't a logical binary statement
+      builder->CreateCondBr(ret_val, jmp_true, jmp_false);
+      if (jmp_true == jmp_end) {
+        jmp_end_vals.emplace_back(llvm::ConstantInt::getTrue(*context),
+                                  builder->GetInsertBlock());
+      } else if (jmp_false == jmp_end) { // jmp_false = jmp_end
+        jmp_end_vals.emplace_back(llvm::ConstantInt::getFalse(*context),
+                                  builder->GetInsertBlock());
+      }
+      ret_val = nullptr;
+      ret_type = ast::VOID;
+    }
+
+    // RHS
+    assert(!ret_val);
+    llvm::Function *cur_func = builder->GetInsertBlock()->getParent();
+    if (log.op == ast::OR) {
+      jmp_false->insertInto(cur_func);
+      builder->SetInsertPoint(jmp_false);
+    } else { // log.op == ast::AND
+      assert(log.op == ast::AND);
+      jmp_true->insertInto(cur_func);
+      builder->SetInsertPoint(jmp_true);
+    }
+
+    if (is_root) {
+      assert((log.op == ast::OR) == (jmp_true == jmp_end));
+      assert((log.op == ast::AND) == (jmp_false == jmp_end));
+      jmp_true = jmp_end;
+      jmp_false = jmp_end;
+    } else {
+      if (log.op == ast::OR) {
+        std::swap(jmp_false, jmp_false_bak);
+      } else { // log.op == ast::AND
+        assert(log.op == ast::AND);
+        std::swap(jmp_true, jmp_true_bak);
+      }
+    }
+    log.r_sub_expr->accept(this);
+
+    if (ret_val) {
+      if (jmp_true == jmp_false) {
+        assert(jmp_true == jmp_end);
+        builder->CreateBr(jmp_end);
+        jmp_end_vals.emplace_back(ret_val, builder->GetInsertBlock());
+      } else {
+        builder->CreateCondBr(ret_val, jmp_true, jmp_false);
+        if (jmp_true == jmp_end) {
+          jmp_end_vals.emplace_back(llvm::ConstantInt::getTrue(*context),
+                                    builder->GetInsertBlock());
+        } else if (jmp_false == jmp_end) { // jmp_false = jmp_end
+          jmp_end_vals.emplace_back(llvm::ConstantInt::getFalse(*context),
+                                    builder->GetInsertBlock());
+        }
+      }
+      ret_val = nullptr;
+      ret_type = ast::VOID;
+    }
+
+    if (is_root) {
+      assert(jmp_true == jmp_false);
+      assert(jmp_true == jmp_end);
+      assert(jmp_end_vals.size() > 1);
+      jmp_end->insertInto(cur_func);
+      builder->SetInsertPoint(jmp_end);
+      llvm::PHINode *phi = builder->CreatePHI(bool_type, jmp_end_vals.size());
+      for (auto &v_b : jmp_end_vals) {
+        phi->addIncoming(v_b.first, v_b.second);
+      }
+      ret_val = phi;
+      ret_type = ast::BOOL;
+      jmp_true = nullptr;
+      jmp_false = nullptr;
+      jmp_end = nullptr;
+      jmp_end_vals.clear();
     }
   }
 };

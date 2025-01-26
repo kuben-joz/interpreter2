@@ -2,24 +2,18 @@ int main() {
 	return 0;
 }
 
-int test(int a, int b) {
-	int c;
-	if(a < 5) {
-		int d;
-	}
-	else {
-	}
-	while(a != 0) {
-	}
-	return ;
+boolean test(boolean a) {
+	boolean b = (a && a) || (a && a);
+	return b;
 }
 
 
+// todo , need to make sure it works correctly
 // this one breaks
 //int test(int a, int b) {
 //	int c;
 //	if(a < 5) {
-//		int d;
+//		int d; // it's this, we added nullptr to phi functions so we can later eliminate them
 //		c = a / b;
 //		a = 0;
 //	}

@@ -48,7 +48,7 @@ void CFG::postorder_rec(llvm::BasicBlock *blk_in,
   res.emplace_back(blk_in);
 }
 
-std::vector<llvm::BasicBlock *> CFG::get_rev_postorder() {
+std::vector<llvm::BasicBlock *> CFG::get_postorder() {
   assert(start_blks.size() == 1 && "We need exactly 1 start blk, this is probably a reverse cfg");
   std::vector<llvm::BasicBlock *> res;
   std::set<llvm::BasicBlock *> visited;
