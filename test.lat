@@ -3,7 +3,15 @@ int main() {
 }
 
 
-void test(void a) {
+
+void a() {
+
+}
+
+void test(int b, int c, int d) {
+    if(true)
+        int a;
+
     while (true) {
         int x;
         x = readInt();
@@ -64,5 +72,15 @@ int test() {
             printString("jeszcze raz");
     }
 }
+
+*/
+/*
+this doesnt fail
+int main() {
+    if(true)
+        int a;
+    return 0;
+}
+
 
 */

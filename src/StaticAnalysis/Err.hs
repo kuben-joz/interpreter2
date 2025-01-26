@@ -5,6 +5,7 @@ module StaticAnalysis.Err where
 
 import Mem.SymbolTable (SymTable (loc))
 import Parsing.AbsMacchiato (AddOp, BNFC'Position, Expr, Expr' (Neg, Not), MulOp, RelOp)
+import qualified Parsing.AbsMacchiato as AType
 import StaticAnalysis.MacchiatoTypes
 
 type ErrLoc = BNFC'Position
@@ -17,6 +18,7 @@ data StaticException
   = UnknownVar ErrLoc String
   | VarRedef ErrLoc String
   | NoMain
+  | BadMainSig ErrLoc MFType MFType
   | -- expected but found
     TypeMismatch ErrLoc MFType MFType
   | RefMismatch ErrLoc MFType MFType
@@ -28,6 +30,8 @@ data StaticException
   | IncompatibleTypeOpOr ErrLoc MFType MFType
   | InvalidKeyword ErrLoc
   | FuncNameCollision ErrLoc String
+  | ArgNameCollision ErrLoc String String
+  | VarNameCollision ErrLoc String
   | NoReturn ErrLoc String
   | NoReturnCont [(ErrLoc, String)]
   | NoReturnInf ErrLoc
@@ -59,19 +63,37 @@ instance Show StaticException where
   show (VarRedef loc id) = (errMsgStart loc) ++ "Variable " ++ show id ++ " redefinition"
   show (UnknownVar loc id) = (errMsgStart loc) ++ "Unkown variable " ++ show id
   show NoMain = (errMsgStart Nothing) ++ "No main function found"
+  show (BadMainSig loc actual expected) = (errMsgStart loc) ++ "Bad main function signature. Expected " ++ show expected ++ ", but got " ++ show actual
   show (TypeMismatch loc t1 t2) = (errMsgStart loc) ++ "Type mismatch between " ++ show t1 ++ " and " ++ show t2
   show (RefMismatch loc t1 t2) = (errMsgStart loc) ++ "Referential mistach between " ++ show t1 ++ " and " ++ show t2
   show (IncompatibleTypeOp loc op t) =
     case op of
       (Not _ _) -> (errMsgStart loc) ++ "Incompatible type " ++ show t ++ " for logical negation"
       (Neg _ _) -> (errMsgStart loc) ++ "Incompatible type " ++ show t ++ " for integer negation"
-  show (IncompatibleTypeOpMul loc op t1 t2) = (errMsgStart loc) ++ " Incompatible types for operation, " ++ show t1 ++ show op ++ show t2
-  show (IncompatibleTypeOpAdd loc op t1 t2) = (errMsgStart loc) ++ " Incompatible types for operation, " ++ show t1 ++ show op ++ show t2
-  show (IncompatibleTypeOpRel loc op t1 t2) = (errMsgStart loc) ++ " Incompatible types for operation, " ++ show t1 ++ show op ++ show t2
+      _ -> undefined
+  show (IncompatibleTypeOpMul loc op t1 t2) =
+    case op of
+      (AType.Times _) -> (errMsgStart loc) ++ " Incompatible types for operation, " ++ show t1 ++ " * " ++ show t2
+      (AType.Div _) -> (errMsgStart loc) ++ " Incompatible types for operation, " ++ show t1 ++ " / " ++ show t2
+      (AType.Mod _) -> (errMsgStart loc) ++ " Incompatible types for operation, " ++ show t1 ++ " % " ++ show t2
+  show (IncompatibleTypeOpAdd loc op t1 t2) =
+    case op of
+      (AType.Plus _) -> (errMsgStart loc) ++ " Incompatible types for operation, " ++ show t1 ++ " + " ++ show t2
+      (AType.Minus _) -> (errMsgStart loc) ++ " Incompatible types for operation, " ++ show t1 ++ " - " ++ show t2
+  show (IncompatibleTypeOpRel loc op t1 t2) =
+    case op of
+      (AType.LTH _) -> (errMsgStart loc) ++ " Incompatible types for operation, " ++ show t1 ++ " < " ++ show t2
+      (AType.LE _) -> (errMsgStart loc) ++ " Incompatible types for operation, " ++ show t1 ++ " <= " ++ show t2
+      (AType.GTH _) -> (errMsgStart loc) ++ " Incompatible types for operation, " ++ show t1 ++ " > " ++ show t2
+      (AType.GE _) -> (errMsgStart loc) ++ " Incompatible types for operation, " ++ show t1 ++ " >= " ++ show t2
+      (AType.EQU _) -> (errMsgStart loc) ++ " Incompatible types for operation, " ++ show t1 ++ " == " ++ show t2
+      (AType.NE _) -> (errMsgStart loc) ++ " Incompatible types for operation, " ++ show t1 ++ " != " ++ show t2
   show (IncompatibleTypeOpAnd loc t1 t2) = (errMsgStart loc) ++ " Incompatible types for operations, " ++ show t1 ++ " && " ++ show t2
   show (IncompatibleTypeOpOr loc t1 t2) = (errMsgStart loc) ++ " Incompatible types for operations, " ++ show t1 ++ " || " ++ show t2
   show (InvalidKeyword loc) = (errMsgStart loc) ++ "Invalid keyword"
   show (FuncNameCollision loc name) = (errMsgStart loc) ++ " Function name collison for " ++ show name
+  show (ArgNameCollision loc name fn_name) = (errMsgStart loc) ++ " Argument name collison for " ++ show name ++ " in function: " ++ show fn_name
+  show (VarNameCollision loc name) = (errMsgStart loc) ++ " Variable name collison for " ++ show name
   show (NoReturn loc name) = (errMsgStart loc) ++ " No return in function " ++ show name
   show (NoReturnCont err_stack) = (errMsgStart Nothing) ++ " No return statements on nonvoid control path: " ++ showStack err_stack
   show (NoReturnInf loc) = (errMsgStart loc) ++ " No possible return form infinite loop "

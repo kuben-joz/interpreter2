@@ -24,6 +24,8 @@ import StaticAnalysis.Err as Err
         CallToUnderclaredFun,
         ForbiddenId,
         FuncNameCollision,
+        ArgNameCollision,
+        VarNameCollision,
         IfElseTypeMistmatch,
         IncompatibleFunParams,
         IncompatibleTypeOp,
@@ -40,7 +42,7 @@ import StaticAnalysis.Err as Err
         TypeMismatch,
         UseOfUndeclaredVar,
         VarAsFunc,
-        VoidVar, VoidArg, VoidExplicitRet
+        VoidVar, VoidArg, VoidExplicitRet, BadMainSig
       ),
   )
 import StaticAnalysis.MacchiatoTypes
@@ -103,17 +105,18 @@ instance Checkable AType.Program where
 instance Checkable AType.FnDef where
   check _ fn@(AType.FunDef pos t id'@(AType.Ident id) args blk) = do
     checkIllegalId id' pos
-    mapM_ (check Nothing) args
+    mapM_ (check Nothing) (zip args (repeat id))
     --      return $ fromMaybe (throwError $ Err.NoReturn pos id) (check (Just $ toMFT t) blk)
     res_type <- check (Just $ toMFT t) blk
     nonVoidGuard res_type (toMFT t) (Err.NoReturn pos id)
     return Nothing
 
-instance Checkable AType.Arg where
-  check _ arg@(AType.ArgVal pos t id'@(AType.Ident id)) = do
+-- the string is the function name for better debug messages
+instance Checkable (AType.Arg, String) where
+  check _ (arg@(AType.ArgVal pos t id'@(AType.Ident id)), fn_name) = do
     checkIllegalId id' pos
     key_val <- addKeyVal id (toMFT arg)
-    notNothingGuard key_val (Err.FuncNameCollision pos id)
+    notNothingGuard key_val (Err.ArgNameCollision pos id fn_name)
     voidGuard (toMFT t) (Err.VoidArg pos)
     return Nothing
 
@@ -194,14 +197,14 @@ instance Checkable AType.Item where
   check (Just t) (AType.NoInit pos id'@(AType.Ident id)) = do
     checkIllegalId id' pos
     prev_val <- addKeyVal id t
-    notNothingGuard prev_val (Err.FuncNameCollision pos id)
+    notNothingGuard prev_val (Err.VarNameCollision pos id)
     return Nothing
   check (Just t) (AType.Init pos id'@(AType.Ident id) expr) = do
     checkIllegalId id' pos
     expr_t <- check Nothing expr
     assertType t (fromJust expr_t) pos
     prev_val <- addKeyVal id t
-    notNothingGuard prev_val (Err.FuncNameCollision pos id)
+    notNothingGuard prev_val (Err.VarNameCollision pos id)
     return Nothing
 
 instance Checkable AType.Expr where
@@ -293,8 +296,17 @@ instance Checkable AType.MulOp where
       _ -> throwError $ Err.IncompatibleTypeOpMul (AType.hasPosition op) op t1 t1
 
 instance Checkable AType.RelOp where
-  check t op@(AType.EQU pos) = do return $ Just (makeType'' MBool)
-  check t op@(AType.NE pos) = do return $ Just (makeType'' MBool)
+  --check t op@(AType.EQU pos) = do return $ Just (makeType'' MBool)
+  check t op@(AType.EQU pos) = do 
+    let t1@(tt, m) = fromJust t
+    case tt of
+      MVoid -> throwError $ Err.IncompatibleTypeOpRel (AType.hasPosition op) op t1 t1
+      _ -> return $ Just (makeType'' MBool)
+  check t op@(AType.NE pos) = do 
+    let t1@(tt, m) = fromJust t
+    case tt of
+      MVoid -> throwError $ Err.IncompatibleTypeOpRel (AType.hasPosition op) op t1 t1
+      _ -> return $ Just (makeType'' MBool)
   check t op = do
     let t1@(tt, m) = fromJust t
     case tt of
@@ -325,7 +337,7 @@ getMain fns = do
       | otherwise = Nothing
 
 assertMain :: AType.FnDef -> STraverser
-assertMain fn = assertType makeMain (toMFT fn) (AType.hasPosition fn)
+assertMain fn = assertType' makeMain (toMFT fn) (BadMainSig (AType.hasPosition fn) (toMFT fn) makeMain)
 
 addBuiltInFuncs :: ([Char], MFType) -> STraverser
 addBuiltInFuncs (funcId, funcType) = do
