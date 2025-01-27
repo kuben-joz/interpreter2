@@ -362,12 +362,22 @@ public:
     } else {
       jmp_else = jmp_after;
     }
+    jmp_true = jmp_if;
+    jmp_false = jmp_else;
+    jmp_end = jmp_else;
     stmt.cond_expr->accept(this);
-    assert(ret_val);
-    assert(ret_type != ast::VOID);
-    builder->CreateCondBr(ret_val, jmp_if, jmp_else);
-    ret_val = nullptr;
-    ret_type = ast::VOID;
+    if (ret_val) {
+      assert(ret_type == ast::BOOL);
+      builder->CreateCondBr(ret_val, jmp_if, jmp_else);
+      ret_val = nullptr;
+      ret_type = ast::VOID;
+    }
+    jmp_true = nullptr;
+    jmp_false = nullptr;
+    jmp_end = nullptr;
+    jmp_end_vals.clear();
+    assert(!ret_val);
+    assert(ret_type == ast::VOID);
     // if cond
     llvm::Function *cur_func = builder->GetInsertBlock()->getParent();
     jmp_if->insertInto(cur_func);

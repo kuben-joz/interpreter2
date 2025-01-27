@@ -1,7 +1,7 @@
 int main() {
     int a = readInt();
     boolean b = a < a;
-    while(b) {
+    if((b ||b)) {
         return 1;
     }
     return 0 ;
