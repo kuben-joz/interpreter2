@@ -1,5 +1,5 @@
 int main() {
-	printInt(fac(10, 10+11));
+	printInt(fac(10));
 	printInt(rfac(10));
 	printInt(mfac(10));
         printInt(ifac(10));
@@ -19,7 +19,7 @@ int main() {
         return 0 ;
 }
 
-int fac(int a, int b) {
+int fac(int a) {
 	int r;
 	int n;
 

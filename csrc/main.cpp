@@ -89,6 +89,8 @@ int main() {
     if (extern_funcs.count(fn)) {
       continue;
     }
+    std::string name(fn->getName());
+    std::cout << name << std::endl;
     CFG cfg(fn);
     //  draw_cfg(module.get(), cfg, i);
     //  draw_rev_cfg(module.get(), cfg, 1000+i);
@@ -96,6 +98,7 @@ int main() {
     mem2reg::transform(cfg, dom);
     i++;
   }
-  module->dump();
+  module->print(stdout, );
+  //module->dump();
   return 0;
 }

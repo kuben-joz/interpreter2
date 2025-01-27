@@ -511,6 +511,7 @@ public:
       assert(ret_val);
       args.push_back(ret_val);
       ret_val = nullptr;
+      ret_type = ast::VOID;
     }
     assert(func_defs.count(fn.ident) && "Called function doesn't exist");
     auto &func_node = func_defs[fn.ident];

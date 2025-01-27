@@ -184,8 +184,6 @@ std::vector<std::unique_ptr<ast::Stmt>> build_block(std::stringstream &ss);
 
 std::unique_ptr<ast::Expr> build_expr(std::stringstream &ss) {
   char c;
-  ss >> c;
-  assert(c == '(');
   std::string s;
   ss >> s;
   ast::metadata meta = build_meta(ss);
@@ -222,38 +220,76 @@ std::unique_ptr<ast::Expr> build_expr(std::stringstream &ss) {
     res = std::make_unique<ast::FunAppExpr>(ident, std::move(args), meta);
 
   } else if (s == "Neg") {
+    ss >> c;
+    assert(c == '(');
     res = std::make_unique<ast::NegExpr>(build_expr(ss), meta);
+    ss >> c;
+    assert(c == ')');
   } else if (s == "Not") {
+    ss >> c;
+    assert(c == '(');
     res = std::make_unique<ast::NotExpr>(build_expr(ss), meta);
+    ss >> c;
+    assert(c == ')');
   } else if (s == "EMul") {
+    ss >> c;
+    assert(c == '(');
     std::unique_ptr<ast::Expr> LHS = build_expr(ss);
+    ss >> c;
+    assert(c == ')');
     ast::MulOp op = get_mul_op(ss);
+    ss >> c;
+    assert(c == '(');
     std::unique_ptr<ast::Expr> RHS = build_expr(ss);
+    ss >> c;
+    assert(c == ')');
     res = std::make_unique<ast::MulExpr>(op, std::move(LHS), std::move(RHS),
                                          meta);
   } else if (s == "EAdd") {
+    ss >> c;
+    assert(c == '(');
     std::unique_ptr<ast::Expr> LHS = build_expr(ss);
+    ss >> c;
+    assert(c == ')');
     ast::AddOp op = get_add_op(ss);
+    ss >> c;
+    assert(c == '(');
     std::unique_ptr<ast::Expr> RHS = build_expr(ss);
+    ss >> c;
+    assert(c == ')');
     res = std::make_unique<ast::AddExpr>(op, std::move(LHS), std::move(RHS),
                                          meta);
   } else if (s == "ERel") {
+    ss >> c;
+    assert(c == '(');
     std::unique_ptr<ast::Expr> LHS = build_expr(ss);
+    ss >> c;
+    assert(c == ')');
     ast::RelOp op = get_rel_op(ss);
+    ss >> c;
+    assert(c == '(');
     std::unique_ptr<ast::Expr> RHS = build_expr(ss);
+    ss >> c;
+    assert(c == ')');
     res = std::make_unique<ast::RelExpr>(op, std::move(LHS), std::move(RHS),
                                          meta);
   } else if (s == "EAnd" || s == "EOr") {
+    ss >> c;
+    assert(c == '(');
     std::unique_ptr<ast::Expr> LHS = build_expr(ss);
+    ss >> c;
+    assert(c == ')');
     ast::LogOp op = s == "EAnd" ? ast::AND : ast::OR;
+    ss >> c;
+    assert(c == '(');
     std::unique_ptr<ast::Expr> RHS = build_expr(ss);
+    ss >> c;
+    assert(c == ')');
     res = std::make_unique<ast::LogExpr>(op, std::move(LHS), std::move(RHS),
                                          meta);
   } else {
     assert(false && "unknown expression");
   }
-  ss >> c;
-  assert(c == ')');
   return res;
 }
 
@@ -261,6 +297,7 @@ std::unique_ptr<ast::Expr> build_expr(std::stringstream &ss) {
 // variables
 std::vector<std::unique_ptr<ast::Stmt>> build_stmt(std::stringstream &ss) {
   std::string s;
+  char c;
   ss >> s;
   ast::metadata meta = build_meta(ss);
   std::vector<std::unique_ptr<ast::Stmt>> res;
@@ -282,15 +319,24 @@ std::vector<std::unique_ptr<ast::Stmt>> build_stmt(std::stringstream &ss) {
       meta = build_meta(ss);
       std::string ident = get_ident(ss);
       std::unique_ptr<ast::Expr> init_val(nullptr);
-      if (s == "Init")
-        init_val = std::move(build_expr(ss));
+      if (s == "Init") {
+        ss >> c;
+        assert(c == '(');
+        init_val = build_expr(ss);
+        ss >> c;
+        assert(c == ')');
+      }
       res.emplace_back(std::make_unique<ast::DeclStmt>(
           type, ident, std::move(init_val), meta));
       ss >> delim;
     }
   } else if (s == "Ass") {
     std::string ident = get_ident(ss);
+    ss >> c;
+    assert(c == '(');
     std::unique_ptr<ast::Expr> ass_expr = build_expr(ss);
+    ss >> c;
+    assert(c == ')');
     res.emplace_back(
         std::make_unique<ast::AssStmt>(ident, std::move(ass_expr), meta));
   } else if (s == "Incr" || s == "Decr") {
@@ -299,12 +345,20 @@ std::vector<std::unique_ptr<ast::Stmt>> build_stmt(std::stringstream &ss) {
     res.emplace_back(std::make_unique<ast::IncDecStmt>(ident, is_inc, meta));
   } else if (s == "Ret" || s == "RetNone") {
     std::unique_ptr<ast::Expr> ret_expr(nullptr);
-    if (s == "Ret")
+    if (s == "Ret") {
+      ss >> c;
+      assert(c == '(');
       ret_expr = build_expr(ss);
+      ss >> c;
+      assert(c == ')');
+    }
     res.emplace_back(std::make_unique<ast::RetStmt>(std::move(ret_expr), meta));
   } else if (s == "Cond" || s == "CondElse" || s == "While") {
+      ss >> c;
+  assert(c == '(');
     std::unique_ptr<ast::Expr> expr = build_expr(ss);
-    char c;
+      ss >> c;
+  assert(c == ')');
     ss >> c;
     assert(c == '(');
     std::unique_ptr<ast::Stmt> if_stmt =
@@ -328,10 +382,14 @@ std::vector<std::unique_ptr<ast::Stmt>> build_stmt(std::stringstream &ss) {
           std::move(expr), std::move(if_stmt), meta));
     }
   } else if (s == "SExp") {
+    ss >> c;
+    assert(c == '(');
     std::unique_ptr<ast::Expr> expr = build_expr(ss);
+    ss >> c;
+    assert(c == ')');
     res.emplace_back(std::make_unique<ast::ExprStmt>(std::move(expr), meta));
   } else {
-    assert(false &&"unknown statement");
+    assert(false && "unknown statement");
   }
   return res;
 }
