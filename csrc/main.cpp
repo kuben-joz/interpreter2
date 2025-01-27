@@ -98,7 +98,6 @@ int main() {
     mem2reg::transform(cfg, dom);
     i++;
   }
-  module->print(stdout, );
-  //module->dump();
+  module->dump();
   return 0;
 }
