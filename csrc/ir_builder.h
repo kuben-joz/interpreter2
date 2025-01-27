@@ -444,12 +444,19 @@ public:
     // condition
     jmp_cond->insertInto(cur_func);
     builder->SetInsertPoint(jmp_cond);
+    jmp_true = jmp_body;
+    jmp_false = jmp_after;
+    jmp_end = jmp_false;
     stmt.cond->accept(this);
-    assert(ret_val);
-    assert(ret_type != ast::VOID);
-    builder->CreateCondBr(ret_val, jmp_body, jmp_after);
+    assert(!ret_val);
+    assert(ret_type == ast::VOID);
+    //builder->CreateCondBr(ret_val, jmp_body, jmp_after);
     ret_val = nullptr;
     ret_type = ast::VOID;
+    jmp_true = nullptr;
+    jmp_false = nullptr;
+    jmp_end = nullptr;
+    jmp_end_vals.clear();
     // after
     jmp_after->insertInto(cur_func);
     builder->SetInsertPoint(jmp_after);
@@ -491,7 +498,7 @@ public:
     assert(!ret_val);
     assert(ret_type == ast::VOID);
     ret_val = llvm::ConstantInt::getBool(*context, b.val);
-    ret_type = ast::STR;
+    ret_type = ast::BOOL;
   }
 
   void visit_string(ast::LStringExpr &s) override {

@@ -95,7 +95,7 @@ int main() {
     //  draw_cfg(module.get(), cfg, i);
     //  draw_rev_cfg(module.get(), cfg, 1000+i);
     DomTree dom(cfg);
-    mem2reg::transform(cfg, dom);
+    // mem2reg::transform(cfg, dom);
     i++;
   }
   module->dump();
