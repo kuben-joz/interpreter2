@@ -14,7 +14,7 @@
 
 namespace liveness {
 
-class LocalLiveVisit : llvm::InstVisitor<LocalLiveVisit> {
+class LocalLiveVisit : public llvm::InstVisitor<LocalLiveVisit> {
 
   // std::set<llvm::Value *> in;
   std::set<llvm::Value *> out;

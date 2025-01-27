@@ -16,6 +16,7 @@
 #include "mem2reg.h"
 #include "skel.h"
 #include "treeparse.h"
+#include "printer.h"
 
 void draw_cfg(llvm::Module *module, CFG &cfg, int i) {
   std::ofstream cfg_f("debug/" + std::to_string(i) + "-cfg.out");
@@ -89,8 +90,6 @@ int main() {
     if (extern_funcs.count(fn)) {
       continue;
     }
-    std::string name(fn->getName());
-    std::cout << name << std::endl;
     CFG cfg(fn);
     //  draw_cfg(module.get(), cfg, i);
     //  draw_rev_cfg(module.get(), cfg, 1000+i);
@@ -98,6 +97,7 @@ int main() {
     // mem2reg::transform(cfg, dom);
     i++;
   }
+  printer::print(module.get(), extern_funcs);
   module->dump();
   return 0;
 }
