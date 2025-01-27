@@ -25,9 +25,9 @@
 
 class IRGen : public Visitor {
 public:
-  llvm::LLVMContext* context;
-  llvm::Module* module;
-  llvm::IRBuilder<>* builder;
+  llvm::LLVMContext *context;
+  llvm::Module *module;
+  llvm::IRBuilder<> *builder;
   std::set<llvm::Function *> extern_funcs;
 
 private:
@@ -108,10 +108,9 @@ private:
   }
 
 public:
-  IRGen(llvm::LLVMContext* context, llvm::Module* module, llvm::IRBuilder<>* builder)
-      : context(context),
-        module(module),
-        builder(builder),
+  IRGen(llvm::LLVMContext *context, llvm::Module *module,
+        llvm::IRBuilder<> *builder)
+      : context(context), module(module), builder(builder),
         int_type(llvm::IntegerType::getInt32Ty(*context)),
         bool_type(llvm::IntegerType::getInt1Ty(*context)),
         str_type(llvm::PointerType::getInt8PtrTy(*context)),
@@ -448,11 +447,14 @@ public:
     jmp_false = jmp_after;
     jmp_end = jmp_false;
     stmt.cond->accept(this);
+    if (ret_val) {
+      assert(ret_type == ast::BOOL);
+      builder->CreateCondBr(ret_val, jmp_body, jmp_after);
+      ret_val = nullptr;
+      ret_type = ast::VOID;
+    }
     assert(!ret_val);
     assert(ret_type == ast::VOID);
-    //builder->CreateCondBr(ret_val, jmp_body, jmp_after);
-    ret_val = nullptr;
-    ret_type = ast::VOID;
     jmp_true = nullptr;
     jmp_false = nullptr;
     jmp_end = nullptr;
