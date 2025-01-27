@@ -1,9 +1,8 @@
 int main() {
     int a = readInt();
     boolean b = a < a;
-    if((b ||b)) {
-        return 1;
-    }
+
+    (b || b);
     return 0 ;
 }
 

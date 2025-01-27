@@ -482,6 +482,10 @@ public:
     assert(!jmp_end);
     assert(jmp_end_vals.empty());
     stmt.expr->accept(this);
+    if(auto *phi = llvm::dyn_cast<llvm::PHINode>(ret_val)) {
+      assert(ret_type == ast::BOOL);
+      phi->removeFromParent();
+    }
     ret_val = nullptr;
     ret_type = ast::VOID;
   }
