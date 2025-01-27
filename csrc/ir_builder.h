@@ -1,11 +1,16 @@
 #pragma once
 // todo remove and split into cpp and h
 
-#include <llvm-14/llvm/IR/BasicBlock.h>
-#include <llvm-14/llvm/IR/DerivedTypes.h>
-#include <llvm-14/llvm/IR/Instructions.h>
-#include <llvm-14/llvm/IR/Module.h>
-#include <llvm-14/llvm/IR/Value.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/DerivedTypes.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/IRBuilder.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Type.h>
+#include <llvm/IR/Value.h>
 
 #include <cassert>
 #include <map>
@@ -14,30 +19,15 @@
 #include <utility>
 #include <vector>
 
+#include "builtin_funcs.h"
 #include "skel.h"
 #include "visitor.h"
-#include "llvm/IR/Constants.h"
-#include "llvm/IR/Function.h"
-#include "llvm/IR/IRBuilder.h"
-#include "llvm/IR/LLVMContext.h"
-#include "llvm/IR/Type.h"
-
-struct ProtoFunc {
-  std::string name;
-  ast::Type ret_type;
-  std::vector<ast::Type> param_types;
-
-  ProtoFunc(const std::string &name, ast::Type ret_type,
-             std::vector<ast::Type> param_types)
-      : name(name), ret_type(ret_type), param_types(param_types) {}
-};
 
 class IRGen : public Visitor {
 public:
-  std::unique_ptr<llvm::LLVMContext> context;
-  std::unique_ptr<llvm::Module> module;
-  std::unique_ptr<llvm::IRBuilder<>> builder;
-  std::vector<ProtoFunc> proto_funcs;
+  llvm::LLVMContext* context;
+  llvm::Module* module;
+  llvm::IRBuilder<>* builder;
   std::set<llvm::Function *> extern_funcs;
 
 private:
@@ -59,10 +49,14 @@ private:
     func() : ret_type(ast::VOID), ptr(nullptr) {}
   };
 
+  std::string merge_strs_name;
+  std::string strs_eq_name;
   llvm::IntegerType *int_type = nullptr;
   llvm::IntegerType *bool_type = nullptr;
+  llvm::PointerType *str_type = nullptr;
+  llvm::Type *void_type = nullptr;
   std::map<std::string, std::vector<var>> vars;
-  std::map<std::string, func> funcs;
+  std::map<std::string, func> func_defs;
   std::set<std::string>
       to_pop; // variables in current block that should be popped out
 
@@ -82,7 +76,7 @@ private:
     llvm::Type *res = nullptr;
     switch (t) {
     case ast::VOID:
-      res = llvm::Type::getVoidTy(*context);
+      res = void_type;
       break;
     case ast::INT:
       res = int_type;
@@ -91,7 +85,7 @@ private:
       res = bool_type;
       break;
     case ast::STR:
-      assert(false && "not implemented type for string");
+      res = str_type;
       break;
     default:
       assert(false && "unknown type");
@@ -99,13 +93,36 @@ private:
     return res;
   }
 
+  void add_extern_func(const ProtoFunc &fn) {
+    llvm::Type *ret_type = convert_type(fn.ret_type);
+    std::vector<llvm::Type *> param_types;
+    for (const auto param : fn.param_types) {
+      param_types.emplace_back(convert_type(param));
+    }
+    llvm::FunctionType *fn_typ =
+        llvm::FunctionType::get(ret_type, param_types, false);
+    llvm::Function *res_fn = llvm::Function::Create(
+        fn_typ, llvm::Function::ExternalLinkage, fn.name, module);
+    func_defs[fn.name] = func(fn.ret_type, res_fn);
+    extern_funcs.insert(res_fn);
+  }
+
 public:
-  IRGen() {
-    context = std::make_unique<llvm::LLVMContext>();
-    module = std::make_unique<llvm::Module>("my init module", *context);
-    builder = std::make_unique<llvm::IRBuilder<>>(*context);
-    int_type = llvm::IntegerType::getInt32Ty(*context);
-    bool_type = llvm::IntegerType::getInt1Ty(*context);
+  IRGen(llvm::LLVMContext* context, llvm::Module* module, llvm::IRBuilder<>* builder)
+      : context(context),
+        module(module),
+        builder(builder),
+        int_type(llvm::IntegerType::getInt32Ty(*context)),
+        bool_type(llvm::IntegerType::getInt1Ty(*context)),
+        str_type(llvm::PointerType::getInt8PtrTy(*context)),
+        void_type(llvm::Type::getVoidTy(*context)) {
+    for (const auto &fn : builtin_func_sigs) {
+      add_extern_func(fn);
+    }
+    strs_eq_name = string_eq_sig.name;
+    add_extern_func(string_eq_sig);
+    merge_strs_name = merge_strings_sig.name;
+    add_extern_func(merge_strings_sig);
   }
 
   void visit_prog(ast::Program &prog) override {
@@ -125,15 +142,16 @@ public:
       }
       llvm::FunctionType *fn_typ =
           llvm::FunctionType::get(ret_type, param_types, false);
+      // internal linkage avoids name collisons
       llvm::Function *res_fn = llvm::Function::Create(
-          fn_typ, llvm::Function::ExternalLinkage, fn->ident,
-          module.get()); // todo check linkage is good
+          fn_typ, llvm::Function::InternalLinkage, fn->ident,
+          module); // todo check linkage is good
       int idx = 0;
       for (auto &arg : res_fn->args()) {
         const std::string &ident = fn->params[idx++].ident;
         arg.setName(ident);
       }
-      funcs[fn->ident] = func(fn->ret_type, res_fn);
+      func_defs[fn->ident] = func(fn->ret_type, res_fn);
     }
     // first time just gets function signature, second time actually generates
     // code for them
@@ -153,9 +171,9 @@ public:
     assert(jmp_end_vals.empty());
     assert(to_pop.empty());
     assert(vars.empty());
-    assert(funcs.count(fn.ident) && "Function doesn't exist");
+    assert(func_defs.count(fn.ident) && "Function doesn't exist");
 
-    llvm::Function *cur_fn = funcs[fn.ident].ptr;
+    llvm::Function *cur_fn = func_defs[fn.ident].ptr;
     start_blk = llvm::BasicBlock::Create(*context, "start", cur_fn);
     builder->SetInsertPoint(start_blk);
     int idx = 0;
@@ -181,6 +199,13 @@ public:
     assert(to_pop.size() == vars.size());
     to_pop.clear();
     vars.clear();
+    // todo this should be done with cfg end nodes
+    if (fn.ret_type == ast::VOID) {
+      llvm::BasicBlock *end_blk = builder->GetInsertBlock();
+      if (end_blk->empty() || !llvm::isa<llvm::ReturnInst>(end_blk->back())) {
+        builder->CreateRetVoid();
+      }
+    }
     start_blk = nullptr;
   }
 
@@ -234,7 +259,10 @@ public:
         ret_val = llvm::ConstantInt::getFalse(bool_type);
         break;
       case ast::STR:
-        assert(false && "string declaration not yet implemented");
+        ret_val = builder->CreateGlobalStringPtr("");
+        break;
+      case ast::VOID:
+        assert(false && "declaration of void var");
         break;
       }
     }
@@ -470,7 +498,7 @@ public:
     assert(!ret_val);
     assert(ret_type == ast::VOID);
     // todo change this to string implementation like others
-    ret_val = builder->CreateGlobalString(s.val);
+    ret_val = builder->CreateGlobalStringPtr(s.val);
     ret_type = ast::STR;
   }
 
@@ -484,13 +512,12 @@ public:
       args.push_back(ret_val);
       ret_val = nullptr;
     }
-    assert(funcs.count(fn.ident) && "Called function doesn't exist");
-    auto &func_node = funcs[fn.ident];
+    assert(func_defs.count(fn.ident) && "Called function doesn't exist");
+    auto &func_node = func_defs[fn.ident];
     llvm::Function *call_fn = func_node.ptr;
     assert(call_fn->arg_size() == args.size() &&
            "wrong number of args for call");
-
-    ret_val = builder->CreateCall(call_fn, args, "fn call");
+    ret_val = builder->CreateCall(call_fn, args, "fncall");
     ret_type = func_node.ret_type;
   }
 
@@ -499,7 +526,7 @@ public:
     assert(ret_type == ast::VOID);
     neg.sub_expr->accept(this);
     assert(ret_val);
-    // todo check ret_val not null
+    // this is just a sub from zero, nsw tough which be a problem
     ret_val = builder->CreateNeg(ret_val);
   }
   void visit_not(ast::NotExpr &no) override { // todo swap for short_circut?
@@ -529,7 +556,6 @@ public:
     assert(ret_type == ast::INT);
     llvm::Value *r_val = ret_val;
     ret_val = nullptr;
-
     ret_type = ast::INT;
     switch (mul.op) {
     case ast::TIMES:
@@ -541,8 +567,6 @@ public:
     case ast::MOD:
       ret_val = builder->CreateSRem(l_val, r_val);
       break;
-    default:
-      throw std::runtime_error("unkown multiplication op");
     }
   }
 
@@ -570,7 +594,10 @@ public:
         ret_type = l_type;
       } else {
         assert(l_type == ast::STR);
-        assert(false && "string addition not implemented");
+        std::vector<llvm::Value *> args({l_val, r_val});
+        ret_val = builder->CreateCall(func_defs[merge_strs_name].ptr, args,
+                                      "strconcat");
+        ret_type = l_type;
       }
     } else {
       assert(add.op == ast::MINUS && "unkown add operation");
@@ -584,38 +611,54 @@ public:
     assert(!ret_val);
     assert(ret_type == ast::VOID);
     rel.l_sub_expr->accept(this);
-    assert(ret_val);
-    assert(ret_type == ast::INT);
     llvm::Value *l_val = ret_val;
+    ast::Type l_type = ret_type;
     ret_val = nullptr;
     ret_type = ast::VOID;
     rel.r_sub_expr->accept(this);
-    assert(ret_val);
-    assert(ret_type == ast::INT);
     llvm::Value *r_val = ret_val;
+    ast::Type r_type = ret_type;
+    assert(r_type == l_type);
     ret_val = nullptr;
     ret_type = ast::VOID;
     switch (rel.op) {
     case ast::LTH:
+      assert(l_type == ast::INT);
       ret_val = builder->CreateICmpSLT(l_val, r_val);
       break;
     case ast::LE:
+      assert(l_type == ast::INT);
       ret_val = builder->CreateICmpSLE(l_val, r_val);
       break;
     case ast::GTH:
+      assert(l_type == ast::INT);
       ret_val = builder->CreateICmpSGT(l_val, r_val);
       break;
     case ast::GE:
+      assert(l_type == ast::INT);
       ret_val = builder->CreateICmpSGE(l_val, r_val);
       break;
     case ast::EQU:
+      assert(l_type != ast::VOID);
+      if (l_type == ast::STR) {
+        std::vector<llvm::Value *> args({l_val, r_val});
+        ret_val =
+            builder->CreateCall(func_defs[strs_eq_name].ptr, args, "streq");
+        break;
+      }
       ret_val = builder->CreateICmpEQ(l_val, r_val);
       break;
     case ast::NE:
+      assert(l_type != ast::VOID);
+      if (l_type == ast::STR) {
+        std::vector<llvm::Value *> args({l_val, r_val});
+        ret_val =
+            builder->CreateCall(func_defs[strs_eq_name].ptr, args, "streq");
+        ret_val = builder->CreateNot(ret_val);
+        break;
+      }
       ret_val = builder->CreateICmpNE(l_val, r_val);
       break;
-    default:
-      throw std::runtime_error("unkown rel op");
     }
     ret_type = ast::BOOL;
   }

@@ -2,6 +2,8 @@
 #include <iostream>
 #include <llvm-14/llvm/IR/BasicBlock.h>
 #include <llvm-14/llvm/IR/Function.h>
+#include <llvm-14/llvm/IR/IRBuilder.h>
+#include <llvm-14/llvm/IR/LLVMContext.h>
 #include <llvm-14/llvm/IR/Module.h>
 #include <llvm-14/llvm/Support/raw_ostream.h>
 #include <memory>
@@ -72,12 +74,21 @@ int main() {
   std::string res;
   getline(std::cin, res);
   std::unique_ptr<ast::Program> prog_ast = treeparse::build_prog(res);
-  IRGen visitor;
+  std::unique_ptr<llvm::LLVMContext> context =
+      std::make_unique<llvm::LLVMContext>();
+  std::unique_ptr<llvm::Module> module =
+      std::make_unique<llvm::Module>("my init module", *context);
+  std::unique_ptr<llvm::IRBuilder<>> builder =
+      std::make_unique<llvm::IRBuilder<>>(*context);
+  IRGen visitor(context.get(), module.get(), builder.get());
   prog_ast->accept(&visitor);
-  std::unique_ptr<llvm::Module> module = std::move(visitor.module);
+  std::set<llvm::Function *> extern_funcs = std::move(visitor.extern_funcs);
   int i = 0;
   for (auto &fn_ref : module->getFunctionList()) {
     llvm::Function *fn = &fn_ref;
+    if (extern_funcs.count(fn)) {
+      continue;
+    }
     CFG cfg(fn);
     //  draw_cfg(module.get(), cfg, i);
     //  draw_rev_cfg(module.get(), cfg, 1000+i);

@@ -101,7 +101,7 @@ ast::Type get_type(std::stringstream &ss) {
   } else if (s == "Void") {
     return ast::VOID;
   } else {
-    throw std::runtime_error("Invlaid type read when parsing tree");
+    assert(false && "Invlaid type read when parsing tree");
   }
 }
 
@@ -127,7 +127,7 @@ ast::MulOp get_mul_op(std::stringstream &ss) {
   } else if (s == "(Mod") {
     res = ast::MOD;
   } else {
-    throw std::runtime_error("unkown mul op");
+    assert(false && "unknown mul op");
   }
   build_meta(ss);
   char c;
@@ -145,7 +145,7 @@ ast::AddOp get_add_op(std::stringstream &ss) {
   } else if (s == "(Minus") {
     res = ast::MINUS;
   } else {
-    throw std::runtime_error("unkown add op");
+    assert(false && "unknown add op");
   }
   build_meta(ss);
   char c;
@@ -171,7 +171,7 @@ ast::RelOp get_rel_op(std::stringstream &ss) {
   } else if (s == "(NE") {
     res = ast::NE;
   } else {
-    throw std::runtime_error("unkown rel op");
+    assert(false && "unkown rel op");
   }
   build_meta(ss);
   char c;
@@ -250,7 +250,7 @@ std::unique_ptr<ast::Expr> build_expr(std::stringstream &ss) {
     res = std::make_unique<ast::LogExpr>(op, std::move(LHS), std::move(RHS),
                                          meta);
   } else {
-    throw std::runtime_error("unknow expression");
+    assert(false && "unknown expression");
   }
   ss >> c;
   assert(c == ')');
@@ -331,7 +331,7 @@ std::vector<std::unique_ptr<ast::Stmt>> build_stmt(std::stringstream &ss) {
     std::unique_ptr<ast::Expr> expr = build_expr(ss);
     res.emplace_back(std::make_unique<ast::ExprStmt>(std::move(expr), meta));
   } else {
-    throw std::runtime_error("unkown statement");
+    assert(false &&"unknown statement");
   }
   return res;
 }
