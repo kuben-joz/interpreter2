@@ -14,17 +14,19 @@ struct DomTree {
 public:
   std::map<llvm::BasicBlock *, int> blk_to_idx;
   std::vector<llvm::BasicBlock *> idx_to_blk;
-  std::vector<int> dom_pred;
-  std::vector<std::vector<int>> dom_succ;
+  std::vector<int> dom_preds;
+  std::vector<std::vector<int>> dom_succs;
   std::vector<DynamicBitset> dom_front;
   std::vector<std::vector<int>> cfg_preds;
   std::vector<std::vector<int>> cfg_succs;
 
   DomTree(CFG &cfg);
 
-  std::vector<llvm::BasicBlock *> it_dom_front(std::set<llvm::BasicBlock *> &in_bbs);
+  std::vector<llvm::BasicBlock *>
+  it_dom_front(std::set<llvm::BasicBlock *> &in_bbs);
+  void dom_frontier();
 
 private:
-  void dom_frontier(std::vector<std::vector<int>> &preds);
+  bool dom_front_calculated;
   inline int intersect(int i, int j);
 };

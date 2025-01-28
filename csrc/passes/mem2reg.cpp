@@ -107,7 +107,7 @@ void rename_rec(const int blk_idx,
   } // end of second loop
 
   // recurse down dominator tree
-  for (int dom_child : dom_tree.dom_succ[blk_idx]) {
+  for (int dom_child : dom_tree.dom_succs[blk_idx]) {
     rename_rec(dom_child, inst_to_var, cfg, dom_tree);
   } // return from dfs
 

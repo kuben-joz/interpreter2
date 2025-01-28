@@ -12,11 +12,13 @@
 
 #include "cfg.h"
 #include "dom_tree.h"
+#include "util.h"
 #include "ir_builder.h"
 #include "mem2reg.h"
 #include "skel.h"
 #include "treeparse.h"
 #include "printer.h"
+#include "init_pass.h"
 
 void draw_cfg(llvm::Module *module, CFG &cfg, int i) {
   std::ofstream cfg_f("debug/" + std::to_string(i) + "-cfg.out");
@@ -95,10 +97,19 @@ int main() {
     //  draw_cfg(module.get(), cfg, i);
     //  draw_rev_cfg(module.get(), cfg, 1000+i);
     DomTree dom(cfg);
-    //mem2reg::transform(cfg, dom);
+    std::pair<bool, bool> res = clean::init_clean(cfg, dom);
+    if(res.second) {
+      cfg.update();
+      dom = DomTree(cfg);
+    }
+    mem2reg::transform(cfg, dom);
     i++;
   }
   printer::print(module.get(), extern_funcs);
   module->dump();
   return 0;
 }
+
+// join lbocks
+// ret removal 
+// also value propagation

@@ -1,5 +1,18 @@
 
+int main() {
+	int x = readInt();
+	int y = readInt();
+	return x + y;
+}
 
+void test(int x, int y) {
+	while(x < y) {
+		x++;
+	}
+	return;
+	x * y;
+	int z = x*y;
+}
 
 
 
