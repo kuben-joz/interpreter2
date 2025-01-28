@@ -19,7 +19,6 @@ class TreeTrimmer : public llvm::InstVisitor<TreeTrimmer> {
 public:
   bool change_glob = false;
   bool change_structure = false;
-  bool is_past_ret = false;
   CFG &cfg;
   DomTree &dom;
   std::vector<bool> removed;
@@ -211,6 +210,8 @@ public:
       }
     }
     for (auto &p_i : phis) {
+      change_structure = true;
+      change_glob = true;
       p_i.first->removeIncomingValue(p_i.second);
     }
   }
@@ -239,146 +240,7 @@ public:
     }
   }
 
-  void clean_hanging_dom(int idx) {
-    if (!is_past_ret) {
-      return;
-    }
-    is_past_ret = false;
-    if (dom.cfg_succs[idx].empty()) {
-      return;
-    }
-    change_structure = true;
-    change_glob = true;
-    clean_hanging_dom_rec(idx);
-  }
-
-  void visitInstruction(llvm::Instruction &inst) {
-    if (is_past_ret) {
-      inst_to_del.emplace_back(&inst);
-      return;
-    }
-  }
-
-  void visitBinaryOperator(llvm::BinaryOperator &mul) {
-    if (is_past_ret) {
-      inst_to_del.emplace_back(&mul);
-      return;
-    }
-    assert(mul.getNumOperands() == 2);
-    if (mul.getNumOperands() != 2) {
-      return;
-    }
-    llvm::Value *l_v = mul.getOperand(0);
-    llvm::Value *r_v = mul.getOperand(1);
-    llvm::ConstantInt *l_const = llvm::dyn_cast<llvm::ConstantInt>(l_v);
-    llvm::ConstantInt *r_const = llvm::dyn_cast<llvm::ConstantInt>(r_v);
-    if (l_const && r_const) {
-      int32_t l = l_const->getSExtValue();
-      int32_t r = r_const->getSExtValue();
-      bool changed = true;
-      int32_t res = 0;
-      switch (mul.getOpcode()) {
-      case llvm::Instruction::Add:
-        res = l + r;
-        break;
-      case llvm::Instruction::Sub:
-        res = l - r;
-        break;
-      case llvm::Instruction::Mul:
-        res = l * r;
-        break;
-      case llvm::Instruction::SDiv:
-        res = l / r;
-        break;
-      case llvm::Instruction::SRem:
-        res = l % r;
-        break;
-      case llvm::Instruction::And:
-        res = l & r;
-        break;
-      case llvm::Instruction::Or:
-        res = l | r;
-        break;
-      case llvm::Instruction::Xor:
-        res = l ^ r;
-        break;
-      default:
-        changed = false;
-        break;
-      }
-      if (changed) {
-        change_glob = true;
-        llvm::Value *new_v = llvm::ConstantInt::getSigned(l_v->getType(), res);
-        mul.replaceAllUsesWith(new_v);
-        inst_to_del.emplace_back(&mul);
-      }
-    }
-  }
-
-  void visitICmpInst(llvm::ICmpInst &icmp) {
-    if (is_past_ret) {
-      inst_to_del.emplace_back(&icmp);
-      return;
-    }
-    assert(icmp.getNumOperands() == 2);
-    if (icmp.getNumOperands() != 2) {
-      return;
-    }
-    llvm::Value *l_v = icmp.getOperand(0);
-    llvm::Value *r_v = icmp.getOperand(1);
-    llvm::ConstantInt *l_const = llvm::dyn_cast<llvm::ConstantInt>(l_v);
-    llvm::ConstantInt *r_const = llvm::dyn_cast<llvm::ConstantInt>(r_v);
-    if (l_const && r_const) {
-      int32_t l = l_const->getSExtValue();
-      int32_t r = r_const->getSExtValue();
-      bool changed = true;
-      bool res = 0;
-      switch (icmp.getPredicate()) {
-      case llvm::CmpInst::ICMP_EQ:
-        res = l == r;
-        break;
-      case llvm::CmpInst::ICMP_NE:
-        res = l != r;
-        break;
-      case llvm::CmpInst::ICMP_SGT:
-        res = l > r;
-        break;
-      case llvm::CmpInst::ICMP_SGE:
-        res = l >= r;
-        break;
-      case llvm::CmpInst::ICMP_SLT:
-        res = l < r;
-        break;
-      case llvm::CmpInst::ICMP_SLE:
-        res = l <= r;
-        break;
-      default:
-        changed = false;
-        break;
-      }
-      if (changed) {
-        change_glob = true;
-        llvm::Value *new_v = llvm::ConstantInt::getBool(
-            llvm::Type::getInt1Ty(icmp.getContext()), res);
-        icmp.replaceAllUsesWith(new_v);
-        inst_to_del.emplace_back(&icmp);
-      }
-    }
-  }
-
-  void visitReturnInst(llvm::ReturnInst &ret) {
-    if (is_past_ret) {
-      inst_to_del.emplace_back(&ret);
-      return;
-    }
-    is_past_ret = true;
-  }
-
   void visitBranchInst(llvm::BranchInst &br) {
-    if (is_past_ret) {
-      inst_to_del.emplace_back(br);
-      return;
-    }
     if (br.isConditional()) {
       llvm::Value *cond = br.getCondition();
       if (auto const_i = llvm::dyn_cast<llvm::ConstantInt>(cond)) {
@@ -396,8 +258,6 @@ public:
         int skip_idx = dom.blk_to_idx[skip];
         assert(dom.blk_to_idx.count(keep));
         int keep_idx = dom.blk_to_idx[keep];
-        change_glob = true;
-        change_structure = true;
         for (int succ : dom.dom_succs[cur_idx]) {
           if (succ == skip_idx) {
             assert(!removed[skip_idx]);
@@ -415,89 +275,51 @@ public:
         // swap to single br
         inst_to_del.emplace_back(&br);
         llvm::BranchInst::Create(keep, cur);
-      }
-    } else { // br to one
-      return;
-    }
-  }
-
-  // todo if all values are the same also for global strings
-  // todo constant OR all using itself!!!!!!!!!!!!!!!!!!!
-  // check all local string or all alloced
-  // in one check pointers in other check value
-  // split it out with isptrtype, then for strings if all are global
-  void visitPHINode(llvm::PHINode &phi) {
-    assert(!is_past_ret);
-    int num_paths = phi.getNumIncomingValues();
-    assert(num_paths); // todo check if there is situation where this isn't the
-                       // case
-    if (num_paths == 0) {
-      return;
-    }
-    if (num_paths == 1) {
-      if (auto const_i =
-              llvm::dyn_cast<llvm::ConstantInt>(phi.getIncomingValue(0))) {
-        int32_t val = const_i->getSExtValue();
         change_glob = true;
-        llvm::Value *new_v =
-            llvm::ConstantInt::getSigned(const_i->getType(), val);
-        phi.replaceAllUsesWith(new_v);
-        inst_to_del.emplace_back(phi);
-        return;
-      } else if (auto *const_exp = llvm::dyn_cast<llvm::ConstantExpr>(
-                     phi.getIncomingValue(0))) {
-        phi.replaceAllUsesWith(const_exp);
-        inst_to_del.emplace_back(phi);
-      }
-    } else {
-      if (llvm::isa<llvm::ConstantInt>(phi.getIncomingValue(0))) {
-        std::vector<llvm::ConstantInt *> vals;
-        for (auto &v : phi.incoming_values()) {
-          if (auto const_i = llvm::dyn_cast<llvm::ConstantInt>(&v)) {
-            vals.emplace_back(const_i);
-          } else if (auto *phi2 = llvm::dyn_cast<llvm::PHINode>(&v)) {
-            if (&phi == phi2) {
-              continue;
-            } else {
-              return; // todo maybe add deeper
-            }
-          } else {
-            return;
-          }
-        }
-        int32_t val = vals.front()->getSExtValue();
-        for (auto v : vals) {
-          if (val != (int32_t)v->getSExtValue()) {
-            return;
-          }
-        }
-        change_glob = true;
-        llvm::Value *new_v =
-            llvm::ConstantInt::getSigned(vals.front()->getType(), val);
-        phi.replaceAllUsesWith(new_v);
-        inst_to_del.emplace_back(phi);
-        return;
-      } else if (llvm::isa<llvm::ConstantExpr>(phi.getIncomingValue(0))) {
-        std::vector<llvm::ConstantInt *> vals;
-        for (auto &v : phi.incoming_values()) {
-          if (auto const_i = llvm::dyn_cast<llvm::ConstantInt>(&v)) {
-            vals.emplace_back(const_i);
-          } else {
-            return;
-          }
-        }
+        change_structure = true;
       }
     }
   }
-
 };
 
-
 // todo strs_eq_fun ins't absorbed for constant strings
-std::pair<bool, bool> transform(CFG &cfg, DomTree &dom,
-                                llvm::Function *strs_eq_fn) {
+std::pair<bool, bool> trim_tree(CFG &cfg, DomTree &dom) {
+  TreeTrimmer trimmer(cfg, dom);
+  // preorder
+  // cut out branches
+  for (int i = 0; i < dom.idx_to_blk.size(); i++) {
+    if (!trimmer.removed[i]) {
+      llvm::BasicBlock *blk = dom.idx_to_blk[i];
+      assert(!blk->empty());
+      if (!blk->empty()) {
+        trimmer.visit(blk->back());
+        trimmer.clean_insts();
+      }
+    }
+  }
+  // trim out blocks with no preds that are not the entry
+  for (int i = 0; i < dom.idx_to_blk.size(); i++) {
+    if (!trimmer.removed[i]) {
+      if(dom.cfg_preds[i].size() == 0) {
+        assert(i == 0);
+        continue; // root node
+      }
+      trimmer.clean_hanging_dom_rec(i);
+    }
+  }
 
-  TreeTrimmer cleaner(cfg, dom);
+  // postorder
+  // merge blocks
+  for (int i = dom.idx_to_blk.size(); i >= 0; i--) {
+    if (!trimmer.removed[i]) {
+      llvm::BasicBlock *blk = dom.idx_to_blk[i];
+      assert(!blk->empty());
+      if (!blk->empty()) {
+        trimmer.join_succ(i);
+      }
+    }
+  }
 
+  return std::make_pair(trimmer.change_glob, trimmer.change_structure);
 }
 } // namespace clean

@@ -216,6 +216,8 @@ public:
       }
     }
     for (auto &p_i : phis) {
+      change_structure = true;
+      change_glob = true;
       p_i.first->removeIncomingValue(p_i.second);
     }
   }
