@@ -5,15 +5,19 @@
 #include <llvm-14/llvm/IR/BasicBlock.h>
 #include <llvm-14/llvm/IR/Constant.h>
 #include <llvm-14/llvm/IR/Constants.h>
+#include <llvm-14/llvm/IR/Function.h>
 #include <llvm-14/llvm/IR/InstVisitor.h>
 #include <llvm-14/llvm/IR/Instruction.h>
+#include <llvm-14/llvm/IR/Instructions.h>
 #include <llvm-14/llvm/IR/Type.h>
+#include <llvm-14/llvm/IR/Value.h>
 #include <llvm-14/llvm/Support/Casting.h>
 #include <utility>
 
 // todo
 // strcmp of same global string reduced to true or false for different
 // phi node collapse if same phi node psuhed through two different directions
+// maybe cleaned uncalled funcitons without side effects
 
 namespace clean {
 class Cleaner : public llvm::InstVisitor<Cleaner> {
@@ -29,43 +33,56 @@ public:
   Cleaner(CFG &cfg, DomTree &dom)
       : cfg(cfg), dom(dom), removed(dom.blk_to_idx.size(), false) {}
 
-
-
+  // if we are the only successor and we don't have any other successors we join
+  // his isntructions into ours
   void join_succ(int orig_idx) {
     int num_succ = 0;
     int succ_idx = -1;
-    for(int succ : dom.cfg_succs[orig_idx]) {
-      if(removed[succ]) {
+    for (int succ : dom.cfg_succs[orig_idx]) {
+      if (removed[succ]) {
         continue;
       }
       num_succ++;
       succ_idx = succ;
     }
     assert(succ_idx >= 0 || num_succ == 0);
-    if(num_succ != 1) {
+    if (num_succ != 1) {
       return;
     }
     int num_preds = 0;
-    for(int pred : dom.cfg_preds[succ_idx]) {
-      if(removed[pred]) {
+    for (int pred : dom.cfg_preds[succ_idx]) {
+      if (removed[pred]) {
         continue;
       }
+      num_preds++;
     }
     assert(num_preds > 0);
-    if(num_preds != 1) {
+    if (num_preds != 1) {
       return;
     }
     change_glob = true;
     change_structure = true;
-
+    llvm::BasicBlock *orig = dom.idx_to_blk[orig_idx];
+    assert(orig);
+    llvm::BasicBlock *join = dom.idx_to_blk[succ_idx];
+    assert(join);
+    // todo check missing ret values in functions that return void
+    assert(!orig->empty());
+    assert(!join->empty());
+    assert(llvm::isa<llvm::BranchInst>(orig->back()));
+    inst_to_del.emplace_back(&orig->back());
+    auto it = join->begin();
+    while(auto *phi = llvm::dyn_cast<llvm::PHINode>(it.)) {
+      
+    }
   }
 
   void clean_insts() {
-    if(inst_to_del.empty()) {
+    if (inst_to_del.empty()) {
       return;
     }
     change_glob = true;
-    for(auto *inst : inst_to_del) {
+    for (auto *inst : inst_to_del) {
       inst->eraseFromParent();
     }
     inst_to_del.clear();
@@ -75,11 +92,10 @@ public:
     llvm::BasicBlock *orig_blk = dom.idx_to_blk[idx_orig];
     llvm::BasicBlock *dest_blk = dom.idx_to_blk[idx_dest];
     std::vector<std::pair<llvm::PHINode *, int>> phis;
-    int num_vals = -1;
     for (auto &inst_ref : dest_blk->getInstList()) {
       if (auto phi = llvm::dyn_cast<llvm::PHINode>(&inst_ref)) {
         int phi_blk_idx = phi->getBasicBlockIndex(orig_blk);
-        num_vals = phi->getNumIncomingValues();
+        int num_vals = phi->getNumIncomingValues();
         assert(num_vals > 1 && phi_blk_idx >= 0);
         if (phi_blk_idx < 0 || num_vals <= 1) {
           break;
@@ -94,7 +110,7 @@ public:
     }
   }
 
-  void clean_past_ret_rec(int idx) {
+  void clean_hanging_dom_rec(int idx) {
     // preorder
     for (int succ : dom.dom_succ[idx]) {
       removed[succ] = true;
@@ -106,19 +122,20 @@ public:
     }
     // go down
     for (int succ : dom.dom_succ[idx]) {
-      clean_past_ret_rec(succ);
+      clean_hanging_dom_rec(succ);
     }
     // postorder
     for (int succ : dom.dom_succ[idx]) {
       if (dom.idx_to_blk[succ]) {
+        dom.blk_to_idx.erase(dom.idx_to_blk[succ]);
         dom.idx_to_blk[succ]->eraseFromParent();
         dom.idx_to_blk[succ] = nullptr;
       }
     }
   }
 
-  void clean_past_ret(int idx) {
-    if(!is_past_ret) {
+  void clean_hanging_dom(int idx) {
+    if (!is_past_ret) {
       return;
     }
     is_past_ret = false;
@@ -127,21 +144,11 @@ public:
     }
     change_structure = true;
     change_glob = true;
-    clean_past_ret_rec(idx);
+    clean_hanging_dom_rec(idx);
   }
 
   void visitInstruction(llvm::Instruction &inst) {
     if (is_past_ret) {
-      // todo check this is removed with the traversal instead
-      // llvm::BasicBlock *blk = inst.getParent();
-      // for (auto *user : inst.users()) {
-      //  if (auto *phi = llvm::dyn_cast<llvm::PHINode>(user)) {
-      //    int phi_blk_idx = phi->getBasicBlockIndex(blk);
-      //    if (phi_blk_idx >= 0) {
-      //      phi->removeIncomingValue(phi_blk_idx, true);
-      //    }
-      //  }
-      //}
       inst_to_del.emplace_back(&inst);
       return;
     }
@@ -161,10 +168,10 @@ public:
     llvm::ConstantInt *l_const = llvm::dyn_cast<llvm::ConstantInt>(l_v);
     llvm::ConstantInt *r_const = llvm::dyn_cast<llvm::ConstantInt>(r_v);
     if (l_const && r_const) {
-      int64_t l = l_const->getSExtValue() % (int64_t)l_const->getBitWidth();
-      int64_t r = r_const->getSExtValue() % (int64_t)r_const->getBitWidth();
+      int32_t l = l_const->getSExtValue();
+      int32_t r = r_const->getSExtValue();
       bool changed = true;
-      int64_t res = 0;
+      int32_t res = 0;
       switch (mul.getOpcode()) {
       case llvm::Instruction::Add:
         res = l + r;
@@ -196,7 +203,6 @@ public:
       }
       if (changed) {
         change_glob = true;
-        res = res % (int64_t)l_const->getBitWidth();
         llvm::Value *new_v = llvm::ConstantInt::getSigned(l_v->getType(), res);
         mul.replaceAllUsesWith(new_v);
         inst_to_del.emplace_back(&mul);
@@ -218,8 +224,8 @@ public:
     llvm::ConstantInt *l_const = llvm::dyn_cast<llvm::ConstantInt>(l_v);
     llvm::ConstantInt *r_const = llvm::dyn_cast<llvm::ConstantInt>(r_v);
     if (l_const && r_const) {
-      int64_t l = l_const->getSExtValue() % (int64_t)l_const->getBitWidth();
-      int64_t r = r_const->getSExtValue() % (int64_t)r_const->getBitWidth();
+      int32_t l = l_const->getSExtValue();
+      int32_t r = r_const->getSExtValue();
       bool changed = true;
       bool res = 0;
       switch (icmp.getPredicate()) {
@@ -268,34 +274,104 @@ public:
       inst_to_del.emplace_back(br);
       return;
     }
-    // if next has only 1 pred then merge
-    // if (br.isConditional()) {
-    //  // check if condition is known and if so then change to br,
-    //  assert(br.getNumSuccessors() == 2);;
-    //  br.getCondition();
-    //} else {
-    //  assert(br.getNumSuccessors() == 1);
-    //  strm << "label ";
-    //  print_blk_name(br.getSuccessor(0), false);
-    //  strm << '\n';
-    //}
+    if (br.isConditional()) {
+      llvm::Value *cond = br.getCondition();
+      if (auto const_i = llvm::dyn_cast<llvm::ConstantInt>(cond)) {
+        assert(const_i->getBitWidth() == 1);
+        int64_t cond_v = const_i->getZExtValue();
+        llvm::BasicBlock *keep = br.getSuccessor(0);
+        llvm::BasicBlock *skip = br.getSuccessor(1);
+        llvm::BasicBlock *cur = br.getParent();
+        if (!cond_v) {
+          std::swap(keep, skip);
+        }
+        assert(dom.blk_to_idx.count(cur));
+        int cur_idx = dom.blk_to_idx[cur];
+        assert(dom.blk_to_idx.count(skip));
+        int skip_idx = dom.blk_to_idx[skip];
+        assert(dom.blk_to_idx.count(keep));
+        int keep_idx = dom.blk_to_idx[keep];
+        change_glob = true;
+        change_structure = true;
+        for (int succ : dom.dom_succ[cur_idx]) {
+          if (succ == skip_idx) {
+            assert(!removed[skip_idx]);
+            removed[skip_idx] = true;
+            clean_hanging_dom_rec(skip_idx);
+            dom.blk_to_idx.erase(dom.idx_to_blk[skip_idx]);
+            skip->removeFromParent();
+            dom.idx_to_blk[skip_idx] = nullptr;
+            break;
+          }
+        }
+        if (!removed[skip_idx]) {
+          remove_phis(cur_idx, skip_idx);
+        }
+        // swap to single br
+        inst_to_del.emplace_back(&br);
+        llvm::BranchInst::Create(keep, cur);
+      }
+    } else { // br to one
+      return;
+    }
   }
 
-  // replace with val is only one
+  // todo if all values are the same also for global strings
   void visitPHINode(llvm::PHINode &phi) {
     assert(!is_past_ret);
     int num_paths = phi.getNumIncomingValues();
     assert(num_paths); // todo check if there is situation where this isn't the
                        // case
     if (num_paths == 0) {
+      return;
+    }
+    if (num_paths == 1) {
+      if (auto const_i =
+              llvm::dyn_cast<llvm::ConstantInt>(phi.getIncomingValue(0))) {
+        int32_t val = const_i->getSExtValue();
+        change_glob = true;
+        llvm::Value *new_v =
+            llvm::ConstantInt::getSigned(const_i->getType(), val);
+        phi.replaceAllUsesWith(new_v);
+        inst_to_del.emplace_back(phi);
         return;
-    }
-    if(num_paths == 1) {
-      
-    }
-    for (int i = 0; i < num_paths; i++) {
-      phi.getIncomingValue(i);
-      phi.getIncomingBlock(i);
+      } else if (auto *const_exp = llvm::dyn_cast<llvm::ConstantExpr>(
+                     phi.getIncomingValue(0))) {
+        phi.replaceAllUsesWith(const_exp);
+        inst_to_del.emplace_back(phi);
+      }
+    } else {
+      if (llvm::isa<llvm::ConstantInt>(phi.getIncomingValue(0))) {
+        std::vector<llvm::ConstantInt *> vals;
+        for (auto &v : phi.incoming_values()) {
+          if (auto const_i = llvm::dyn_cast<llvm::ConstantInt>(&v)) {
+            vals.emplace_back(const_i);
+          } else {
+            return;
+          }
+        }
+        int32_t val = vals.front()->getSExtValue();
+        for (auto v : vals) {
+          if (val != (int32_t)v->getSExtValue()) {
+            return;
+          }
+        }
+        change_glob = true;
+        llvm::Value *new_v =
+            llvm::ConstantInt::getSigned(vals.front()->getType(), val);
+        phi.replaceAllUsesWith(new_v);
+        inst_to_del.emplace_back(phi);
+        return;
+      } else if (llvm::isa<llvm::ConstantExpr>(phi.getIncomingValue(0))) {
+        std::vector<llvm::ConstantInt *> vals;
+        for (auto &v : phi.incoming_values()) {
+          if (auto const_i = llvm::dyn_cast<llvm::ConstantInt>(&v)) {
+            vals.emplace_back(const_i);
+          } else {
+            return;
+          }
+        }
+      }
     }
   }
 
@@ -309,13 +385,13 @@ public:
 
 void transform_rec(int idx, CFG &cfg, DomTree &dom, Cleaner &cleaner) {
   llvm::BasicBlock *cur_block = dom.idx_to_blk[idx];
-  for(auto &inst : cur_block->getInstList()) {
+  for (auto &inst : cur_block->getInstList()) {
     cleaner.visit(inst);
   }
-  cleaner.clean_past_ret(idx);
+  cleaner.clean_hanging_dom(idx);
   cleaner.clean_insts();
-  for(int succ : dom.dom_succ[idx]) {
-    if(cleaner.removed[succ]) {
+  for (int succ : dom.dom_succ[idx]) {
+    if (cleaner.removed[succ]) {
       continue;
     }
     transform_rec(succ, cfg, dom, cleaner);
@@ -324,7 +400,8 @@ void transform_rec(int idx, CFG &cfg, DomTree &dom, Cleaner &cleaner) {
   cleaner.clean_insts();
 }
 
-std::pair<bool, bool> transform(CFG &cfg, DomTree &dom) {
+std::pair<bool, bool> transform(CFG &cfg, DomTree &dom,
+                                llvm::Function *strs_eq_fn) {
   Cleaner cleaner(cfg, dom);
   do {
     cleaner.reset();

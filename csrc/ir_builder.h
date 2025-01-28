@@ -29,7 +29,8 @@ public:
   llvm::Module *module;
   llvm::IRBuilder<> *builder;
   std::set<llvm::Function *> extern_funcs;
-
+  llvm::Function *merge_strs_fn;
+  llvm::Function *str_eq_fn;
 private:
   struct var {
     const ast::Type type;
@@ -49,8 +50,7 @@ private:
     func() : ret_type(ast::VOID), ptr(nullptr) {}
   };
 
-  std::string merge_strs_name;
-  std::string strs_eq_name;
+
   llvm::IntegerType *int_type = nullptr;
   llvm::IntegerType *bool_type = nullptr;
   llvm::PointerType *str_type = nullptr;
@@ -93,7 +93,7 @@ private:
     return res;
   }
 
-  void add_extern_func(const ProtoFunc &fn) {
+  llvm::Function* add_extern_func(const ProtoFunc &fn) {
     llvm::Type *ret_type = convert_type(fn.ret_type);
     std::vector<llvm::Type *> param_types;
     for (const auto param : fn.param_types) {
@@ -105,6 +105,7 @@ private:
         fn_typ, llvm::Function::ExternalLinkage, fn.name, module);
     func_defs[fn.name] = func(fn.ret_type, res_fn);
     extern_funcs.insert(res_fn);
+    return res_fn;
   }
 
 public:
@@ -118,10 +119,8 @@ public:
     for (const auto &fn : builtin_func_sigs) {
       add_extern_func(fn);
     }
-    strs_eq_name = string_eq_sig.name;
-    add_extern_func(string_eq_sig);
-    merge_strs_name = merge_strings_sig.name;
-    add_extern_func(merge_strings_sig);
+    str_eq_fn = add_extern_func(string_eq_sig);
+    merge_strs_fn = add_extern_func(merge_strings_sig);
   }
 
   void visit_prog(ast::Program &prog) override {
@@ -619,7 +618,7 @@ public:
       } else {
         assert(l_type == ast::STR);
         std::vector<llvm::Value *> args({l_val, r_val});
-        ret_val = builder->CreateCall(func_defs[merge_strs_name].ptr, args,
+        ret_val = builder->CreateCall(merge_strs_fn, args,
                                       "strconcat");
         ret_type = l_type;
       }
@@ -667,7 +666,7 @@ public:
       if (l_type == ast::STR) {
         std::vector<llvm::Value *> args({l_val, r_val});
         ret_val =
-            builder->CreateCall(func_defs[strs_eq_name].ptr, args, "streq");
+            builder->CreateCall(str_eq_fn, args, "streq");
         break;
       }
       ret_val = builder->CreateICmpEQ(l_val, r_val);
@@ -677,7 +676,7 @@ public:
       if (l_type == ast::STR) {
         std::vector<llvm::Value *> args({l_val, r_val});
         ret_val =
-            builder->CreateCall(func_defs[strs_eq_name].ptr, args, "streq");
+            builder->CreateCall(str_eq_fn, args, "streq");
         ret_val = builder->CreateNot(ret_val);
         break;
       }

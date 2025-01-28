@@ -84,6 +84,7 @@ int main() {
   IRGen visitor(context.get(), module.get(), builder.get());
   prog_ast->accept(&visitor);
   std::set<llvm::Function *> extern_funcs = std::move(visitor.extern_funcs);
+  llvm::Function* strs_eq_fn = visitor.str_eq_fn;
   int i = 0;
   for (auto &fn_ref : module->getFunctionList()) {
     llvm::Function *fn = &fn_ref;
