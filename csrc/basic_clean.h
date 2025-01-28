@@ -66,15 +66,26 @@ public:
     assert(orig);
     llvm::BasicBlock *join = dom.idx_to_blk[succ_idx];
     assert(join);
-    // todo check missing ret values in functions that return void
     assert(!orig->empty());
     assert(!join->empty());
     assert(llvm::isa<llvm::BranchInst>(orig->back()));
     inst_to_del.emplace_back(&orig->back());
     auto it = join->begin();
-    while(auto *phi = llvm::dyn_cast<llvm::PHINode>(it.)) {
-      
+    auto end = join->end();
+    while (it != end) {
+      if (auto *phi = llvm::dyn_cast<llvm::PHINode>(it)) {
+        assert(phi->getNumIncomingValues() == 1);
+        llvm::Value *v = phi->getIncomingValue(0);
+        phi->replaceAllUsesWith(v);
+      }
+      else {
+        break;
+      }
+      it++;
     }
+    
+
+
   }
 
   void clean_insts() {
@@ -400,8 +411,21 @@ void transform_rec(int idx, CFG &cfg, DomTree &dom, Cleaner &cleaner) {
   cleaner.clean_insts();
 }
 
+void add_void_ret(CFG &cfg) {
+  if (!cfg.start_blks.front()->getParent()->getReturnType()->isVoidTy()) {
+    return;
+  }
+  for (auto *blk : cfg.end_blks) {
+    if (blk->empty() || !llvm::isa<llvm::ReturnInst>(blk->back())) {
+      llvm::ReturnInst::Create(blk->getContext(), blk);
+    }
+  }
+}
+
+// todo strs_eq_fun ins't absorbed for constant strings
 std::pair<bool, bool> transform(CFG &cfg, DomTree &dom,
                                 llvm::Function *strs_eq_fn) {
+
   Cleaner cleaner(cfg, dom);
   do {
     cleaner.reset();

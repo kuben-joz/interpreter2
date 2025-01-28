@@ -197,13 +197,6 @@ public:
     assert(to_pop.size() == vars.size());
     to_pop.clear();
     vars.clear();
-    // todo this should be done with cfg end nodes
-    if (fn.ret_type == ast::VOID) {
-      llvm::BasicBlock *end_blk = builder->GetInsertBlock();
-      if (end_blk->empty() || !llvm::isa<llvm::ReturnInst>(end_blk->back())) {
-        builder->CreateRetVoid();
-      }
-    }
     start_blk = nullptr;
   }
 
