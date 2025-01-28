@@ -1,15 +1,25 @@
 int main() {
-    string a = readString();
-    string b = a + a;
-    string c = b + "test";
-    b = a + c + "test";
-    int ia = readInt();
-
-    test(ia*5, ia);
-    return 0 ;
+	printInt(fac(10));
+	printInt(rfac(10));
+	printInt(mfac(10));
+        printInt(ifac(10));
+        string r ; // just to test blocks 
+	{
+	  int n = 10;
+	  int r = 1;
+	  while (n>0) {
+	    r = r * n;
+	    n--;
+	  }
+	  printInt(r);
+	}
+	printString (repStr("=",60));
+	printString ("hello */");
+        printString ("/* world") ;
+        return 0 ;
 }
 
-void fac(int a) {
+int fac(int a) {
 	int r;
 	int n;
 
@@ -19,17 +29,50 @@ void fac(int a) {
 	  r = r * n;
 	  n = n - 1;
 	}
-	return;
+	return r;
 }
 
-void test(int a, int b) {
-    boolean c = a < b;
-    if(c) {
+int rfac(int n) {
+	if (n == 0)
+	  return 1;
+	else
+	  return n * rfac(n-1);
+}
 
-    }
-    else {
+int mfac(int n) {
+	if (n == 0)
+	  return 1;
+	else
+	  return n * nfac(n-1);
+}
 
-    }
+int nfac(int n) {
+	if (n != 0)
+	  return mfac(n-1) * n;
+	else
+	  return 1;
+}
+
+int ifac(int n) { return ifac2f(1,n); }
+
+int ifac2f(int l, int h) {
+        if (l == h)
+          return l;
+        if (l > h)
+          return 1;
+        int m;
+        m = (l + h) / 2;
+        return ifac2f(l,m) * ifac2f(m+1,h);
+}
+
+string repStr(string s, int n) {
+  string r = "";
+  int i = 0;
+  while(i<n) {
+    r = r + s;
+    i++;
+  }
+ return r;
 }
 
 

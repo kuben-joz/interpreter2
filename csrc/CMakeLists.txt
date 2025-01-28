@@ -25,7 +25,7 @@ include_directories(${LLVM_INCLUDE_DIRS})
 separate_arguments(LLVM_DEFINITIONS_LIST NATIVE_COMMAND ${LLVM_DEFINITIONS})
 add_definitions(${LLVM_DEFINITIONS_LIST})
 
-set(source_files builtin_funcs.cpp builtin_funcs.h cfg.cpp cfg.h dom_tree.cpp dom_tree.h ir_builder.h liveness.h main.cpp mem2reg.cpp mem2reg.h printer.cpp printer.h skel.cpp skel.h syntax.h treeparse.cpp treeparse.h util.cpp util.h visitor.h)
+set(source_files builtin_funcs.cpp builtin_funcs.h cfg.cpp cfg.h dom_tree.cpp dom_tree.h ir_builder.h main.cpp mem2reg.cpp mem2reg.h printer.cpp printer.h skel.cpp skel.h syntax.h treeparse.cpp treeparse.h util.cpp util.h visitor.h)
 
 # Now build our tools
 add_executable(compiler ${source_files})
