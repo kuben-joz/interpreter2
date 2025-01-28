@@ -9,13 +9,27 @@ void test(int x, int y) {
 	while(x < y) {
 		x++;
 	}
+	while(x < y) {
 	return;
 	x * y;
 	int z = x*y;
+	}
 }
 
+/*
+iterated branching folding
 
-
+void test(int x, int y) {
+	while(x < y) {
+		x++;
+	}
+	while(x < y) {
+	return;
+	x * y;
+	int z = x*y;
+	}
+}
+*/
 
 /*
 int main() {

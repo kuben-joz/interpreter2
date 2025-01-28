@@ -20,7 +20,7 @@
 // maybe cleaned uncalled funcitons without side effects
 
 namespace clean {
-class Cleaner : public llvm::InstVisitor<Cleaner> {
+class InitCleaner : public llvm::InstVisitor<InitCleaner> {
 public:
   bool change_glob = false;
   bool change_structure = false;
@@ -30,7 +30,7 @@ public:
   std::vector<bool> removed;
   std::vector<llvm::Instruction *> inst_to_del;
 
-  Cleaner(CFG &cfg, DomTree &dom)
+  InitCleaner(CFG &cfg, DomTree &dom)
       : cfg(cfg), dom(dom), removed(dom.blk_to_idx.size(), false) {}
 
   void join_succ_single(int orig_idx, int succ_idx) {
@@ -503,7 +503,7 @@ public:
   }
 };
 
-void transform_rec(int idx, CFG &cfg, DomTree &dom, Cleaner &cleaner) {
+void transform_rec(int idx, CFG &cfg, DomTree &dom, InitCleaner &cleaner) {
   llvm::BasicBlock *cur_block = dom.idx_to_blk[idx];
   for (auto &inst : cur_block->getInstList()) {
     cleaner.visit(inst);
@@ -537,7 +537,7 @@ void add_void_ret(CFG &cfg) {
 std::pair<bool, bool> transform(CFG &cfg, DomTree &dom,
                                 llvm::Function *strs_eq_fn) {
 
-  Cleaner cleaner(cfg, dom);
+  InitCleaner cleaner(cfg, dom);
   do {
     cleaner.reset();
     transform_rec(0, cfg, dom, cleaner);

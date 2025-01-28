@@ -26,7 +26,7 @@ include_directories(${LLVM_INCLUDE_DIRS} ${my_dirs})
 separate_arguments(LLVM_DEFINITIONS_LIST NATIVE_COMMAND ${LLVM_DEFINITIONS})
 add_definitions(${LLVM_DEFINITIONS_LIST})
 
-set(source_files builtin_funcs.cpp builtin_funcs.h graphs/cfg.cpp graphs/cfg.h graphs/dom_tree.cpp graphs/dom_tree.h ir_builder.h main.cpp passes/mem2reg.cpp passes/mem2reg.h passes/init_pass.cpp passes/init_pass.h printer.cpp printer.h skel.cpp skel.h syntax.h treeparse.cpp treeparse.h util.cpp util.h visitor.h)
+set(source_files builtin_funcs.cpp builtin_funcs.h graphs/cfg.cpp graphs/cfg.h graphs/dom_tree.cpp graphs/dom_tree.h ir_builder.h main.cpp passes/mem2reg.cpp passes/mem2reg.h passes/init_pass.cpp passes/init_pass.h passes/pass_util.cpp passes/pass_util.h printer.cpp printer.h skel.cpp skel.h syntax.h treeparse.cpp treeparse.h util.cpp util.h visitor.h)
 
 
 # Now build our tools

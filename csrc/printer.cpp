@@ -106,7 +106,7 @@ public:
         } else {
           str_idx = it->second;
         }
-        strm << "getelementptr inbounds ([" << str.length() << " x i8], ["
+        strm <<"getelementptr inbounds ([" << str.length() << " x i8], ["
              << str.length() << " x i8]* @str_" << str_idx << ", i32 0, i32 0)";
       } else if (llvm::isa<llvm::ConstantData>(str_ptr)) {
         auto it = str_to_glob.find("");

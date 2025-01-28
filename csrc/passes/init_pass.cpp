@@ -7,7 +7,7 @@
 #include "init_pass.h"
 
 namespace clean {
-class Cleaner : public llvm::InstVisitor<Cleaner> {
+class InitCleaner : public llvm::InstVisitor<InitCleaner> {
 public:
   bool change_glob = false;
   bool change_structure = false;
@@ -17,7 +17,7 @@ public:
   std::vector<bool> removed;
   std::vector<llvm::Instruction *> inst_to_del;
 
-  Cleaner(CFG &cfg, DomTree &dom)
+  InitCleaner(CFG &cfg, DomTree &dom)
       : cfg(cfg), dom(dom), removed(dom.blk_to_idx.size(), false) {}
 
   void clean_insts() {
@@ -112,7 +112,7 @@ public:
   void visitPHINode(llvm::PHINode &phi) { assert(!is_past_ret); }
 };
 
-void transform_rec(int idx, CFG &cfg, DomTree &dom, Cleaner &cleaner) {
+void transform_rec(int idx, CFG &cfg, DomTree &dom, InitCleaner &cleaner) {
   llvm::BasicBlock *cur_block = dom.idx_to_blk[idx];
   for (auto &inst : cur_block->getInstList()) {
     cleaner.visit(inst);
@@ -141,10 +141,9 @@ bool add_void_ret(CFG &cfg) {
   return res;
 }
 
-
 std::pair<bool, bool> init_clean(CFG &cfg, DomTree &dom) {
 
-  Cleaner cleaner(cfg, dom);
+  InitCleaner cleaner(cfg, dom);
   bool void_added = add_void_ret(cfg);
   transform_rec(0, cfg, dom, cleaner);
 
