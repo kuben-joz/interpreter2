@@ -8,5 +8,5 @@
 
 // todo same for strings
 namespace clean {
-std::pair<bool, bool> val_prop(CFG &cfg, DomTree &dom, llvm::Function* str_eq_fn);
+std::pair<bool, bool> val_prop(CFG &cfg, DomTree &dom, llvm::Function* str_eq_fn, StringCMP &str_cmp);
 }

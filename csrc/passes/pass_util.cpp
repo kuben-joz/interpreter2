@@ -1,5 +1,7 @@
 #include <llvm-14/llvm/IR/Constants.h>
+#include <llvm-14/llvm/IR/DerivedTypes.h>
 #include <llvm-14/llvm/IR/Value.h>
+#include <llvm-14/llvm/Support/Casting.h>
 #include <map>
 #include <utility>
 
@@ -20,7 +22,7 @@ struct StringCMP {
       llvm::Value *str1 = const_exp1->getOperand(0)->getOperand(0);
       llvm::Value *str2 = const_exp2->getOperand(0)->getOperand(0);
       auto it = glob_str_cache.find(std::make_pair(str1, str2));
-      if(it != glob_str_cache.end()) {
+      if (it != glob_str_cache.end()) {
         return std::make_pair(true, it->second);
       }
       if (auto *str1_v = llvm::dyn_cast<llvm::ConstantDataSequential>(str1)) {
@@ -40,5 +42,18 @@ struct StringCMP {
       }
     }
     return std::make_pair(false, false);
+  }
+
+  bool is_string(llvm::Value *val) {
+    llvm::Type *typ = val->getType();
+    if (auto p_typ = llvm::dyn_cast<llvm::PointerType>(typ)) {
+      llvm::Type *v_typ = typ->getPointerElementType();
+      if (v_typ->isIntegerTy() && v_typ->getIntegerBitWidth() == 8) {
+        return true;
+      }
+      return false;
+    } else {
+      return llvm::isa<llvm::ConstantExpr>(val);
+    }
   }
 };

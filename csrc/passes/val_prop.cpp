@@ -1,5 +1,6 @@
 #include "cfg.h"
 #include "dom_tree.h"
+#include "pass_util.h"
 #include <cassert>
 #include <llvm-14/llvm/IR/BasicBlock.h>
 #include <llvm-14/llvm/IR/Constant.h>
@@ -25,11 +26,12 @@ public:
   bool change_structure = false;
   CFG &cfg;
   DomTree &dom;
+  StringCMP &str_cmp;
   llvm::Function *str_eq_fn;
   std::vector<llvm::Instruction *> inst_to_del;
 
-  ValProp(CFG &cfg, DomTree &dom, llvm::Function *str_eq_fn)
-      : cfg(cfg), dom(dom), str_eq_fn(str_eq_fn) {}
+  ValProp(CFG &cfg, DomTree &dom, llvm::Function *str_eq_fn, StringCMP &str_cmp)
+      : cfg(cfg), dom(dom), str_eq_fn(str_eq_fn), str_cmp(str_cmp) {}
 
   void clean_insts() {
     if (inst_to_del.empty()) {
@@ -149,20 +151,14 @@ public:
       return;
     }
     if (num_paths == 1) {
-      if (auto const_i =
-              llvm::dyn_cast<llvm::ConstantInt>(phi.getIncomingValue(0))) {
-        int32_t val = const_i->getSExtValue();
-        change_glob = true;
-        llvm::Value *new_v =
-            llvm::ConstantInt::getSigned(const_i->getType(), val);
-        phi.replaceAllUsesWith(new_v);
-        inst_to_del.emplace_back(phi);
+      llvm::Value *new_v = phi.getIncomingValue(0);
+      assert(new_v != &phi);
+      if (new_v == &phi) {
         return;
-      } else if (auto *const_exp = llvm::dyn_cast<llvm::ConstantExpr>(
-                     phi.getIncomingValue(0))) {
-        phi.replaceAllUsesWith(const_exp);
-        inst_to_del.emplace_back(phi);
       }
+      phi.replaceAllUsesWith(new_v);
+      inst_to_del.emplace_back(phi);
+      change_glob = true;
     } else {
       if (llvm::isa<llvm::ConstantInt>(phi.getIncomingValue(0))) {
         std::vector<llvm::ConstantInt *> vals;
@@ -196,26 +192,52 @@ public:
         change_glob = true;
         llvm::Value *new_v =
             llvm::ConstantInt::getSigned(vals.front()->getType(), val);
-        phi.replaceAllUsesWith(new_v);
         inst_to_del.emplace_back(phi);
-        return;
+        phi.replaceAllUsesWith(new_v);
+        change_glob = true;
+      } else if (str_cmp.is_string(phi.getIncomingValue(0))) {
+        std::vector<llvm::Value *> vals;
+        for (auto &v : phi.incoming_values()) {
+          if (auto *phi2 = llvm::dyn_cast<llvm::PHINode>(&v)) {
+            if (&phi == phi2) {
+              continue;
+            } else {
+              return; // todo maybe add deeper
+            }
+          } else {
+            assert(str_cmp.is_string(v));
+            if (!str_cmp.is_string(v)) {
+              return;
+            }
+            vals.emplace_back(v);
+          }
+        }
+        assert(!vals.empty());
+        if (vals.empty()) {
+          return;
+        }
+        llvm::Value *new_v = vals.front();
+        inst_to_del.emplace_back(phi);
+        phi.replaceAllUsesWith(new_v);
+        change_glob = true;
       }
     }
+  };
+
+  // todo strs_eq_fun ins't absorbed for constant strings
+  std::pair<bool, bool> val_prop(CFG &cfg, DomTree &dom,
+                                 llvm::Function *strs_eq_fn,
+                                 StringCMP &str_cmp) {
+
+    ValProp propagator(cfg, dom, strs_eq_fn, str_cmp);
+    for (int idx = 0; idx < dom.idx_to_blk.size(); idx++) {
+      llvm::BasicBlock *blk = dom.idx_to_blk[idx];
+      for (auto &inst : blk->getInstList()) {
+        propagator.visit(inst);
+      }
+      propagator.clean_insts();
+    }
+    return std::make_pair(propagator.change_glob, propagator.change_structure);
   }
 };
-
-// todo strs_eq_fun ins't absorbed for constant strings
-std::pair<bool, bool> val_prop(CFG &cfg, DomTree &dom,
-                               llvm::Function *strs_eq_fn) {
-
-  ValProp propagator(cfg, dom, strs_eq_fn);
-  for(int idx = 0; idx < dom.idx_to_blk.size(); idx++) {
-    llvm::BasicBlock *blk = dom.idx_to_blk[idx];
-    for(auto &inst : blk->getInstList()) {
-      propagator.visit(inst);
-    }
-    propagator.clean_insts();
-  }
-  return std::make_pair(propagator.change_glob, propagator.change_structure);
-}
 } // namespace clean
