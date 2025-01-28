@@ -19,6 +19,8 @@
 #include "treeparse.h"
 #include "printer.h"
 #include "init_pass.h"
+#include "val_prop.h"
+#include "pass_util.h"
 
 void draw_cfg(llvm::Module *module, CFG &cfg, int i) {
   std::ofstream cfg_f("debug/" + std::to_string(i) + "-cfg.out");
@@ -89,6 +91,7 @@ int main() {
   llvm::Function* strs_eq_fn = visitor.str_eq_fn;
   int i = 0;
   for (auto &fn_ref : module->getFunctionList()) {
+    StringCMP str_cmp;
     llvm::Function *fn = &fn_ref;
     if (extern_funcs.count(fn)) {
       continue;
@@ -103,6 +106,7 @@ int main() {
       dom = DomTree(cfg);
     }
     mem2reg::transform(cfg, dom);
+    clean::val_prop(cfg, dom, strs_eq_fn, str_cmp);
     i++;
   }
   printer::print(module.get(), extern_funcs);

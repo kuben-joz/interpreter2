@@ -44,6 +44,20 @@ public:
     inst_to_del.clear();
   }
 
+  void visitCallInst(llvm::CallInst &call) {
+    if (call.getCalledFunction() == str_eq_fn) {
+      std::pair<bool, bool> res =
+          str_cmp.cmp_strings(call.getArgOperand(0), call.getArgOperand(1));
+      if (res.first) {
+        inst_to_del.emplace_back(&call);
+        llvm::Value *new_v =
+            llvm::ConstantInt::getBool(call.getType(), res.second);
+        call.replaceAllUsesWith(new_v);
+        change_glob = true;
+      }
+    }
+  }
+
   void visitBinaryOperator(llvm::BinaryOperator &mul) {
     assert(mul.getNumOperands() == 2);
     if (mul.getNumOperands() != 2) {
@@ -157,7 +171,7 @@ public:
         return;
       }
       phi.replaceAllUsesWith(new_v);
-      inst_to_del.emplace_back(phi);
+      inst_to_del.emplace_back(&phi);
       change_glob = true;
     } else {
       if (llvm::isa<llvm::ConstantInt>(phi.getIncomingValue(0))) {
@@ -192,7 +206,7 @@ public:
         change_glob = true;
         llvm::Value *new_v =
             llvm::ConstantInt::getSigned(vals.front()->getType(), val);
-        inst_to_del.emplace_back(phi);
+        inst_to_del.emplace_back(&phi);
         phi.replaceAllUsesWith(new_v);
         change_glob = true;
       } else if (str_cmp.is_string(phi.getIncomingValue(0))) {
@@ -217,7 +231,7 @@ public:
           return;
         }
         llvm::Value *new_v = vals.front();
-        inst_to_del.emplace_back(phi);
+        inst_to_del.emplace_back(&phi);
         phi.replaceAllUsesWith(new_v);
         change_glob = true;
       }
@@ -225,19 +239,18 @@ public:
   };
 
   // todo strs_eq_fun ins't absorbed for constant strings
-  std::pair<bool, bool> val_prop(CFG &cfg, DomTree &dom,
-                                 llvm::Function *strs_eq_fn,
-                                 StringCMP &str_cmp) {
-
-    ValProp propagator(cfg, dom, strs_eq_fn, str_cmp);
-    for (int idx = 0; idx < dom.idx_to_blk.size(); idx++) {
-      llvm::BasicBlock *blk = dom.idx_to_blk[idx];
-      for (auto &inst : blk->getInstList()) {
-        propagator.visit(inst);
-      }
-      propagator.clean_insts();
-    }
-    return std::make_pair(propagator.change_glob, propagator.change_structure);
-  }
 };
+std::pair<bool, bool> val_prop(CFG &cfg, DomTree &dom,
+                               llvm::Function *strs_eq_fn, StringCMP &str_cmp) {
+
+  ValProp propagator(cfg, dom, strs_eq_fn, str_cmp);
+  for (int idx = 0; idx < dom.idx_to_blk.size(); idx++) {
+    llvm::BasicBlock *blk = dom.idx_to_blk[idx];
+    for (auto &inst : blk->getInstList()) {
+      propagator.visit(inst);
+    }
+    propagator.clean_insts();
+  }
+  return std::make_pair(propagator.change_glob, propagator.change_structure);
+}
 } // namespace clean

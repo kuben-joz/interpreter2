@@ -106,7 +106,7 @@ public:
         } else {
           str_idx = it->second;
         }
-        strm <<"getelementptr inbounds ([" << str.length() << " x i8], ["
+        strm << "getelementptr inbounds ([" << str.length() << " x i8], ["
              << str.length() << " x i8]* @str_" << str_idx << ", i32 0, i32 0)";
       } else if (llvm::isa<llvm::ConstantData>(str_ptr)) {
         auto it = str_to_glob.find("");
@@ -461,9 +461,9 @@ void print(llvm::Module *module, std::set<llvm::Function *> extern_funcs) {
     printer.print_func(fn_name, fn);
   }
   for (auto it : printer.str_to_glob) {
-    strm << "@str_" << it.second << " = private constant [" << it.first.length()
-         << " x i8] ";
+    strm << "@str_" << it.second << " = private constant [";
     if (it.first.length() > 0) {
+      strm << it.first.length() << " x i8] ";
       strm << "c\"";
       for (char c : it.first) {
         if (c < 16) {
@@ -475,7 +475,7 @@ void print(llvm::Module *module, std::set<llvm::Function *> extern_funcs) {
       strm << "\", align 1; \"" << it.first.substr(0, it.first.length() - 1)
            << "\"\n";
     } else {
-      strm << "zeroinitializer, align 1; empty string\n";
+      strm  << " 1 x i8] " << "zeroinitializer, align 1; empty string\n";
     }
   }
 }

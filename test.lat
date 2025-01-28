@@ -5,16 +5,18 @@ int main() {
 	return x + y;
 }
 
-void test(int x, int y) {
-	while(x < y) {
-		x++;
+void test(string a, string b) {
+	if("test" == "") {
+
 	}
-	while(x < y) {
-	return;
-	x * y;
-	int z = x*y;
+	else {
+		if(a == b) {
+			string c = a + b;
+		}
 	}
 }
+
+
 
 /*
 iterated branching folding
