@@ -17,5 +17,5 @@
 
 //todo we could be going back into ourselves if we have a while with empty block, which is fine
 namespace clean {
-std::pair<bool, bool> trim_tree(CFG &cfg, DomTree &dom);
+std::pair<bool, bool> fold_tree(CFG &cfg, DomTree &dom);
 } // namespace clean

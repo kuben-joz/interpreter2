@@ -89,8 +89,6 @@ public:
     if (dom.cfg_succs[idx].empty()) {
       return;
     }
-    change_structure = true;
-    change_glob = true;
     clean_hanging_dom_rec(idx);
   }
 

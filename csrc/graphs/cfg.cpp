@@ -11,8 +11,6 @@
 CFG::CFG(llvm::Function *fn) : func(fn) { update(); }
 
 void CFG::update() {
-  succ.clear();
-  pred.clear();
   start_blks.emplace_back(&(func->getEntryBlock()));
   for (auto &blk_ref : func->getBasicBlockList()) {
     llvm::BasicBlock *blk = &blk_ref;

@@ -1,4 +1,3 @@
-#pragma once
 #include "cfg.h"
 #include "dom_tree.h"
 #include <cassert>
@@ -26,160 +25,6 @@ public:
 
   TreeTrimmer(CFG &cfg, DomTree &dom)
       : cfg(cfg), dom(dom), removed(dom.blk_to_idx.size(), false) {}
-
-  void join_succ_single(int orig_idx, int succ_idx) {
-    int num_preds = 0;
-    for (int pred : dom.cfg_preds[succ_idx]) {
-      if (!removed[pred]) {
-        num_preds++;
-      }
-    }
-    assert(num_preds > 0);
-    if (num_preds != 1) {
-      return;
-    }
-    change_glob = true;
-    change_structure = true;
-    llvm::BasicBlock *orig = dom.idx_to_blk[orig_idx];
-    assert(orig);
-    llvm::BasicBlock *join = dom.idx_to_blk[succ_idx];
-    assert(join);
-    assert(!orig->empty());
-    assert(!join->empty());
-    assert(llvm::isa<llvm::BranchInst>(orig->back()));
-    inst_to_del.emplace_back(&orig->back());
-    auto it = join->begin();
-    auto end = join->end();
-    while (it != end) {
-      if (auto *phi = llvm::dyn_cast<llvm::PHINode>(it)) {
-        assert(phi->getNumIncomingValues() == 1);
-        llvm::Value *v = phi->getIncomingValue(0);
-        phi->replaceAllUsesWith(v);
-        inst_to_del.emplace_back(phi);
-      } else {
-        break;
-      }
-      it++;
-    }
-    std::vector<llvm::Instruction *> to_move;
-    while (it != end) {
-      to_move.emplace_back(&it);
-      it++;
-    }
-    for (auto *instr : to_move) {
-      instr->removeFromParent();
-      instr->insertAfter(&orig->back());
-    }
-    for (int succ_succ : dom.cfg_succs[succ_idx]) {
-      if (!removed[succ_succ]) {
-        llvm::BasicBlock *cur_succ = dom.idx_to_blk[succ_succ];
-        for (auto &inst : cur_succ->getInstList()) {
-          if (auto *phi = llvm::dyn_cast<llvm::PHINode>(&inst)) {
-            int blk_idx = phi->getBasicBlockIndex(join);
-            assert(blk_idx >= 0);
-            phi->setIncomingBlock(blk_idx, orig);
-          } else {
-            break;
-          }
-        }
-      }
-    }
-    removed[succ_idx] = true;
-    dom.blk_to_idx.erase(join);
-    join->eraseFromParent();
-    dom.idx_to_blk[succ_idx] = nullptr;
-  }
-
-  void join_succ_double(int orig_idx) {
-    assert(!removed[orig_idx]);
-    llvm::BasicBlock *orig = dom.idx_to_blk[orig_idx];
-    assert(orig);
-
-    std::vector<int> succlst;
-    for (int succ : dom.cfg_succs[orig_idx]) {
-      if (!removed[succ]) {
-        succlst.emplace_back(succ);
-      }
-    }
-    assert(succlst.size() == 2);
-
-    // check all have one predecessor and one successor
-    for (int succ : succlst) {
-      int num_preds = 0;
-      for (int pred : dom.cfg_preds[succ]) {
-        if (!removed[pred]) {
-          num_preds++;
-        }
-      }
-      assert(num_preds > 0);
-      if (num_preds > 1) {
-        return;
-      }
-      // todo maybe add to merge if they return the same thing or if all phi
-      // nodes agree
-    }
-
-    // check both have one branch
-    std::vector<llvm::BasicBlock *> succ_succs;
-    for (int succ : succlst) {
-      assert(dom.idx_to_blk[succ]);
-      llvm::BasicBlock *succ_blk = dom.idx_to_blk[succ];
-      assert(!succ_blk->empty());
-      if (auto *br = llvm::dyn_cast<llvm::BranchInst>(&succ_blk->front())) {
-        if (br->isConditional()) {
-          return;
-        } else {
-          llvm::BasicBlock *succ_succ = br->getSuccessor(0);
-          assert(dom.blk_to_idx.count(succ_succ));
-          assert(!succ_succ->empty());
-          succ_succs.emplace_back(succ_succ);
-        }
-      } else {
-        return;
-      }
-    }
-    assert(succ_succs.size() == 2);
-    // don't get rid of phi node info
-    llvm::BranchInst *orig_br = llvm::dyn_cast<llvm::BranchInst>(&orig->back());
-    assert(orig_br);
-    assert(orig_br->isConditional());
-    if (succ_succs[0] == succ_succs[1]) {
-      if (llvm::isa<llvm::PHINode>(succ_succs[0]->front())) {
-        return;
-      } else {
-        inst_to_del.emplace_back(orig_br);
-        llvm::BranchInst::Create(succ_succs[0], orig);
-      }
-    } else { // jump to different places
-      for (int i = 0; i < 2; i++) {
-        llvm::BasicBlock *succ = dom.idx_to_blk[succlst[i]];
-        llvm::BasicBlock *succ_succ = succ_succs[i];
-        for (auto &inst : succ_succ->getInstList()) {
-          if (auto *phi = llvm::dyn_cast<llvm::PHINode>(&inst)) {
-          }
-        }
-      }
-    }
-  }
-
-  // if we are the only successor and we don't have any other successors we join
-  // his isntructions into ours
-  void join_succ(int orig_idx) {
-    int num_succ = 0;
-    int succ_idx = -1;
-    for (int succ : dom.cfg_succs[orig_idx]) {
-      if (!removed[succ]) {
-        num_succ++;
-        succ_idx = succ;
-      }
-    }
-    assert(succ_idx >= 0 || num_succ == 0);
-    if (num_succ == 1) {
-      join_succ_single(orig_idx, succ_idx);
-    } else {
-      join_succ_double(orig_idx);
-    }
-  }
 
   void clean_insts() {
     if (inst_to_del.empty()) {
@@ -261,11 +106,26 @@ public:
         for (int succ : dom.dom_succs[cur_idx]) {
           if (succ == skip_idx) {
             assert(!removed[skip_idx]);
-            removed[skip_idx] = true;
+            int num_preds = 0;
+            for (int pred : dom.cfg_preds[skip_idx]) {
+              if (!removed[pred]) {
+                num_preds++;
+              }
+            };
+            assert(num_preds > 0);
+            // orig dominates skip so in theory this means that skip_idx will have an empty dom tree if
+            // it has more than one predecessor so cleaning the hanging dom rec won't do anything
+            if (num_preds == 1) {
+              removed[skip_idx] = true;
+            }
             clean_hanging_dom_rec(skip_idx);
-            dom.blk_to_idx.erase(dom.idx_to_blk[skip_idx]);
-            skip->removeFromParent();
-            dom.idx_to_blk[skip_idx] = nullptr;
+            if (removed[skip_idx]) {
+              change_glob = true;
+              change_structure = true;
+              dom.blk_to_idx.erase(dom.idx_to_blk[skip_idx]);
+              skip->removeFromParent();
+              dom.idx_to_blk[skip_idx] = nullptr;
+            }
             break;
           }
         }
@@ -300,22 +160,24 @@ std::pair<bool, bool> trim_tree(CFG &cfg, DomTree &dom) {
   // trim out blocks with no preds that are not the entry
   for (int i = 0; i < dom.idx_to_blk.size(); i++) {
     if (!trimmer.removed[i]) {
-      if(dom.cfg_preds[i].size() == 0) {
+      if (dom.cfg_preds[i].size() == 0) {
         assert(i == 0);
         continue; // root node
       }
-      trimmer.clean_hanging_dom_rec(i);
-    }
-  }
-
-  // postorder
-  // merge blocks
-  for (int i = dom.idx_to_blk.size(); i >= 0; i--) {
-    if (!trimmer.removed[i]) {
-      llvm::BasicBlock *blk = dom.idx_to_blk[i];
-      assert(!blk->empty());
-      if (!blk->empty()) {
-        trimmer.join_succ(i);
+      bool has_pred = false;
+      for (int pred : dom.cfg_preds[i]) {
+        has_pred = has_pred || !trimmer.removed[pred];
+      }
+      if (!has_pred) {
+        trimmer.clean_hanging_dom_rec(i);
+        assert(dom.idx_to_blk[i]);
+        if (dom.idx_to_blk[i]) {
+          trimmer.change_glob = true;
+          trimmer.change_structure = true;
+          dom.blk_to_idx.erase(dom.idx_to_blk[i]);
+          dom.idx_to_blk[i]->eraseFromParent();
+          dom.idx_to_blk[i] = nullptr;
+        }
       }
     }
   }

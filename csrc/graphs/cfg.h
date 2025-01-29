@@ -13,12 +13,11 @@ struct CFG {
 
   CFG(llvm::Function *func);
 
-  void update();
-
   std::vector<llvm::BasicBlock *> get_postorder();
 
 private:
   void postorder_rec(llvm::BasicBlock *blk_in,
                      std::set<llvm::BasicBlock *> &visited,
                      std::vector<llvm::BasicBlock *> &res);
+  void update();
 };

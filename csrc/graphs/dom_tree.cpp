@@ -8,6 +8,10 @@
 std::vector<llvm::BasicBlock *>
 DomTree::it_dom_front(std::set<llvm::BasicBlock *> &in_bbs) {
   // initial dom frontier
+  assert(dom_front_calculated);
+  //if(!dom_front_calculated) {
+  //  dom_frontier();
+  //}
   DynamicBitset res_bs(blk_to_idx.size());
   for (llvm::BasicBlock *bb : in_bbs) {
     assert(blk_to_idx.count(bb) && "Block doesn't exist in CFG");
@@ -59,11 +63,11 @@ DomTree::DomTree(CFG &cfg)
     blk_to_idx[idx_to_blk[i]] = i;
   }
   for (int i = 0; i < idx_to_blk.size(); i++) {
-    auto &cur_preds = cfg_preds[i];
+    std::vector<int> &cur_preds = cfg_preds[i];
     for (auto cur_pred : cfg.pred[idx_to_blk[i]]) {
       cur_preds.emplace_back(blk_to_idx[cur_pred]);
     }
-    auto &cur_succs = cfg_succs;
+    std::vector<int> &cur_succs = cfg_succs[i];
     for (auto cur_succ : cfg.succ[idx_to_blk[i]]) {
       cur_succs.emplace_back(blk_to_idx[cur_succ]);
     }
@@ -118,6 +122,7 @@ inline int DomTree::intersect(int i, int j) {
 }
 
 void DomTree::dom_frontier() {
+  dom_front_calculated = true;
   for (int cur_node = 0; cur_node < dom_preds.size(); cur_node++) {
     if (cfg_preds[cur_node].size() >= 2) {
       for (int pred : cfg_preds[cur_node]) {

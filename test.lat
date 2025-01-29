@@ -5,16 +5,17 @@ int main() {
 	return x + y;
 }
 
-void test(int c, int b) {
-	int a = b+c;
-	while(a > 5) {
-		if(b < 5) {
-			a--;
-		}
-		else {
-			a++;
+void test(boolean a, boolean b) {
+	b = true;
+	while(true) {
+		if(b) {
+
 		}
 	}
+}
+
+void test1(boolean a, boolean b) {
+
 }
 
 /*

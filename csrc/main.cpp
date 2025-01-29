@@ -12,15 +12,16 @@
 
 #include "cfg.h"
 #include "dom_tree.h"
-#include "util.h"
+#include "init_pass.h"
 #include "ir_builder.h"
 #include "mem2reg.h"
-#include "skel.h"
-#include "treeparse.h"
-#include "printer.h"
-#include "init_pass.h"
-#include "val_prop.h"
 #include "pass_util.h"
+#include "printer.h"
+#include "skel.h"
+#include "tree_trim.h"
+#include "treeparse.h"
+#include "util.h"
+#include "val_prop.h"
 
 void draw_cfg(llvm::Module *module, CFG &cfg, int i) {
   std::ofstream cfg_f("debug/" + std::to_string(i) + "-cfg.out");
@@ -88,7 +89,7 @@ int main() {
   IRGen visitor(context.get(), module.get(), builder.get());
   prog_ast->accept(&visitor);
   std::set<llvm::Function *> extern_funcs = std::move(visitor.extern_funcs);
-  llvm::Function* strs_eq_fn = visitor.str_eq_fn;
+  llvm::Function *strs_eq_fn = visitor.str_eq_fn;
   int i = 0;
   for (auto &fn_ref : module->getFunctionList()) {
     StringCMP str_cmp;
@@ -101,12 +102,19 @@ int main() {
     //  draw_rev_cfg(module.get(), cfg, 1000+i);
     DomTree dom(cfg);
     std::pair<bool, bool> res = clean::init_clean(cfg, dom);
-    if(res.second) {
-      cfg.update();
+    if (res.second) {
+      cfg = CFG(fn);
       dom = DomTree(cfg);
     }
+    dom.dom_frontier();
     mem2reg::transform(cfg, dom);
-    clean::val_prop(cfg, dom, strs_eq_fn, str_cmp);
+    res = clean::val_prop(cfg, dom, strs_eq_fn, str_cmp);
+    assert(!res.second);
+    res = clean::trim_tree(cfg, dom);
+    if (res.second) {
+      cfg = CFG(fn);
+      dom = DomTree(cfg);
+    }
     i++;
   }
   printer::print(module.get(), extern_funcs);
@@ -115,5 +123,5 @@ int main() {
 }
 
 // join lbocks
-// ret removal 
+// ret removal
 // also value propagation
