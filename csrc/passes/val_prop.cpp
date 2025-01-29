@@ -248,17 +248,17 @@ public:
       case llvm::Instruction::SRem:
         break;
       case llvm::Instruction::And:
-        if(l_v == r_v) {
+        if (l_v == r_v) {
           res_ptr = l_v;
         }
         break;
       case llvm::Instruction::Or:
-        if(l_v == r_v) {
+        if (l_v == r_v) {
           res_ptr = l_v;
         }
         break;
       case llvm::Instruction::Xor:
-        if(l_v == r_v) {
+        if (l_v == r_v) {
           changed = true;
           res = 0;
         }
@@ -385,42 +385,27 @@ public:
       inst_to_del.emplace_back(&phi);
       change_glob = true;
     } else {
-      if (llvm::isa<llvm::ConstantInt>(phi.getIncomingValue(0))) {
-        std::vector<llvm::ConstantInt *> vals;
-        for (auto &v : phi.incoming_values()) {
-          if (auto const_i = llvm::dyn_cast<llvm::ConstantInt>(&v)) {
-            if (!vals.empty() &&
-                vals.back()->getSExtValue() != const_i->getSExtValue()) {
-              break;
-            }
-            vals.emplace_back(const_i);
-          } else if (auto *phi2 = llvm::dyn_cast<llvm::PHINode>(&v)) {
-            if (&phi == phi2) {
-              continue;
-            } else {
-              return; // todo maybe add deeper
-            }
-          } else {
+      if (phi.getType()->isIntegerTy()) {
+        // same vals have same pointer
+        llvm::Value *prev = nullptr;
+        for (auto &use : phi.incoming_values()) {
+          llvm::Value *val = use.get();
+          if (val == &phi) {
+            continue;
+          }
+          if(!prev) {
+            prev = val;
+          }
+          else if(prev != val) {
             return;
           }
         }
-        assert(!vals.empty());
-        if (vals.empty()) {
-          return;
-        }
-        int32_t val = vals.front()->getSExtValue();
-        for (auto v : vals) {
-          if (val != (int32_t)v->getSExtValue()) {
-            return;
-          }
-        }
-        change_glob = true;
-        llvm::Value *new_v =
-            llvm::ConstantInt::getSigned(vals.front()->getType(), val);
+        assert(prev);
         inst_to_del.emplace_back(&phi);
-        phi.replaceAllUsesWith(new_v);
+        phi.replaceAllUsesWith(prev);
         change_glob = true;
-      } else if (str_cmp.is_string(phi.getIncomingValue(0))) {
+      } 
+      else if (str_cmp.is_string_type(phi.getType())) {
         std::vector<llvm::Value *> vals;
         for (auto &v : phi.incoming_values()) {
           if (auto *phi2 = llvm::dyn_cast<llvm::PHINode>(&v)) {

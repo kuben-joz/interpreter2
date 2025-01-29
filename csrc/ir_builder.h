@@ -99,9 +99,8 @@ private:
     for (const auto param : fn.param_types) {
       param_types.emplace_back(convert_type(param));
     }
-    llvm::FunctionType *fn_typ = nullptr;
-
-    fn_typ = llvm::FunctionType::get(ret_type, param_types, false);
+    llvm::FunctionType *fn_typ =
+        llvm::FunctionType::get(ret_type, param_types, false);
 
     llvm::Function *res_fn = llvm::Function::Create(
         fn_typ, llvm::Function::ExternalLinkage, fn.name, module);
@@ -260,9 +259,15 @@ public:
       }
     }
     llvm::BasicBlock *bb_bak = builder->GetInsertBlock();
-    builder->SetInsertPoint(&(start_blk->front()));
+    if (start_blk->empty()) {
+      builder->SetInsertPoint(start_blk);
+    } else {
+      builder->SetInsertPoint(&(start_blk->front()));
+    }
+    llvm::Type *alloc_type = convert_type(stmt.type);
+    assert(alloc_type == ret_val->getType());
     llvm::AllocaInst *alloc =
-        builder->CreateAlloca(convert_type(stmt.type), nullptr, stmt.ident);
+        builder->CreateAlloca(convert_type(stmt.type), nullptr);
     builder->SetInsertPoint(bb_bak);
     builder->CreateStore(ret_val,
                          alloc); // we always have default value for variable

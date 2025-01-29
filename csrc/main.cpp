@@ -92,6 +92,7 @@ int main() {
   llvm::Function *strs_eq_fn = visitor.str_eq_fn;
   int i = 0;
   for (auto &fn_ref : module->getFunctionList()) {
+    break;
     StringCMP str_cmp;
     llvm::Function *fn = &fn_ref;
     if (extern_funcs.count(fn)) {

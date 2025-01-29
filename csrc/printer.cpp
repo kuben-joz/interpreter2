@@ -98,25 +98,21 @@ public:
       llvm::Value *str_ptr = glob->getOperand(0);
       if (auto *str_v = llvm::dyn_cast<llvm::ConstantDataSequential>(str_ptr)) {
         std::string str(str_v->getAsString());
-        auto it = str_to_glob.find(str);
-        unsigned long long str_idx;
-        if (it == str_to_glob.end()) {
-          str_idx = ++glob_n;
-          str_to_glob[str] = glob_n;
-        } else {
-          str_idx = it->second;
+        auto res = str_to_glob.insert({str, glob_n});
+        if (res.second) {
+          assert(!strict && "printing new string name with strict");
+          glob_n++;
         }
+        unsigned long long str_idx = res.first->second;
         strm << "getelementptr inbounds ([" << str.length() << " x i8], ["
              << str.length() << " x i8]* @str_" << str_idx << ", i32 0, i32 0)";
       } else if (llvm::isa<llvm::ConstantData>(str_ptr)) {
-        auto it = str_to_glob.find("");
-        unsigned long long str_idx;
-        if (it == str_to_glob.end()) {
-          str_idx = ++glob_n;
-          str_to_glob[""] = glob_n;
-        } else {
-          str_idx = it->second;
+        auto res = str_to_glob.insert({"", glob_n});
+        if (res.second) {
+          assert(!strict && "printing new string name with strict");
+          glob_n++;
         }
+        unsigned long long str_idx = res.first->second;
         strm << "getelementptr inbounds ([1 x i8], [1 x i8]* @str_" << str_idx
              << ", i32 0, i32 0)";
       } else {
@@ -136,27 +132,21 @@ public:
       }
       return;
     }
-    auto it = val_to_string.find(val);
-    if (it == val_to_string.end()) {
+    auto res = val_to_string.insert({val, next_reg_name});
+    if (res.second) {
       assert(!strict && "value unkown, can't print");
-      val_to_string[val] = next_reg_name;
-      strm << next_reg_name;
       next_reg_name = "%r" + std::to_string(++reg_n);
-    } else {
-      strm << it->second;
     }
+    strm << res.first->second;
   }
 
   void print_blk_name(llvm::BasicBlock *blk, bool strict) {
-    auto it = blk_to_string.find(blk);
-    if (it == blk_to_string.end()) {
+    auto res = blk_to_string.insert({blk, next_blk_name});
+    if (res.second) {
       assert(!strict && "can't find block to write");
-      blk_to_string[blk] = next_blk_name;
-      strm << "%" << next_blk_name;
       next_blk_name = "blk_" + std::to_string(++blk_n);
-    } else {
-      strm << "%" << it->second;
     }
+    strm << "%" << res.first->second;
   }
   // ------ Visitors Start ------------------------------------
   void visitInstruction(llvm::Instruction &inst) {
@@ -401,14 +391,11 @@ public:
   }
 
   void print_blk(llvm::BasicBlock *blk) {
-    auto it = blk_to_string.find(blk);
-    if (it == blk_to_string.end()) {
-      blk_to_string[blk] = next_blk_name;
-      strm << next_blk_name << ":\n";
+    auto res = blk_to_string.insert({blk, next_blk_name});
+    if (res.second) {
       next_blk_name = "blk_" + std::to_string(++blk_n);
-    } else {
-      strm << it->second << ":\n";
     }
+    strm << res.first->second << ":\n";
     for (auto &inst_ref : blk->getInstList()) {
       this->visit(inst_ref);
     }

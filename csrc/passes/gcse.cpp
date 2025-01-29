@@ -107,6 +107,23 @@ public:
   GCSE(CFG &cfg, DomTree &dom)
       : cfg(cfg), dom(dom), removed(dom.blk_to_idx.size(), false) {}
 
+  std::pair<int, bool> get_or_insert_id(Value *v) {
+    auto search = val_to_int.insert({v, vals.size()});
+    if (search.second) {
+      int res = vals.size();
+      assert(res == parent.size());
+      vals.emplace_back(v);
+      parent.emplace_back(res);
+      return {res, true};
+    } else {
+      int res = search.first->second;
+      while (res != parent[res]) {
+        res = parent[res];
+      }
+      return {res, false};
+    }
+  }
+
   void clean_insts() {
     val v(1, ast::VOID);
     val v2(v);
@@ -125,30 +142,29 @@ public:
   }
 
   void visitICmpInst(ICmpInst &icmp) {
-
-    llvm::Value *l_v = icmp.getOperand(0);
-    llvm::Value *r_v = icmp.getOperand(1);
-    switch (icmp.getPredicate()) {
-    case llvm::CmpInst::ICMP_EQ:
-
-      break;
-    case llvm::CmpInst::ICMP_NE:
-
-      break;
-    case llvm::CmpInst::ICMP_SGT:
-
-      break;
-    case llvm::CmpInst::ICMP_SGE:
-
-      break;
-    case llvm::CmpInst::ICMP_SLT:
-
-      break;
-    case llvm::CmpInst::ICMP_SLE:
-
-      break;
+    Value *l_v = icmp.getOperand(0);
+    Value *r_v = icmp.getOperand(1);
+    int l_id = get_or_insert_id(l_v).first;
+    int r_id = get_or_insert_id(r_v).first;
+    const CmpInst::Predicate predicate = icmp.getPredicate();
+    auto &inst_map = icmp_refs[predicate];
+    std::unordered_map<std::pair<int, int>, int>::iterator it;
+    std::unordered_map<std::pair<int, int>, int>::iterator it_rev;
+    switch (predicate) {
+    case CmpInst::ICMP_EQ:
+    case CmpInst::ICMP_NE:
+      it_rev = inst_map.find({r_id, l_id});
+      if (it_rev != inst_map.end()) {
+        inst_to_del.emplace_back(&icmp);
+        int idx = it->second;
+        while(idx != )
+        icmp.replaceAllUsesWith(Value *V)
+      }
     default:
-      break;
+      it = inst_map.find({l_id, r_id});
+      if(it == inst_map.end()) {
+
+      }
     }
   }
 

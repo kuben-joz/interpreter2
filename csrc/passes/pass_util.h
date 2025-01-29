@@ -10,8 +10,6 @@ struct StringCMP {
 
   // can_compare, true/false
   std::pair<bool, bool> cmp_strings(llvm::Value *v1, llvm::Value *v2);
-
+  bool is_string_type(llvm::Type *typ);
   bool is_string(llvm::Value *v1);
 };
-
-

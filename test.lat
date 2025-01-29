@@ -1,6 +1,7 @@
 
 int main() {
-	int x = readInt();
+	int x = 6;
+	string s = "test";
 	x = -x;
 	int y = readInt();
 	printInt(x+y);
@@ -9,7 +10,8 @@ int main() {
 }
 
 void test1(boolean a, boolean b) {
-
+	int x = 5;
+	string s = "test";
 }
 
 /*

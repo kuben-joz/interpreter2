@@ -139,7 +139,7 @@ bool add_void_ret(CFG &cfg) {
   return res;
 }
 
-std::pair<bool, bool> gcse(CFG &cfg, DomTree &dom) {
+std::pair<bool, bool> init_clean(CFG &cfg, DomTree &dom) {
 
   InitCleaner cleaner(cfg, dom);
   bool void_added = add_void_ret(cfg);
