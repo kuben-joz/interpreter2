@@ -31,6 +31,7 @@ public:
   std::set<llvm::Function *> extern_funcs;
   llvm::Function *merge_strs_fn;
   llvm::Function *str_eq_fn;
+
 private:
   struct var {
     const ast::Type type;
@@ -49,7 +50,6 @@ private:
 
     func() : ret_type(ast::VOID), ptr(nullptr) {}
   };
-
 
   llvm::IntegerType *int_type = nullptr;
   llvm::IntegerType *bool_type = nullptr;
@@ -93,14 +93,16 @@ private:
     return res;
   }
 
-  llvm::Function* add_extern_func(const ProtoFunc &fn) {
+  llvm::Function *add_extern_func(const ProtoFunc &fn) {
     llvm::Type *ret_type = convert_type(fn.ret_type);
     std::vector<llvm::Type *> param_types;
     for (const auto param : fn.param_types) {
       param_types.emplace_back(convert_type(param));
     }
-    llvm::FunctionType *fn_typ =
-        llvm::FunctionType::get(ret_type, param_types, false);
+    llvm::FunctionType *fn_typ = nullptr;
+
+    fn_typ = llvm::FunctionType::get(ret_type, param_types, false);
+
     llvm::Function *res_fn = llvm::Function::Create(
         fn_typ, llvm::Function::ExternalLinkage, fn.name, module);
     func_defs[fn.name] = func(fn.ret_type, res_fn);
@@ -474,7 +476,7 @@ public:
     assert(!jmp_end);
     assert(jmp_end_vals.empty());
     stmt.expr->accept(this);
-    if(auto *phi = llvm::dyn_cast<llvm::PHINode>(ret_val)) {
+    if (auto *phi = llvm::dyn_cast<llvm::PHINode>(ret_val)) {
       assert(ret_type == ast::BOOL);
       phi->removeFromParent();
     }
@@ -533,7 +535,12 @@ public:
     llvm::Function *call_fn = func_node.ptr;
     assert(call_fn->arg_size() == args.size() &&
            "wrong number of args for call");
-    ret_val = builder->CreateCall(call_fn, args, "fncall");
+    if (func_node.ret_type == ast::VOID) {
+      ret_val = builder->CreateCall(call_fn, args);
+    } else {
+      ret_val = builder->CreateCall(call_fn, args, "fncall");
+    }
+
     ret_type = func_node.ret_type;
   }
 
@@ -611,8 +618,7 @@ public:
       } else {
         assert(l_type == ast::STR);
         std::vector<llvm::Value *> args({l_val, r_val});
-        ret_val = builder->CreateCall(merge_strs_fn, args,
-                                      "strconcat");
+        ret_val = builder->CreateCall(merge_strs_fn, args, "strconcat");
         ret_type = l_type;
       }
     } else {
@@ -658,8 +664,7 @@ public:
       assert(l_type != ast::VOID);
       if (l_type == ast::STR) {
         std::vector<llvm::Value *> args({l_val, r_val});
-        ret_val =
-            builder->CreateCall(str_eq_fn, args, "streq");
+        ret_val = builder->CreateCall(str_eq_fn, args, "streq");
         break;
       }
       ret_val = builder->CreateICmpEQ(l_val, r_val);
@@ -668,8 +673,7 @@ public:
       assert(l_type != ast::VOID);
       if (l_type == ast::STR) {
         std::vector<llvm::Value *> args({l_val, r_val});
-        ret_val =
-            builder->CreateCall(str_eq_fn, args, "streq");
+        ret_val = builder->CreateCall(str_eq_fn, args, "streq");
         ret_val = builder->CreateNot(ret_val);
         break;
       }

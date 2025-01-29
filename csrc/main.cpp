@@ -108,7 +108,7 @@ int main() {
     }
     dom.dom_frontier();
     mem2reg::transform(cfg, dom);
-    res = clean::val_prop(cfg, dom, strs_eq_fn, str_cmp);
+    res = clean::val_prop(cfg, dom, strs_eq_fn, str_cmp, builder.get());
     assert(!res.second);
     res = clean::trim_tree(cfg, dom);
     if (res.second) {

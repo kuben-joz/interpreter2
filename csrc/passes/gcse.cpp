@@ -1,5 +1,3 @@
-
-
 #include <llvm-14/llvm/IR/InstVisitor.h>
 
 #include "cfg.h"
@@ -7,7 +5,7 @@
 #include "init_pass.h"
 
 namespace clean {
-class InitCleaner : public llvm::InstVisitor<InitCleaner> {
+class CGSE : public llvm::InstVisitor<CGSE> {
 public:
   bool change_glob = false;
   bool change_structure = false;
@@ -17,7 +15,7 @@ public:
   std::vector<bool> removed;
   std::vector<llvm::Instruction *> inst_to_del;
 
-  InitCleaner(CFG &cfg, DomTree &dom)
+  CGSE(CFG &cfg, DomTree &dom)
       : cfg(cfg), dom(dom), removed(dom.blk_to_idx.size(), false) {}
 
   void clean_insts() {
@@ -110,7 +108,7 @@ public:
   void visitPHINode(llvm::PHINode &phi) { assert(!is_past_ret); }
 };
 
-void transform_rec(int idx, CFG &cfg, DomTree &dom, InitCleaner &cleaner) {
+void transform_rec(int idx, CFG &cfg, DomTree &dom, CGSE &cleaner) {
   llvm::BasicBlock *cur_block = dom.idx_to_blk[idx];
   for (auto &inst : cur_block->getInstList()) {
     cleaner.visit(inst);
@@ -139,9 +137,9 @@ bool add_void_ret(CFG &cfg) {
   return res;
 }
 
-std::pair<bool, bool> gcse(CFG &cfg, DomTree &dom) {
+std::pair<bool, bool> init_clean(CFG &cfg, DomTree &dom) {
 
-  InitCleaner cleaner(cfg, dom);
+  CGSE cleaner(cfg, dom);
   bool void_added = add_void_ret(cfg);
   transform_rec(0, cfg, dom, cleaner);
 

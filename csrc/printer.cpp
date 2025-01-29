@@ -177,9 +177,12 @@ public:
 
   void visitCallInst(llvm::CallInst &call) {
     strm << "  ";
-    print_val(&call, false);
-    strm << " = call ";
     llvm::Function *fn = call.getCalledFunction();
+    if (!fn->getReturnType()->isVoidTy()) {
+      print_val(&call, false);
+      strm << " = ";
+    }
+    strm << "call ";
     print_type(fn->getReturnType());
     strm << " @" << func_to_string[fn] << '(';
     int n_params = fn->arg_size();
@@ -417,7 +420,11 @@ public:
     next_reg_name = "%r0";
     blk_n = 0;
     next_blk_name = "blk_0";
-    strm << "define internal ";
+    if (name == "main") {
+      strm << "define ";
+    } else {
+      strm << "define internal ";
+    }
     print_type(fn->getReturnType());
     strm << " @" << name << '(';
     print_params(fn);
@@ -457,8 +464,7 @@ void print(llvm::Module *module, std::set<llvm::Function *> extern_funcs) {
     if (is_extern) {
       continue;
     }
-    std::string fn_name(fn->getName());
-    printer.print_func(fn_name, fn);
+    printer.print_func(fn);
   }
   for (auto it : printer.str_to_glob) {
     strm << "@str_" << it.second << " = private constant [";
@@ -475,7 +481,7 @@ void print(llvm::Module *module, std::set<llvm::Function *> extern_funcs) {
       strm << "\", align 1; \"" << it.first.substr(0, it.first.length() - 1)
            << "\"\n";
     } else {
-      strm  << " 1 x i8] " << "zeroinitializer, align 1; empty string\n";
+      strm << " 1 x i8] " << "zeroinitializer, align 1; empty string\n";
     }
   }
 }

@@ -1,17 +1,11 @@
 
 int main() {
 	int x = readInt();
+	x = -x;
 	int y = readInt();
+	printInt(x+y);
+	test1(true, false);
 	return x + y;
-}
-
-void test(boolean a, boolean b) {
-	b = true;
-	while(true) {
-		if(b) {
-
-		}
-	}
 }
 
 void test1(boolean a, boolean b) {

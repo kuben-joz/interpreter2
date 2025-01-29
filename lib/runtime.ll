@@ -3,12 +3,13 @@
 %struct._IO_codecvt = type opaque
 %struct._IO_wide_data = type opaque
 
-@dnl = internal constant [4 x i8] c"%d\0A\00"
+@d_read = internal constant [3 x i8] c"%d\00"
+@d_write = internal constant [4 x i8] c"%d\0A\00"
 ;
 @d = internal constant [3 x i8] c"%d\00"
-@malloc_fail_conc = internal constant [29 x i8] c"malloc fail on string concat\00"
-@read_str_fail = internal constant [28 x i8] c"getline failed on getString\00"
-@run_err = internal constant [14 x i8] c"runtime error\00"
+@malloc_fail_conc = internal constant [30 x i8] c"malloc fail on string concat\0A\00"
+@read_str_fail = internal constant [29 x i8] c"getline failed on getString\0A\00"
+@run_err = internal constant [15 x i8] c"runtime error\0A\00"
 ;@lf  = internal constant [4 x i8] c"%lf\00"	
 ; --------------  all of these can produce name conflicts I think --------------
 @stdin = external global %struct._IO_FILE*
@@ -25,6 +26,7 @@ declare dso_local i8* @strcat(i8*, i8*)
 declare dso_local i32 @strcmp(i8*, i8*)
 declare dso_local void @exit(i32)
 declare dso_local i64 @getline(i8**, i64*, %struct._IO_FILE*)
+declare dso_local i32 @getc(%struct._IO_FILE*)
 
 define i1 @strs_eq(i8* %s1, i8* %s2) {
 	entry:
@@ -48,7 +50,7 @@ define i8* @merge_strs(i8* %s1, i8* %s2) {
 		%i8 = call i8* @strcat(i8* %i5, i8* %s2)
 		ret i8* %i5
 	fail:
-		%i9 = getelementptr [29 x i8], [29 x i8]* @malloc_fail_conc, i32 0, i32 0
+		%i9 = getelementptr [30 x i8], [30 x i8]* @malloc_fail_conc, i32 0, i32 0
 		%i10 = call i32 @puts(i8* %i9)
 		call void @exit(i32 -1)
 		ret i8* null
@@ -58,7 +60,7 @@ define i8* @merge_strs(i8* %s1, i8* %s2) {
 
 define void @printInt(i32 %x) {
 	entry:
-		%t0 = getelementptr [4 x i8], [4 x i8]* @dnl, i32 0, i32 0
+		%t0 = getelementptr [4 x i8], [4 x i8]* @d_write, i32 0, i32 0
 		call i32 (i8*, ...) @printf(i8* %t0, i32 %x) 
 		ret void
 }
@@ -96,7 +98,7 @@ define i8* @readString() {
 		ret  i8* %res
 	fail:
 		call void @free(i8* %res)
-		%err_msg = getelementptr [28 x i8], [28 x i8]* @read_str_fail, i32 0, i32 0
+		%err_msg = getelementptr [29 x i8], [29 x i8]* @read_str_fail, i32 0, i32 0
 		%puts_tmp = call i32 @puts(i8* %err_msg)
 		call void @exit(i32 -1)
 		ret i8* null
@@ -105,34 +107,36 @@ define i8* @readString() {
 define i32 @readInt() {
 entry:
 	%res = alloca i32
-  %t1 = getelementptr [4 x i8], [4 x i8]* @dnl, i32 0, i32 0
+  %t1 = getelementptr [3 x i8], [3 x i8]* @d_read, i32 0, i32 0
 	call i32 (i8*, ...) @scanf(i8* %t1, i32* %res)
-	%t2 = load i32, i32* %res
-	ret i32 %t2
+	%stream = load %struct._IO_FILE*, %struct._IO_FILE** @stdin
+	%t2 = call i32 @getc(%struct._IO_FILE* %stream)
+	%t3 = load i32, i32* %res
+	ret i32 %t3
 }
 
 define void @error() {
 	entry:
-		%i0 = getelementptr [14 x i8], [14 x i8]* @run_err, i32 0, i32 0
+		%i0 = getelementptr [15 x i8], [15 x i8]* @run_err, i32 0, i32 0
 		call i32 @puts(i8* %i0)
 		call void @exit(i32 1)
 		ret void
 }
 
 
-define i32 @main() {
-		%i1 = call i32 @readInt()
-		call void @printInt(i32 %i1)
-		%i2= getelementptr [28 x i8], [28 x i8]* @read_str_fail, i32 0, i32 0
-		%i3 = getelementptr [29 x i8], [29 x i8]* @malloc_fail_conc, i32 0, i32 0
-		%i4 = getelementptr [14 x i8], [14 x i8]* @run_err, i32 0, i32 0
-		%iext = call i8* @readString()
-		%i5 = call i1 @strs_eq(i8* %i2, i8* %i2)
-		br i1 %i5, label %is_true, label %is_false
-	is_true:
-		call void @printString(i8* %iext)
-		ret i32 0
-	is_false:
-		call void @printString(i8* %i3)
-		ret i32 0
-}
+;define i32 @main() {
+;		%i1 = call i32 @readInt()
+;		call void @printInt(i32 %i1)
+;		%i2= getelementptr [28 x i8], [28 x i8]* @read_str_fail, i32 0, i32 0
+;		%i3 = getelementptr [29 x i8], [29 x i8]* @malloc_fail_conc, i32 0, i32 0
+;		%i4 = getelementptr [14 x i8], [14 x i8]* @run_err, i32 0, i32 0
+;		%iext = call i8* @readString()
+;		%i5 = call i1 @strs_eq(i8* %i2, i8* %i2)
+;		br i1 %i5, label %is_true, label %is_false
+;	is_true:
+;		call void @printString(i8* %iext)
+;		ret i32 0
+;	is_false:
+;		call void @printString(i8* %i3)
+;		ret i32 0
+;}

@@ -56,3 +56,13 @@ bool StringCMP::is_string(llvm::Value *val) {
     return llvm::isa<llvm::ConstantExpr>(val);
   }
 }
+
+
+//bit width 0 if not ocnstant
+std::pair<int, int64_t> get_const_int(llvm::Value *val) {
+  if(auto *int_val = llvm::dyn_cast<llvm::ConstantInt>(val)) {
+    return std::make_pair(int_val->getBitWidth(), int_val->getZExtValue());
+  }else {
+    return std::make_pair(0, 0);
+  }
+}
