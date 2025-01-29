@@ -1,24 +1,115 @@
+#include <cstddef>
+#include <llvm-14/llvm/IR/BasicBlock.h>
 #include <llvm-14/llvm/IR/InstVisitor.h>
+#include <llvm-14/llvm/IR/InstrTypes.h>
+#include <llvm-14/llvm/IR/Instruction.h>
+#include <llvm-14/llvm/IR/Instructions.h>
+#include <tuple>
+#include <unordered_map>
 
 #include "cfg.h"
 #include "dom_tree.h"
 #include "init_pass.h"
+#include "skel.h"
+
+using namespace llvm;
 
 namespace clean {
-class CGSE : public llvm::InstVisitor<CGSE> {
+
+// {REF}
+// https://stackoverflow.com/questions/2590677/how-do-i-combine-hash-values-in-c0x
+template <class T> inline void hash_combine(std::size_t &seed, const T &v) {
+  std::hash<T> hasher;
+  seed ^= hasher(v) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+}
+
+class GCSE : public InstVisitor<GCSE> {
 public:
   bool change_glob = false;
   bool change_structure = false;
-  bool is_past_ret = false;
+  bool was_phi = false;
   CFG &cfg;
   DomTree &dom;
   std::vector<bool> removed;
-  std::vector<llvm::Instruction *> inst_to_del;
+  std::vector<Instruction *> inst_to_del;
+  // this is kinda a FIND UNION
 
-  CGSE(CFG &cfg, DomTree &dom)
+  enum OPS {
+    EQ,
+    NE,
+    GT,
+    LT,
+    LE,
+    ADD,
+    SUB,
+    MUL,
+    UDIV,
+    SDIV,
+    UREM,
+    SREM,
+    SHL,
+    LSHR,
+    ASHR,
+    AND,
+    OR,
+    XOR
+  };
+
+  struct val {
+    int64_t const_val;
+    ast::Type type;
+    llvm::Value *ptr_val;
+
+    val(int64_t const_val, ast::Type type)
+        : const_val(const_val), type(type), ptr_val(nullptr) {}
+
+    val(Value *ptr_val, ast::Type type)
+        : const_val(0), type(type), ptr_val(ptr_val) {}
+
+    std::size_t operator()(const val &x) const {
+      std::hash<int64_t> hasher;
+      size_t seed = hasher(x.const_val);
+      seed ^= hasher(x.type) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+      seed ^=
+          hasher((intptr_t)x.ptr_val) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+      return seed;
+    }
+
+    bool operator==(const val &other) {
+      return (const_val == other.const_val) && (type == other.type) &&
+             (ptr_val == other.ptr_val);
+    }
+  };
+
+  struct pairhash {
+  public:
+    std::size_t operator()(const std::pair<int, int> &x) const {
+      std::hash<int> hasher;
+      size_t seed = hasher(x.first);
+      seed ^= hasher(x.second) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+      return seed;
+    }
+  };
+
+  // ICMP or binaryop
+
+  std::vector<int> parent;
+  std::vector<val> vals;
+  std::map<llvm::CmpInst::Predicate,
+           std::unordered_map<std::pair<int, int>, int, pairhash>>
+      icmp_refs;
+  std::map<llvm::Instruction::BinaryOps,
+           std::unordered_map<std::pair<int, int>, int, pairhash>>
+      bin_op_refs;
+
+  std::unordered_map<llvm::Value *, int> val_to_int;
+
+  GCSE(CFG &cfg, DomTree &dom)
       : cfg(cfg), dom(dom), removed(dom.blk_to_idx.size(), false) {}
 
   void clean_insts() {
+    val v(1, ast::VOID);
+    val v2(v);
     if (inst_to_del.empty()) {
       return;
     }
@@ -29,121 +120,112 @@ public:
     inst_to_del.clear();
   }
 
-  void remove_phis(int idx_orig, int idx_dest) {
-    llvm::BasicBlock *orig_blk = dom.idx_to_blk[idx_orig];
-    llvm::BasicBlock *dest_blk = dom.idx_to_blk[idx_dest];
-    std::vector<std::pair<llvm::PHINode *, int>> phis;
-    for (auto &inst_ref : dest_blk->getInstList()) {
-      if (auto phi = llvm::dyn_cast<llvm::PHINode>(&inst_ref)) {
-        int phi_blk_idx = phi->getBasicBlockIndex(orig_blk);
-        int num_vals = phi->getNumIncomingValues();
-        assert(num_vals > 1 && phi_blk_idx >= 0);
-        if (phi_blk_idx < 0 || num_vals <= 1) {
-          break;
-        }
-        phis.emplace_back(phi, phi_blk_idx);
-      } else {
-        break;
-      }
-    }
-    for (auto &p_i : phis) {
-      change_glob = true;
-      change_structure = true;
-      p_i.first->removeIncomingValue(p_i.second);
+  void visitInstruction(Instruction &inst) {
+    assert("false" && "unhandled instruction");
+  }
+
+  void visitICmpInst(ICmpInst &icmp) {
+
+    llvm::Value *l_v = icmp.getOperand(0);
+    llvm::Value *r_v = icmp.getOperand(1);
+    switch (icmp.getPredicate()) {
+    case llvm::CmpInst::ICMP_EQ:
+
+      break;
+    case llvm::CmpInst::ICMP_NE:
+
+      break;
+    case llvm::CmpInst::ICMP_SGT:
+
+      break;
+    case llvm::CmpInst::ICMP_SGE:
+
+      break;
+    case llvm::CmpInst::ICMP_SLT:
+
+      break;
+    case llvm::CmpInst::ICMP_SLE:
+
+      break;
+    default:
+      break;
     }
   }
 
-  void clean_hanging_dom_rec(int idx) {
-    // preorder
+  void visitAllocaInst(AllocaInst &alloca) {}
+
+  void visitLoadInst(LoadInst &load) {}
+
+  void visitStoreInst(StoreInst *store) {}
+
+  void visitPHINode(PHINode &phi) { was_phi = true; }
+
+  void visitCallInst(CallInst &call) {}
+
+  void visitReturnInst(ReturnInst &ret) {}
+
+  void visitBranchInst(BranchInst &br) {}
+
+  void visitBinaryOperator(BinaryOperator &mul) {
+    switch (mul.getOpcode()) {
+    case llvm::Instruction::Add:
+
+      break;
+    case llvm::Instruction::Sub:
+
+      break;
+    case llvm::Instruction::Mul:
+
+      break;
+    case llvm::Instruction::UDiv:
+
+      break;
+    case llvm::Instruction::SDiv:
+
+      break;
+    case llvm::Instruction::URem:
+
+      break;
+    case llvm::Instruction::SRem:
+
+      break;
+    case llvm::Instruction::Shl:
+
+      break;
+    case llvm::Instruction::LShr:
+
+      break;
+    case llvm::Instruction::AShr:
+
+      break;
+    case llvm::Instruction::And:
+
+      break;
+    case llvm::Instruction::Or:
+
+      break;
+    case llvm::Instruction::Xor:
+
+      break;
+    default:
+
+      break;
+    }
+  }
+
+  void run_rec(int idx) {
+    BasicBlock *blk = dom.idx_to_blk[idx];
+
     for (int succ : dom.dom_succs[idx]) {
-      removed[succ] = true;
-    }
-    for (int succ : dom.cfg_succs[idx]) {
-      if (!removed[succ]) {
-        remove_phis(idx, succ);
-      }
-    }
-    // go down
-    for (int succ : dom.dom_succs[idx]) {
-      clean_hanging_dom_rec(succ);
-    }
-    // postorder
-    for (int succ : dom.dom_succs[idx]) {
-      if (dom.idx_to_blk[succ]) {
-        change_glob = true;
-        change_structure = true;
-        dom.blk_to_idx.erase(dom.idx_to_blk[succ]);
-        dom.idx_to_blk[succ]->eraseFromParent();
-        dom.idx_to_blk[succ] = nullptr;
-      }
+      run_rec(succ);
     }
   }
-
-  void clean_hanging_dom(int idx) {
-    if (!is_past_ret) {
-      return;
-    }
-    is_past_ret = false;
-    if (dom.cfg_succs[idx].empty()) {
-      return;
-    }
-    clean_hanging_dom_rec(idx);
-  }
-
-  void visitInstruction(llvm::Instruction &inst) {
-    if (is_past_ret) {
-      inst_to_del.emplace_back(&inst);
-      return;
-    }
-  }
-
-  void visitReturnInst(llvm::ReturnInst &ret) {
-    if (is_past_ret) {
-      inst_to_del.emplace_back(&ret);
-      return;
-    }
-    is_past_ret = true;
-  }
-
-  void visitPHINode(llvm::PHINode &phi) { assert(!is_past_ret); }
 };
 
-void transform_rec(int idx, CFG &cfg, DomTree &dom, CGSE &cleaner) {
-  llvm::BasicBlock *cur_block = dom.idx_to_blk[idx];
-  for (auto &inst : cur_block->getInstList()) {
-    cleaner.visit(inst);
-  }
-  cleaner.clean_hanging_dom(idx);
-  cleaner.clean_insts();
-  for (int succ : dom.dom_succs[idx]) {
-    if (!cleaner.removed[succ]) {
-      transform_rec(succ, cfg, dom, cleaner);
-    }
-  }
-  cleaner.clean_insts();
-}
+std::pair<bool, bool> run_gcse(CFG &cfg, DomTree &dom) {
 
-bool add_void_ret(CFG &cfg) {
-  if (!cfg.start_blks.front()->getParent()->getReturnType()->isVoidTy()) {
-    return false;
-  }
-  bool res = false;
-  for (auto *blk : cfg.end_blks) {
-    if (blk->empty() || !llvm::isa<llvm::ReturnInst>(blk->back())) {
-      llvm::ReturnInst::Create(blk->getContext(), blk);
-      res = true;
-    }
-  }
-  return res;
-}
+  GCSE gcse(cfg, dom);
 
-std::pair<bool, bool> init_clean(CFG &cfg, DomTree &dom) {
-
-  CGSE cleaner(cfg, dom);
-  bool void_added = add_void_ret(cfg);
-  transform_rec(0, cfg, dom, cleaner);
-
-  return std::make_pair(void_added || cleaner.change_glob,
-                        cleaner.change_structure);
+  return std::make_pair(gcse.change_glob, gcse.change_structure);
 }
 } // namespace clean

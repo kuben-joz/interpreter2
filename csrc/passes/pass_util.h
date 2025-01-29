@@ -13,3 +13,5 @@ struct StringCMP {
 
   bool is_string(llvm::Value *v1);
 };
+
+
