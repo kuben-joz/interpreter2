@@ -7,6 +7,7 @@
 #include <llvm-14/llvm/IR/Value.h>
 #include <tuple>
 #include <unordered_map>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -193,33 +194,36 @@ public:
     for (auto &[pred, to_pop] : icmp_to_pop) {
       icmp_pop_nums[pred] = to_pop.size();
     }
-    assert(false && "todo");
-
-    clean_insts();
     int init_num_vals = idx_to_val.size();
 
-    for (int succ : dom.dom_succs[idx]) {
+    assert(false && "todo");
+    clean_insts();
 
+    for (int succ : dom.dom_succs[idx]) {
       run_rec(succ);
-      for (auto &[op, to_pop] : bin_op_to_pop) {
-        std::unordered_map<std::pair<int, int>, int, pairhash> &pop_map =
-            bin_op_to_idx[op];
-        const int pop_size = bin_op_pop_nums[op];
-        while (to_pop.size() != pop_size) {
-          pop_map.erase(to_pop.back());
-          to_pop.pop_back();
-        }
+    }
+
+    for (auto &[op, to_pop] : bin_op_to_pop) {
+      std::unordered_map<std::pair<int, int>, int, pairhash> &pop_map =
+          bin_op_to_idx[op];
+      const int pop_size = bin_op_pop_nums[op];
+      while (to_pop.size() != pop_size) {
+        pop_map.erase(to_pop.back());
+        to_pop.pop_back();
       }
-      for (auto &[pred, to_pop] : icmp_to_pop) {
-        std::unordered_map<std::pair<int, int>, int, pairhash> &pop_map =
-            icmp_to_idx[pred];
-        const int pop_size = icmp_pop_nums[pred];
-        while (to_pop.size() != pop_size) {
-          pop_map.erase(to_pop.back());
-          to_pop.pop_back();
-        }
+    }
+    for (auto &[pred, to_pop] : icmp_to_pop) {
+      std::unordered_map<std::pair<int, int>, int, pairhash> &pop_map =
+          icmp_to_idx[pred];
+      const int pop_size = icmp_pop_nums[pred];
+      while (to_pop.size() != pop_size) {
+        pop_map.erase(to_pop.back());
+        to_pop.pop_back();
       }
-      idx_to_val.resize(init_num_vals);
+    }
+    while(idx_to_val.size() != init_num_vals) {
+      val_to_idx.erase(idx_to_val.back());
+      idx_to_val.pop_back();
     }
   }
 };
