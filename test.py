@@ -7,31 +7,33 @@ import sys
 
 def main():
     path = Path(sys.argv[1])
-    bad = len(sys.argv) > 2
-    files = glob(str(path / "*.lat"))
-    print(files)
-    print("")
-    for fn in files:
+    files_code = { Path(f).stem : f  for f in glob(str(path / "*.lat"))}
+    files_in = { Path(f).stem : f  for f in glob(str(path / "*.input"))}
+    files_out = { Path(f).stem : f  for f in glob(str(path / "*.out"))}
+    i = 0
+    for base, full in files_code.items():
+        print(base)
+        i += 1
+        if base in files_in:
+            continue
+        if base not in files_out:
+            true_out = []
+        else:
+            with open(files_out[base], 'r') as f:
+                true_out = f.readlines()
+
         p = subprocess.run(
-            ["./latc", fn],
+            ["./latc_llvm", full],
             capture_output=True,
             text=True,
         )
-        print(p.stderr)
+        #my_res = p.stdout.splitlines()
+        #for my, true in zip(my_res, true_out):
+        #    if my != true:
+        #        print(f"!!!!!!!!!!!!!!!fail on {base}!!!!!!!!!!!!!!!!!!!!!")
+        #        break
     
-    
-    
-    
-    #for fn in files:
-    #    p = subprocess.run(
-    #        ["./latc", fn],
-    #        stdout=subprocess.PIPE,
-    #        stderr=subprocess.PIPE,
-    #    )
-    #    if (bad and p.stderr.decode("ascii")[:6] != "ERROR\n") or (
-    #        not bad and p.stderr.decode("ascii")[:3] != "OK\n"
-    #    ):
-    #        print(Path(fn).stem)
+
 
 
 if __name__ == "__main__":

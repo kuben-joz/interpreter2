@@ -14,34 +14,13 @@ declare i8* @merge_strs(i8*, i8*)
 
 define i32 @main() {
 blk_0:
-  %r0 = call i32 @f.1(i32 1, i32 -1)
-  call void @printInt(i32 %r0)
+  call void @printString(i8* getelementptr inbounds ([2 x i8], [2 x i8]* @str_0, i32 0, i32 0))
+  call void @printString(i8* getelementptr inbounds ([2 x i8], [2 x i8]* @str_0, i32 0, i32 0))
+  call void @printString(i8* getelementptr inbounds ([2 x i8], [2 x i8]* @str_1, i32 0, i32 0))
+  call void @printString(i8* getelementptr inbounds ([2 x i8], [2 x i8]* @str_1, i32 0, i32 0))
   ret i32 0
 
 }
 
-define internal i32 @f.1(i32 %r0, i32 %r1) {
-blk_0:
-  %r2 = icmp sgt i32 %r0, 0
-  br i1 %r2, label %blk_1, label %blk_2
-
-blk_1:
-  %r3 = icmp sgt i32 %r1, 0
-  br i1 %r3, label %blk_3, label %blk_2
-
-blk_2:
-  %r4 = icmp slt i32 %r0, 0
-  br i1 %r4, label %blk_4, label %blk_5
-
-blk_4:
-  %r5 = icmp slt i32 %r1, 0
-  br i1 %r5, label %blk_3, label %blk_5
-
-blk_3:
-  ret i32 7
-
-blk_5:
-  ret i32 42
-
-}
-
+@str_0 = private constant [2 x i8] c"\34\00", align 1; "4"
+@str_1 = private constant [2 x i8] c"\36\00", align 1; "6"

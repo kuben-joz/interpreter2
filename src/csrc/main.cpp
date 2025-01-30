@@ -20,6 +20,7 @@
 #include "pass_util.h"
 #include "printer.h"
 #include "skel.h"
+#include "tree_fold.h"
 #include "tree_trim.h"
 #include "treeparse.h"
 #include "util.h"
@@ -110,6 +111,7 @@ int main() {
     dom = DomTree(cfg);
     res = clean::trim_tree(cfg, dom);
 
+    // todo maybe trim ehre
     cfg = CFG(fn);
     res = clean::remove_unreachable(cfg);
 
@@ -136,10 +138,33 @@ int main() {
     cfg = CFG(fn);
     dom = DomTree(cfg);
     clean::run_gcse(cfg, dom);
+
+    cfg = CFG(fn);
+    res = clean::remove_unreachable(cfg);
+
+    cfg = CFG(fn);
+    dom = DomTree(cfg);
+    res = clean::trim_tree(cfg, dom);
+
+    cfg = CFG(fn);
+    res = clean::remove_unreachable(cfg);
+
+    cfg = CFG(fn);
+    dom = DomTree(cfg);
+    res = clean::val_prop(cfg, dom, strs_eq_fn, str_cmp, builder.get());
+
+    cfg = CFG(fn);
+    res = clean::remove_unreachable(cfg);
+
+    // argval here helps
+
+    cfg = CFG(fn);
+    dom = DomTree(cfg);
+    clean::fold_tree(cfg, dom); // do this last
     i++;
   }
   printer::print(module.get(), extern_funcs);
-  module->dump();
+  // module->dump();
   return 0;
 }
 

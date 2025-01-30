@@ -103,36 +103,37 @@ public:
         int skip_idx = dom.blk_to_idx[skip];
         assert(dom.blk_to_idx.count(keep));
         int keep_idx = dom.blk_to_idx[keep];
-        for (int succ : dom.dom_succs[cur_idx]) {
-          if (succ == skip_idx) {
-            assert(!removed[skip_idx]);
-            int num_preds = 0;
-            for (int pred : dom.cfg_preds[skip_idx]) {
-              if (!removed[pred]) {
-                num_preds++;
-              }
-            };
-            assert(num_preds > 0);
-            // orig dominates skip so in theory this means that skip_idx will
-            // have an empty dom tree if it has more than one predecessor so
-            // cleaning the hanging dom rec won't do anything
-            if (num_preds == 1) {
-              removed[skip_idx] = true;
-            }
-            clean_hanging_dom_rec(skip_idx);
-            if (removed[skip_idx]) {
-              change_glob = true;
-              change_structure = true;
-              dom.blk_to_idx.erase(dom.idx_to_blk[skip_idx]);
-              skip->removeFromParent();
-              dom.idx_to_blk[skip_idx] = nullptr;
-            }
-            break;
-          }
-        }
-        if (!removed[skip_idx]) {
-          remove_phis(cur_idx, skip_idx);
-        }
+        // for (int succ : dom.dom_succs[cur_idx]) {
+        //   if (succ == skip_idx) {
+        //     assert(!removed[skip_idx]);
+        //     int num_preds = 0;
+        //     for (int pred : dom.cfg_preds[skip_idx]) {
+        //       if (!removed[pred]) {
+        //         num_preds++;
+        //       }
+        //     };
+        //     assert(num_preds > 0);
+        //     // orig dominates skip so in theory this means that skip_idx will
+        //     // have an empty dom tree if it has more than one predecessor so
+        //     // cleaning the hanging dom rec won't do anything
+        //     if (num_preds == 1) {
+        //       removed[skip_idx] = true;
+        //     }
+        //     clean_hanging_dom_rec(skip_idx);
+        //     if (removed[skip_idx]) {
+        //       change_glob = true;
+        //       change_structure = true;
+        //       dom.blk_to_idx.erase(dom.idx_to_blk[skip_idx]);
+        //       skip->removeFromParent();
+        //       dom.idx_to_blk[skip_idx] = nullptr;
+        //     }
+        //     break;
+        //   }
+        // }
+        // if (!removed[skip_idx]) {
+        //   remove_phis(cur_idx, skip_idx);
+        // }
+        removed[skip_idx] = true;
         // swap to single br
         inst_to_del.emplace_back(&br);
         llvm::BranchInst::Create(keep, cur);
@@ -143,47 +144,60 @@ public:
   }
 };
 
+void trim_tree_rec(int idx, TreeTrimmer &trimmer, CFG &cfg, DomTree &dom) {
+  // postorder
+  // cut out branches
+
+  for (int succ : dom.dom_succs[idx]) {
+    // if (!trimmer.removed[succ]) {
+    trim_tree_rec(succ, trimmer, cfg, dom);
+    //}
+  }
+  // for (int succ : dom.dom_succs[idx]) {
+  // if (!trimmer.removed[succ]) {
+  // llvm::BasicBlock *blk = dom.idx_to_blk[succ];
+  // assert(!blk->empty());
+  // if (!blk->empty()) {
+  trimmer.visit(dom.idx_to_blk[idx]);
+  trimmer.clean_insts();
+  // }
+  // }
+  //}
+}
+
 // todo strs_eq_fun ins't absorbed for constant strings
 std::pair<bool, bool> trim_tree(CFG &cfg, DomTree &dom) {
   TreeTrimmer trimmer(cfg, dom);
   // preorder
   // cut out branches
-  for (int i = 0; i < dom.idx_to_blk.size(); i++) {
-    if (!trimmer.removed[i]) {
-      llvm::BasicBlock *blk = dom.idx_to_blk[i];
-      // assert(!blk->empty());
-      if (!blk->empty()) {
-        trimmer.visit(blk->back());
-        trimmer.clean_insts();
-      }
-    }
-  }
+
+  trim_tree_rec(0, trimmer, cfg, dom);
   // trim out blocks with no preds that are not the entry
-  for (int i = 0; i < dom.idx_to_blk.size(); i++) {
-    if (!trimmer.removed[i]) {
-      if (dom.cfg_preds[i].size() == 0) {
-        assert(i == 0);
-        continue; // root node
-      }
-      bool has_pred = false;
-      for (int pred : dom.cfg_preds[i]) {
-        has_pred = has_pred || !trimmer.removed[pred];
-      }
-      if (!has_pred) {
-        trimmer.clean_hanging_dom_rec(i);
-        assert(dom.idx_to_blk[i]);
-        if (dom.idx_to_blk[i]) {
-          trimmer.change_glob = true;
-          trimmer.change_structure = true;
-          dom.blk_to_idx.erase(dom.idx_to_blk[i]);
-          dom.idx_to_blk[i]->eraseFromParent();
-          dom.idx_to_blk[i] = nullptr;
-        }
-      }
-    }
-  }
-  //llvm::BasicBlock *start_blk = cfg.start_blks[0];
-  //for (auto *blk : cfg.end_blks) {
+  // for (int i = 0; i < dom.idx_to_blk.size(); i++) {
+  //  if (!trimmer.removed[i]) {
+  //    if (dom.cfg_preds[i].size() == 0) {
+  //      assert(i == 0);
+  //      continue; // root node
+  //    }
+  //    bool has_pred = false;
+  //    for (int pred : dom.cfg_preds[i]) {
+  //      has_pred = has_pred || !trimmer.removed[pred];
+  //    }
+  //    if (!has_pred) {
+  //      trimmer.clean_hanging_dom_rec(i);
+  //      assert(dom.idx_to_blk[i]);
+  //      if (dom.idx_to_blk[i]) {
+  //        trimmer.change_glob = true;
+  //        trimmer.change_structure = true;
+  //        dom.blk_to_idx.erase(dom.idx_to_blk[i]);
+  //        dom.idx_to_blk[i]->eraseFromParent();
+  //        dom.idx_to_blk[i] = nullptr;
+  //      }
+  //    }
+  //  }
+  //}
+  // llvm::BasicBlock *start_blk = cfg.start_blks[0];
+  // for (auto *blk : cfg.end_blks) {
   //  if (blk != start_blk && !cfg.succ.count(blk) && !cfg.pred.count(blk)) {
   //    trimmer.change_glob = true;
   //    trimmer.change_structure = true;
