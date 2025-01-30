@@ -4,7 +4,6 @@ install:
 	$(MAKE) -C src/haskellsrc
 	$(MAKE) -C src/csrc/build
 	cp src/latc ./latc
-	cp src/latc_llvm ./latc_llvm
 
 .PHONY: clean
 clean:

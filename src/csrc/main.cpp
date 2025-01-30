@@ -121,7 +121,7 @@ int main() {
     i++;
   }
   printer::print(module.get(), extern_funcs);
-  //module->dump();
+  module->dump();
   return 0;
 }
 

@@ -327,7 +327,7 @@ public:
   void visitPHINode(llvm::PHINode &phi) {
     strm << "  ";
     print_val(&phi, false);
-    strm << ' ';
+    strm << " = ";
     print_type(phi.getType());
     strm << " [";
     int num_paths = phi.getNumIncomingValues();
