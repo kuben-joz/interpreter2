@@ -6,33 +6,42 @@
 #interf="${outdir}/${basefile}.ll"
 #src/haskellsrc/Main "$1" > "$llf" && src/csrc/build/compiler < "$llf" > "$interf" || (error=$? ; rm "$llf" ; rm "$interf" ; exit $error)
 
-src/haskellsrc/Main "$1" > "tmp/test.tree"
+treef=$(mktemp /tmp/llf.XXXXXX)
+
+basefile=$(basename -- "$1" .lat)
+
+outdir=$(dirname -- "$1")
+
+src/haskellsrc/Main "$1" > "$treef"
 flag=$?
 if [ $flag -ne 0 ]; then
-  rm "tmp/test.tree"
+  rm "$treef"
   exit $flag
 else
-  src/csrc/build/compiler < "tmp/test.tree" > "tmp/test.ll"
+  llf="${outdir}/${basefile}.ll"
+  src/csrc/build/compiler < "$treef" > "$llf"
   flag=$?
-  rm "tmp/test.tree"
+  rm "$treef"
 fi
 
 if [ $flag -ne 0 ]; then
-  rm "tmp/test.ll"
+  rm "$llf"
   exit $flag
 else
-  llvm-as -o "tmp/test.bc" "tmp/test.ll"
+  bcf=$(mktemp /tmp/bcf.XXXXXX)
+  llvm-as -o "$bcf" "$llf"
   flag=$?
 fi
 
 if [ $flag -ne 0 ]; then
-  rm "tmp/test.ll"
-  rm "tmp/test.bc"
+  rm "$llf"
+  rm "$bcf"
   exit $flag
 else
-  llvm-link -o "tmp/run.bc" "tmp/test.bc" "lib/runtime.bc"
+  resf="${outdir}/${basefile}.bc"
+  llvm-link -o "$resf" "$bcf" "lib/runtime.bc"
   flag=$?
 fi
 
-rm "tmp/test.bc"
+rm "$bcf"
 exit $flag

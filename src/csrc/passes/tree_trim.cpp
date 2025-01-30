@@ -182,13 +182,14 @@ std::pair<bool, bool> trim_tree(CFG &cfg, DomTree &dom) {
       }
     }
   }
-  for (auto *blk : cfg.end_blks) {
-    if (!blk->isEntryBlock() && !cfg.succ.count(blk) && !cfg.pred.count(blk)) {
-      trimmer.change_glob = true;
-      trimmer.change_structure = true;
-      blk->eraseFromParent();
-    }
-  }
+  //llvm::BasicBlock *start_blk = cfg.start_blks[0];
+  //for (auto *blk : cfg.end_blks) {
+  //  if (blk != start_blk && !cfg.succ.count(blk) && !cfg.pred.count(blk)) {
+  //    trimmer.change_glob = true;
+  //    trimmer.change_structure = true;
+  //    blk->eraseFromParent();
+  //  }
+  //}
 
   return std::make_pair(trimmer.change_glob, trimmer.change_structure);
 }

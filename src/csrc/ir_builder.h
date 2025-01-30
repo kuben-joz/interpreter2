@@ -829,7 +829,7 @@ public:
     } else { // jmp_end
       assert(jmp_true);
       assert(jmp_false);
-      assert((jmp_true == jmp_end) || (jmp_false == jmp_end));
+      //assert((jmp_true == jmp_end) || (jmp_false == jmp_end));
       if (log.op == ast::OR) {
         jmp_false_bak = llvm::BasicBlock::Create(*context, "jmp_false");
         std::swap(jmp_false, jmp_false_bak);

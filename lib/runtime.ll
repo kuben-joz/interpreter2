@@ -123,20 +123,3 @@ define void @error() {
 		ret void
 }
 
-
-;define i32 @main() {
-;		%i1 = call i32 @readInt()
-;		call void @printInt(i32 %i1)
-;		%i2= getelementptr [28 x i8], [28 x i8]* @read_str_fail, i32 0, i32 0
-;		%i3 = getelementptr [29 x i8], [29 x i8]* @malloc_fail_conc, i32 0, i32 0
-;		%i4 = getelementptr [14 x i8], [14 x i8]* @run_err, i32 0, i32 0
-;		%iext = call i8* @readString()
-;		%i5 = call i1 @strs_eq(i8* %i2, i8* %i2)
-;		br i1 %i5, label %is_true, label %is_false
-;	is_true:
-;		call void @printString(i8* %iext)
-;		ret i32 0
-;	is_false:
-;		call void @printString(i8* %i3)
-;		ret i32 0
-;}

@@ -10,6 +10,7 @@
 #include <sstream>
 #include <string>
 
+#include "basic.h"
 #include "cfg.h"
 #include "dom_tree.h"
 #include "gcse.h"
@@ -103,9 +104,23 @@ int main() {
     std::pair<bool, bool> res = clean::init_clean(cfg, dom);
 
     cfg = CFG(fn);
+    res = clean::remove_unreachable(cfg);
+
+    cfg = CFG(fn);
+    dom = DomTree(cfg);
+    res = clean::trim_tree(cfg, dom);
+
+    cfg = CFG(fn);
+    res = clean::remove_unreachable(cfg);
+
+    cfg = CFG(fn);
     dom = DomTree(cfg);
     dom.dom_frontier();
     mem2reg::transform(cfg, dom);
+
+    cfg = CFG(fn);
+    res = clean::remove_unreachable(cfg);
+
     cfg = CFG(fn);
     dom = DomTree(cfg);
     res = clean::val_prop(cfg, dom, strs_eq_fn, str_cmp, builder.get());
@@ -114,6 +129,9 @@ int main() {
     cfg = CFG(fn);
     dom = DomTree(cfg);
     res = clean::trim_tree(cfg, dom);
+
+    cfg = CFG(fn);
+    res = clean::remove_unreachable(cfg);
 
     cfg = CFG(fn);
     dom = DomTree(cfg);

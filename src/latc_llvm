@@ -1,25 +1,32 @@
 #!/bin/bash
 
-#filef="test.test.test"
-#fileff=$(basename -- "$filef" .test)
-#outdir=$(dirname -- "$filef")
-#echo "${outdir}/${fileff}.best"
-#exit 0
-llf=$(mktemp /tmp/llf.XXXXXX)
-basefile=$(basename -- "$1" .lat)
-outdir=$(dirname -- "$1")
-interf="${outdir}/${basefile}.ll"
-src/haskellsrc/Main "$1" > "$llf" && src/csrc/build/compiler < "$llf" > "$interf" || (error=$? ; rm "$llf" ; rm "$interf" ; exit $error)
+src/haskellsrc/Main "$1" > "tmp/test.tree"
+flag=$?
+if [ $flag -ne 0 ]; then
+  rm "tmp/test.tree"
+  exit $flag
+else
+  src/csrc/build/compiler < "tmp/test.tree" > "tmp/test.ll"
+  flag=$?
+  rm "tmp/test.tree"
+fi
 
+if [ $flag -ne 0 ]; then
+  rm "tmp/test.ll"
+  exit $flag
+else
+  llvm-as -o "tmp/test.bc" "tmp/test.ll"
+  flag=$?
+fi
 
-bcf=$(mktemp /tmp/bcf.XXXXXX)
-linkf="${outdir}/${basefile}.bc"
+if [ $flag -ne 0 ]; then
+  rm "tmp/test.ll"
+  rm "tmp/test.bc"
+  exit $flag
+else
+  llvm-link -o "tmp/run.bc" "tmp/test.bc" "lib/runtime.bc"
+  flag=$?
+fi
 
-
-llvm-as -o "$bcf" "$interf"
-llvm-link -o "$linkf" "$bcf" "lib/runtime.bc"
-error=$?
-
-rm "$llf"
-rm "$bcf"
-exit $error
+rm "tmp/test.bc"
+exit $flag

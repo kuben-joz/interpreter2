@@ -1,5 +1,6 @@
 
 
+#include <llvm-14/llvm/IR/BasicBlock.h>
 #include <llvm-14/llvm/IR/InstVisitor.h>
 
 #include "cfg.h"
@@ -125,24 +126,25 @@ void transform_rec(int idx, CFG &cfg, DomTree &dom, InitCleaner &cleaner) {
   cleaner.clean_insts();
 }
 
-bool add_void_ret(CFG &cfg) {
+bool add_ret_or_trim(CFG &cfg) {
   if (!cfg.start_blks.front()->getParent()->getReturnType()->isVoidTy()) {
     return false;
-  }
-  bool res = false;
-  for (auto *blk : cfg.end_blks) {
-    if (blk->empty() || !llvm::isa<llvm::ReturnInst>(blk->back())) {
-      llvm::ReturnInst::Create(blk->getContext(), blk);
-      res = true;
+  } else {
+    bool res = false;
+    for (auto *blk : cfg.end_blks) {
+      if (blk->empty() || !llvm::isa<llvm::ReturnInst>(blk->back())) {
+        llvm::ReturnInst::Create(blk->getContext(), blk);
+        res = true;
+      }
     }
+    return res;
   }
-  return res;
 }
 
 std::pair<bool, bool> init_clean(CFG &cfg, DomTree &dom) {
 
   InitCleaner cleaner(cfg, dom);
-  bool void_added = add_void_ret(cfg);
+  bool void_added = add_ret_or_trim(cfg);
   transform_rec(0, cfg, dom, cleaner);
 
   return std::make_pair(void_added || cleaner.change_glob,
