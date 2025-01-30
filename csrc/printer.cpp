@@ -468,7 +468,7 @@ void print(llvm::Module *module, std::set<llvm::Function *> extern_funcs) {
       strm << "\", align 1; \"" << it.first.substr(0, it.first.length() - 1)
            << "\"\n";
     } else {
-      strm << " 1 x i8] " << "zeroinitializer, align 1; empty string\n";
+      strm << "1 x i8] " << "zeroinitializer, align 1; empty string\n";
     }
   }
 }

@@ -20,4 +20,8 @@ public:
 
   void set(uint64_t idx);
   void clear();
+
+  void expand(uint64_t new_sz);
+
+  bool operator==(const DynamicBitset &other);
 };

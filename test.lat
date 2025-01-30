@@ -1,99 +1,33 @@
+/* Test boolean operators. */
 
 int main() {
-	int x = 6;
-	string s = "test";
-	x = -x;
-	int y = readInt();
-	printInt(x+y);
-	test1(true, false);
-	return x + y;
+  printString("&&");
+  printBool(test(-1) && test(0));
+  printBool(test(-2) && test(1));
+  printBool(test(3) && test(-5));
+  printBool(test(234234) && test(21321));
+  printString("||");
+  printBool(test(-1) || test(0));
+  printBool(test(-2) || test(1));
+  printBool(test(3) || test(-5));
+  printBool(test(234234) || test(21321));
+  printString("!");
+  printBool(true);
+  printBool(false);
+  return 0 ;
+
 }
 
-void test1(boolean a, boolean b) {
-	int x = 5;
-	string s = "test";
+void printBool(boolean b) {
+  if (!b) {
+    printString("false");
+  } else {
+    printString("true");
+ }
+ return;
 }
 
-/*
-todo phi elim
-*/
-
-/*
-iterated branching folding
-
-void test(int x, int y) {
-	while(x < y) {
-		x++;
-	}
-	while(x < y) {
-	return;
-	x * y;
-	int z = x*y;
-	}
+boolean test(int i) {
+  printInt(i);
+  return i > 0;
 }
-*/
-
-/*
-int main() {
-	int a = readInt();
-	int b = readInt();
-	boolean c = a < b;
-	if(c) {
-		if(c) {
-
-		}
-		else {
-			
-		}
-	}
-	else {
-		if(c) {
-			
-		}
-		else {
-			
-		}
-	}
-	return 0;
-}
-
-
-
-this fails
-int test() {
-    while (true) {
-        int x;
-        x = readInt();
-        if (x == 1)
-					while(x == 1) {
-            return 0;
-					}
-        else
-            printString("jeszcze raz");
-    }
-}
-but this is ok
-int test() {
-    while (true) {
-        int x;
-        x = readInt();
-        if (x == 1)
-					while(true) {
-            return 0;
-					}
-        else
-            printString("jeszcze raz");
-    }
-}
-
-*/
-/*
-this doesnt fail
-int main() {
-    if(true)
-        int a;
-    return 0;
-}
-
-
-*/

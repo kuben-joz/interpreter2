@@ -381,6 +381,7 @@ public:
       if (new_v == &phi) {
         return;
       }
+      assert(phi.hasConstantValue());
       phi.replaceAllUsesWith(new_v);
       inst_to_del.emplace_back(&phi);
       change_glob = true;
@@ -401,36 +402,37 @@ public:
           }
         }
         assert(prev);
+        assert(phi.hasConstantValue());
         inst_to_del.emplace_back(&phi);
         phi.replaceAllUsesWith(prev);
         change_glob = true;
       } 
-      else if (str_cmp.is_string_type(phi.getType())) {
-        std::vector<llvm::Value *> vals;
-        for (auto &v : phi.incoming_values()) {
-          if (auto *phi2 = llvm::dyn_cast<llvm::PHINode>(&v)) {
-            if (&phi == phi2) {
-              continue;
-            } else {
-              return; // todo maybe add deeper
-            }
-          } else {
-            assert(str_cmp.is_string(v));
-            if (!str_cmp.is_string(v)) {
-              return;
-            }
-            vals.emplace_back(v);
-          }
-        }
-        assert(!vals.empty());
-        if (vals.empty()) {
-          return;
-        }
-        llvm::Value *new_v = vals.front();
-        inst_to_del.emplace_back(&phi);
-        phi.replaceAllUsesWith(new_v);
-        change_glob = true;
-      }
+      //else if (str_cmp.is_string_type(phi.getType())) {
+      //  std::vector<llvm::Value *> vals;
+      //  for (auto &v : phi.incoming_values()) {
+      //    if (auto *phi2 = llvm::dyn_cast<llvm::PHINode>(&v)) {
+      //      if (&phi == phi2) {
+      //        continue;
+      //      } else {
+      //        return; // todo maybe add deeper
+      //      }
+      //    } else {
+      //      assert(str_cmp.is_string(v));
+      //      if (!str_cmp.is_string(v)) {
+      //        return;
+      //      }
+      //      vals.emplace_back(v);
+      //    }
+      //  }
+      //  assert(!vals.empty());
+      //  if (vals.empty()) {
+      //    return;
+      //  }
+      //  llvm::Value *new_v = vals.front();
+      //  inst_to_del.emplace_back(&phi);
+      //  phi.replaceAllUsesWith(new_v);
+      //  change_glob = true;
+      //}
     }
   };
 

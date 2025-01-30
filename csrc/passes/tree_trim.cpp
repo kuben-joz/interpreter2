@@ -113,8 +113,9 @@ public:
               }
             };
             assert(num_preds > 0);
-            // orig dominates skip so in theory this means that skip_idx will have an empty dom tree if
-            // it has more than one predecessor so cleaning the hanging dom rec won't do anything
+            // orig dominates skip so in theory this means that skip_idx will
+            // have an empty dom tree if it has more than one predecessor so
+            // cleaning the hanging dom rec won't do anything
             if (num_preds == 1) {
               removed[skip_idx] = true;
             }
@@ -150,7 +151,7 @@ std::pair<bool, bool> trim_tree(CFG &cfg, DomTree &dom) {
   for (int i = 0; i < dom.idx_to_blk.size(); i++) {
     if (!trimmer.removed[i]) {
       llvm::BasicBlock *blk = dom.idx_to_blk[i];
-      assert(!blk->empty());
+      // assert(!blk->empty());
       if (!blk->empty()) {
         trimmer.visit(blk->back());
         trimmer.clean_insts();
@@ -179,6 +180,13 @@ std::pair<bool, bool> trim_tree(CFG &cfg, DomTree &dom) {
           dom.idx_to_blk[i] = nullptr;
         }
       }
+    }
+  }
+  for (auto *blk : cfg.end_blks) {
+    if (!dom.blk_to_idx.count(blk)) {
+      trimmer.change_glob = true;
+      trimmer.change_structure = true;
+      blk->eraseFromParent();
     }
   }
 

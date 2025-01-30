@@ -14,6 +14,8 @@ void CFG::update() {
   start_blks.emplace_back(&(func->getEntryBlock()));
   for (auto &blk_ref : func->getBasicBlockList()) {
     llvm::BasicBlock *blk = &blk_ref;
+    succ[blk];
+    pred[blk];
     if (!blk->empty()) {
       llvm::Instruction *instr = &(blk->back());
       if (auto *br = llvm::dyn_cast<llvm::BranchInst>(instr)) {

@@ -57,6 +57,7 @@ bool StringCMP::is_string_type(llvm::Type *typ) {
 
 bool StringCMP::is_string(llvm::Value *val) {
   llvm::Type *typ = val->getType();
+  return is_string_type(typ);
 }
 
 // bit width 0 if not ocnstant

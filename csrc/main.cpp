@@ -12,6 +12,7 @@
 
 #include "cfg.h"
 #include "dom_tree.h"
+#include "gcse.h"
 #include "init_pass.h"
 #include "ir_builder.h"
 #include "mem2reg.h"
@@ -92,7 +93,6 @@ int main() {
   llvm::Function *strs_eq_fn = visitor.str_eq_fn;
   int i = 0;
   for (auto &fn_ref : module->getFunctionList()) {
-    break;
     StringCMP str_cmp;
     llvm::Function *fn = &fn_ref;
     if (extern_funcs.count(fn)) {
@@ -111,14 +111,17 @@ int main() {
     mem2reg::transform(cfg, dom);
     res = clean::val_prop(cfg, dom, strs_eq_fn, str_cmp, builder.get());
     assert(!res.second);
+    cfg = CFG(fn);
+    dom = DomTree(cfg);
     res = clean::trim_tree(cfg, dom);
     if (res.second) {
       cfg = CFG(fn);
       dom = DomTree(cfg);
     }
+    clean::run_gcse(cfg, dom);
     i++;
   }
-  printer::print(module.get(), extern_funcs);
+  //printer::print(module.get(), extern_funcs);
   module->dump();
   return 0;
 }
