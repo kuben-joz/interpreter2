@@ -7,9 +7,9 @@
 @d_write = internal constant [4 x i8] c"%d\0A\00"
 ;
 @d = internal constant [3 x i8] c"%d\00"
-@malloc_fail_conc = internal constant [30 x i8] c"malloc fail on string concat\0A\00"
-@read_str_fail = internal constant [29 x i8] c"getline failed on getString\0A\00"
-@run_err = internal constant [15 x i8] c"runtime error\0A\00"
+@malloc_fail_conc = internal constant [29 x i8] c"malloc fail on string concat\00"
+@read_str_fail = internal constant [28 x i8] c"getline failed on getString\00"
+@run_err = internal constant [14 x i8] c"runtime error\00"
 ;@lf  = internal constant [4 x i8] c"%lf\00"	
 ; --------------  all of these can produce name conflicts I think --------------
 @stdin = external global %struct._IO_FILE*
@@ -50,7 +50,7 @@ define i8* @merge_strs(i8* %s1, i8* %s2) {
 		%i8 = call i8* @strcat(i8* %i5, i8* %s2)
 		ret i8* %i5
 	fail:
-		%i9 = getelementptr [30 x i8], [30 x i8]* @malloc_fail_conc, i32 0, i32 0
+		%i9 = getelementptr [29 x i8], [29 x i8]* @malloc_fail_conc, i32 0, i32 0
 		%i10 = call i32 @puts(i8* %i9)
 		call void @exit(i32 -1)
 		ret i8* null
@@ -98,7 +98,7 @@ define i8* @readString() {
 		ret  i8* %res
 	fail:
 		call void @free(i8* %res)
-		%err_msg = getelementptr [29 x i8], [29 x i8]* @read_str_fail, i32 0, i32 0
+		%err_msg = getelementptr [28 x i8], [28 x i8]* @read_str_fail, i32 0, i32 0
 		%puts_tmp = call i32 @puts(i8* %err_msg)
 		call void @exit(i32 -1)
 		ret i8* null
@@ -117,7 +117,7 @@ entry:
 
 define void @error() {
 	entry:
-		%i0 = getelementptr [15 x i8], [15 x i8]* @run_err, i32 0, i32 0
+		%i0 = getelementptr [14 x i8], [14 x i8]* @run_err, i32 0, i32 0
 		call i32 @puts(i8* %i0)
 		call void @exit(i32 1)
 		ret void

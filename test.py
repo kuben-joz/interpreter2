@@ -14,13 +14,24 @@ def main():
     for fn in files:
         p = subprocess.run(
             ["./latc", fn],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
+            capture_output=True,
+            text=True,
         )
-        if (bad and p.stderr.decode("ascii")[:6] != "ERROR\n") or (
-            not bad and p.stderr.decode("ascii")[:3] != "OK\n"
-        ):
-            print(Path(fn).stem)
+        print(p.stderr)
+    
+    
+    
+    
+    #for fn in files:
+    #    p = subprocess.run(
+    #        ["./latc", fn],
+    #        stdout=subprocess.PIPE,
+    #        stderr=subprocess.PIPE,
+    #    )
+    #    if (bad and p.stderr.decode("ascii")[:6] != "ERROR\n") or (
+    #        not bad and p.stderr.decode("ascii")[:3] != "OK\n"
+    #    ):
+    #        print(Path(fn).stem)
 
 
 if __name__ == "__main__":

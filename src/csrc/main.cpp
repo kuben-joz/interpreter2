@@ -99,30 +99,29 @@ int main() {
       continue;
     }
     CFG cfg(fn);
-    //  draw_cfg(module.get(), cfg, i);
-    //  draw_rev_cfg(module.get(), cfg, 1000+i);
     DomTree dom(cfg);
     std::pair<bool, bool> res = clean::init_clean(cfg, dom);
-    if (res.second) {
-      cfg = CFG(fn);
-      dom = DomTree(cfg);
-    }
+
+    cfg = CFG(fn);
+    dom = DomTree(cfg);
     dom.dom_frontier();
     mem2reg::transform(cfg, dom);
+    cfg = CFG(fn);
+    dom = DomTree(cfg);
     res = clean::val_prop(cfg, dom, strs_eq_fn, str_cmp, builder.get());
     assert(!res.second);
+
     cfg = CFG(fn);
     dom = DomTree(cfg);
     res = clean::trim_tree(cfg, dom);
-    if (res.second) {
-      cfg = CFG(fn);
-      dom = DomTree(cfg);
-    }
+
+    cfg = CFG(fn);
+    dom = DomTree(cfg);
     clean::run_gcse(cfg, dom);
     i++;
   }
-  //printer::print(module.get(), extern_funcs);
-  module->dump();
+  printer::print(module.get(), extern_funcs);
+  //module->dump();
   return 0;
 }
 

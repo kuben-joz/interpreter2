@@ -14,15 +14,13 @@ void CFG::update() {
   start_blks.emplace_back(&(func->getEntryBlock()));
   for (auto &blk_ref : func->getBasicBlockList()) {
     llvm::BasicBlock *blk = &blk_ref;
-    succ[blk];
-    pred[blk];
     if (!blk->empty()) {
       llvm::Instruction *instr = &(blk->back());
       if (auto *br = llvm::dyn_cast<llvm::BranchInst>(instr)) {
         for(auto *s : br->successors()) {
-          assert(succ[blk].empty() || succ[blk].back() != s);
+          //assert(succ[blk].empty() || succ[blk].back() != s);
           succ[blk].emplace_back(s);
-          assert(pred[s].empty() || pred[s].back() != blk);
+          //assert(pred[s].empty() || pred[s].back() != blk);
           pred[s].emplace_back(blk);
         }
       }

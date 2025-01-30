@@ -183,7 +183,7 @@ std::pair<bool, bool> trim_tree(CFG &cfg, DomTree &dom) {
     }
   }
   for (auto *blk : cfg.end_blks) {
-    if (!dom.blk_to_idx.count(blk)) {
+    if (!blk->isEntryBlock() && !cfg.succ.count(blk) && !cfg.pred.count(blk)) {
       trimmer.change_glob = true;
       trimmer.change_structure = true;
       blk->eraseFromParent();
