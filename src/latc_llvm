@@ -1,6 +1,19 @@
 #!/bin/bash
+llf=$(mktemp /tmp/llf.XXXXXX)
+interf=$(mktemp /tmp/interf.XXXXXX)
+src/haskellsrc/Main $1 > "$llf" && src/csrc/build/compiler < "$llf" 2> "$interf" || (error=$? ; rm "$llf" ; rm "$interf" ; exit $error)
 
 
+bcf=$(mktemp /tmp/bcf.XXXXXX)
+linkf=$(mktemp /tmp/linkf.XXXXXX)
 
+llvm-as -o "$bcf" "$interf"
+llvm-link -o "$linkf" "$bcf" "lib/runtime.bc"
+lli "$linkf"
+error=$?
 
-rm "$llfile"
+rm "$llf"
+rm "$interf"
+rm "$bcf"
+rm "$linkf"
+exit $error
