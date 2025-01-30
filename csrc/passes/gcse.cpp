@@ -4,8 +4,11 @@
 #include <llvm-14/llvm/IR/InstrTypes.h>
 #include <llvm-14/llvm/IR/Instruction.h>
 #include <llvm-14/llvm/IR/Instructions.h>
+#include <llvm-14/llvm/IR/Value.h>
 #include <tuple>
 #include <unordered_map>
+#include <utility>
+#include <vector>
 
 #include "cfg.h"
 #include "dom_tree.h"
@@ -18,6 +21,7 @@ namespace clean {
 
 // {REF}
 // https://stackoverflow.com/questions/2590677/how-do-i-combine-hash-values-in-c0x
+// i.e. this is from boost
 template <class T> inline void hash_combine(std::size_t &seed, const T &v) {
   std::hash<T> hasher;
   seed ^= hasher(v) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
@@ -32,54 +36,6 @@ public:
   DomTree &dom;
   std::vector<bool> removed;
   std::vector<Instruction *> inst_to_del;
-  // this is kinda a FIND UNION
-
-  enum OPS {
-    EQ,
-    NE,
-    GT,
-    LT,
-    LE,
-    ADD,
-    SUB,
-    MUL,
-    UDIV,
-    SDIV,
-    UREM,
-    SREM,
-    SHL,
-    LSHR,
-    ASHR,
-    AND,
-    OR,
-    XOR
-  };
-
-  struct val {
-    int64_t const_val;
-    ast::Type type;
-    llvm::Value *ptr_val;
-
-    val(int64_t const_val, ast::Type type)
-        : const_val(const_val), type(type), ptr_val(nullptr) {}
-
-    val(Value *ptr_val, ast::Type type)
-        : const_val(0), type(type), ptr_val(ptr_val) {}
-
-    std::size_t operator()(const val &x) const {
-      std::hash<int64_t> hasher;
-      size_t seed = hasher(x.const_val);
-      seed ^= hasher(x.type) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
-      seed ^=
-          hasher((intptr_t)x.ptr_val) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
-      return seed;
-    }
-
-    bool operator==(const val &other) {
-      return (const_val == other.const_val) && (type == other.type) &&
-             (ptr_val == other.ptr_val);
-    }
-  };
 
   struct pairhash {
   public:
@@ -93,40 +49,37 @@ public:
 
   // ICMP or binaryop
 
-  std::vector<int> parent;
-  std::vector<val> vals;
-  std::map<llvm::CmpInst::Predicate,
-           std::unordered_map<std::pair<int, int>, int, pairhash>>
-      icmp_refs;
-  std::map<llvm::Instruction::BinaryOps,
-           std::unordered_map<std::pair<int, int>, int, pairhash>>
-      bin_op_refs;
+  std::vector<Value *> idx_to_val;
+  std::unordered_map<Value *, int> val_to_idx;
 
-  std::unordered_map<llvm::Value *, int> val_to_int;
+  std::map<CmpInst::Predicate,
+           std::unordered_map<std::pair<int, int>, int, pairhash>>
+      icmp_to_idx;
+  std::map<CmpInst::Predicate, std::vector<std::pair<int, int>>> icmp_to_pop;
+
+  std::map<Instruction::BinaryOps,
+           std::unordered_map<std::pair<int, int>, int, pairhash>>
+      bin_op_to_idx;
+  std::map<Instruction::BinaryOps, std::vector<std::pair<int, int>>>
+      bin_op_to_pop;
 
   GCSE(CFG &cfg, DomTree &dom)
       : cfg(cfg), dom(dom), removed(dom.blk_to_idx.size(), false) {}
 
   std::pair<int, bool> get_or_insert_id(Value *v) {
-    auto search = val_to_int.insert({v, vals.size()});
+    int res = idx_to_val.size();
+    auto search = val_to_idx.insert({v, res});
     if (search.second) {
-      int res = vals.size();
-      assert(res == parent.size());
-      vals.emplace_back(v);
-      parent.emplace_back(res);
+      assert(res = idx_to_val.size());
+      idx_to_val.emplace_back(res);
       return {res, true};
     } else {
-      int res = search.first->second;
-      while (res != parent[res]) {
-        res = parent[res];
-      }
+      res = search.first->second;
       return {res, false};
     }
   }
 
   void clean_insts() {
-    val v(1, ast::VOID);
-    val v2(v);
     if (inst_to_del.empty()) {
       return;
     }
@@ -138,102 +91,135 @@ public:
   }
 
   void visitInstruction(Instruction &inst) {
-    assert("false" && "unhandled instruction");
+    assert(false && "unhandled instruction");
+    val_to_idx[&inst] = idx_to_val.size();
+    idx_to_val.emplace_back(&inst);
   }
 
   void visitICmpInst(ICmpInst &icmp) {
     Value *l_v = icmp.getOperand(0);
     Value *r_v = icmp.getOperand(1);
-    int l_id = get_or_insert_id(l_v).first;
-    int r_id = get_or_insert_id(r_v).first;
+    auto [l_id, l_new] = get_or_insert_id(l_v);
+    auto [r_id, r_new] = get_or_insert_id(r_v);
     const CmpInst::Predicate predicate = icmp.getPredicate();
-    auto &inst_map = icmp_refs[predicate];
-    std::unordered_map<std::pair<int, int>, int>::iterator it;
-    std::unordered_map<std::pair<int, int>, int>::iterator it_rev;
-    switch (predicate) {
-    case CmpInst::ICMP_EQ:
-    case CmpInst::ICMP_NE:
-      it_rev = inst_map.find({r_id, l_id});
-      if (it_rev != inst_map.end()) {
-        inst_to_del.emplace_back(&icmp);
-        int idx = it->second;
-        while(idx != )
-        icmp.replaceAllUsesWith(Value *V)
+    auto &inst_map = icmp_to_idx[predicate];
+    auto search = inst_map.insert({{l_id, r_id}, (int)idx_to_val.size()});
+    if (search.second) {
+      auto &cmp_pop = icmp_to_pop[predicate];
+      cmp_pop.emplace_back(l_id, r_id);
+      if (predicate == CmpInst::ICMP_EQ || predicate == CmpInst::ICMP_NE) {
+        auto search_rev =
+            inst_map.insert({{r_id, l_id}, (int)idx_to_val.size()});
+        assert(search_rev
+                   .second); // check we didn't forget to insert other way round
+        cmp_pop.emplace_back(r_id, l_id);
       }
-    default:
-      it = inst_map.find({l_id, r_id});
-      if(it == inst_map.end()) {
-
-      }
+      idx_to_val.emplace_back(&icmp);
+    } else { // value already present
+      Value *repl_inst = idx_to_val[search.first->second];
+      inst_to_del.emplace_back(icmp);
+      icmp.replaceAllUsesWith(repl_inst);
+      change_glob = true;
     }
   }
 
-  void visitAllocaInst(AllocaInst &alloca) {}
+  // we take care of this in a post mem2reg pass
+  void visitAllocaInst(AllocaInst &alloca) {
+    val_to_idx[&alloca] = idx_to_val.size();
+    idx_to_val.emplace_back(&alloca);
+  }
 
-  void visitLoadInst(LoadInst &load) {}
+  void visitLoadInst(LoadInst &load) {
+    val_to_idx[&load] = idx_to_val.size();
+    idx_to_val.emplace_back(&load);
+  }
 
-  void visitStoreInst(StoreInst *store) {}
+  void visitStoreInst(StoreInst &store) {
+    val_to_idx[&store] = idx_to_val.size();
+    idx_to_val.emplace_back(&store);
+  }
 
-  void visitPHINode(PHINode &phi) { was_phi = true; }
+  void visitPHINode(PHINode &phi) {
+    assert(false && "todo");
+    was_phi = true;
+  }
 
-  void visitCallInst(CallInst &call) {}
+  void visitCallInst(CallInst &call) {
+    val_to_idx[&call] = idx_to_val.size();
+    idx_to_val.emplace_back(&call);
+  }
 
   void visitReturnInst(ReturnInst &ret) {}
 
   void visitBranchInst(BranchInst &br) {}
 
   void visitBinaryOperator(BinaryOperator &mul) {
-    switch (mul.getOpcode()) {
-    case llvm::Instruction::Add:
+    Value *l_v = mul.getOperand(0);
+    Value *r_v = mul.getOperand(1);
+    auto [l_id, new_l] = get_or_insert_id(l_v);
+    auto [r_id, new_r] = get_or_insert_id(r_v);
+    Instruction::BinaryOps op = mul.getOpcode();
 
-      break;
-    case llvm::Instruction::Sub:
+    auto &inst_map = bin_op_to_idx[op];
+    auto search = inst_map.insert({{l_id, r_id}, (int)idx_to_val.size()});
 
-      break;
-    case llvm::Instruction::Mul:
-
-      break;
-    case llvm::Instruction::UDiv:
-
-      break;
-    case llvm::Instruction::SDiv:
-
-      break;
-    case llvm::Instruction::URem:
-
-      break;
-    case llvm::Instruction::SRem:
-
-      break;
-    case llvm::Instruction::Shl:
-
-      break;
-    case llvm::Instruction::LShr:
-
-      break;
-    case llvm::Instruction::AShr:
-
-      break;
-    case llvm::Instruction::And:
-
-      break;
-    case llvm::Instruction::Or:
-
-      break;
-    case llvm::Instruction::Xor:
-
-      break;
-    default:
-
-      break;
+    if (search.second) {
+      auto &inst_pop = bin_op_to_pop[op];
+      const bool is_symm = op == Instruction::Add || op == Instruction::Mul ||
+                           op == Instruction::And || op == Instruction::Or ||
+                           op == Instruction::Xor;
+      if (is_symm) {
+        auto search_rev =
+            inst_map.insert({{r_id, l_id}, (int)idx_to_val.size()});
+        assert(
+            search_rev
+                .second); // we didn't forget to isnert reverse value somewher
+      }
+    } else {
+      Value *repl_val = idx_to_val[search.first->second];
+      inst_to_del.emplace_back(mul);
+      mul.replaceAllUsesWith(repl_val);
+      change_glob = true;
     }
   }
 
   void run_rec(int idx) {
     BasicBlock *blk = dom.idx_to_blk[idx];
+    std::map<Instruction::BinaryOps, int> bin_op_pop_nums;
+    for (auto &[op, to_pop] : bin_op_to_pop) {
+      bin_op_pop_nums[op] = to_pop.size();
+    }
+    std::map<CmpInst::Predicate, int> icmp_pop_nums;
+    for (auto &[pred, to_pop] : icmp_to_pop) {
+      icmp_pop_nums[pred] = to_pop.size();
+    }
+    assert(false && "todo");
+
+    clean_insts();
+    int init_num_vals = idx_to_val.size();
 
     for (int succ : dom.dom_succs[idx]) {
+
       run_rec(succ);
+      for (auto &[op, to_pop] : bin_op_to_pop) {
+        std::unordered_map<std::pair<int, int>, int, pairhash> &pop_map =
+            bin_op_to_idx[op];
+        const int pop_size = bin_op_pop_nums[op];
+        while (to_pop.size() != pop_size) {
+          pop_map.erase(to_pop.back());
+          to_pop.pop_back();
+        }
+      }
+      for (auto &[pred, to_pop] : icmp_to_pop) {
+        std::unordered_map<std::pair<int, int>, int, pairhash> &pop_map =
+            icmp_to_idx[pred];
+        const int pop_size = icmp_pop_nums[pred];
+        while (to_pop.size() != pop_size) {
+          pop_map.erase(to_pop.back());
+          to_pop.pop_back();
+        }
+      }
+      idx_to_val.resize(init_num_vals);
     }
   }
 };
@@ -242,6 +228,6 @@ std::pair<bool, bool> run_gcse(CFG &cfg, DomTree &dom) {
 
   GCSE gcse(cfg, dom);
 
-  return std::make_pair(gcse.change_glob, gcse.change_structure);
+  return {gcse.change_glob, gcse.change_structure};
 }
 } // namespace clean
