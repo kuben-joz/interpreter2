@@ -131,9 +131,10 @@ public:
         //   }
         // }
         // if (!removed[skip_idx]) {
-        //   remove_phis(cur_idx, skip_idx);
+        //
         // }
         removed[skip_idx] = true;
+        remove_phis(cur_idx, skip_idx);
         // swap to single br
         inst_to_del.emplace_back(&br);
         llvm::BranchInst::Create(keep, cur);

@@ -34,7 +34,7 @@ else
 fi
 
 if [ $flag -ne 0 ]; then
-  rm "$llf"
+  #rm "$llf"
   rm "$bcf"
   exit $flag
 else

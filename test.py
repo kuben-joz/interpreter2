@@ -23,15 +23,15 @@ def main():
                 true_out = f.readlines()
 
         p = subprocess.run(
-            ["./latc_llvm", full],
+            ["./latc", full],
             capture_output=True,
             text=True,
         )
-        #my_res = p.stdout.splitlines()
-        #for my, true in zip(my_res, true_out):
-        #    if my != true:
-        #        print(f"!!!!!!!!!!!!!!!fail on {base}!!!!!!!!!!!!!!!!!!!!!")
-        #        break
+        my_res = p.stdout.splitlines()
+        for my, true in zip(my_res, true_out):
+            if my != true:
+                print(f"!!!!!!!!!!!!!!!fail on {base}!!!!!!!!!!!!!!!!!!!!!")
+                break
     
 
 

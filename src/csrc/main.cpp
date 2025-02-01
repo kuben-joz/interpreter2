@@ -107,15 +107,17 @@ int main() {
     cfg = CFG(fn);
     res = clean::remove_unreachable(cfg);
 
-    cfg = CFG(fn);
-    dom = DomTree(cfg);
-    res = clean::trim_tree(cfg, dom);
+    // cfg = CFG(fn);
+    // dom = DomTree(cfg);
+    // res = clean::trim_tree(cfg, dom);
 
     // todo maybe trim ehre
-    cfg = CFG(fn);
-    res = clean::remove_unreachable(cfg);
+    // cfg = CFG(fn);
+    // res = clean::remove_unreachable(cfg);
 
     cfg = CFG(fn);
+    // draw_cfg(module.get(), cfg, i);
+    // i++;
     dom = DomTree(cfg);
     dom.dom_frontier();
     mem2reg::transform(cfg, dom);
@@ -151,20 +153,19 @@ int main() {
 
     cfg = CFG(fn);
     dom = DomTree(cfg);
+    // this is mostly here to remove phi values with one incoming value
     res = clean::val_prop(cfg, dom, strs_eq_fn, str_cmp, builder.get());
-
-    cfg = CFG(fn);
-    res = clean::remove_unreachable(cfg);
 
     // argval here helps
 
     cfg = CFG(fn);
     dom = DomTree(cfg);
     clean::fold_tree(cfg, dom); // do this last
+
     i++;
   }
   printer::print(module.get(), extern_funcs);
-  // module->dump();
+  //module->dump();
   return 0;
 }
 

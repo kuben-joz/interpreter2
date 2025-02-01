@@ -1,5 +1,8 @@
 #include "mem2reg.h"
 #include <cstddef>
+#include <llvm-14/llvm/IR/Instruction.h>
+#include <llvm-14/llvm/Support/Casting.h>
+#include <unordered_set>
 
 namespace mem2reg {
 struct var {
@@ -87,16 +90,33 @@ void rename_rec(const int blk_idx,
   // all children, not just dominated
   // note to self, this is for something like while loops to have phis both ways
   // successors in papaer are CFG, children are Dom Tree
+  /*
+  Here, the words predecessor, successor, and path always refer to CFG.
+
+ The words parent, child, ancestor, and descendant always refer to the dominator
+ tree.
+  */
   for (llvm::BasicBlock *cfg_child : cfg.succ[blk]) {
     for (auto &inst_ref : cfg_child->getInstList()) {
       if (auto *phi_inst = llvm::dyn_cast<llvm::PHINode>(&inst_ref)) {
         auto var_it = inst_to_var.find(phi_inst);
         if (var_it == inst_to_var.end()) {
+          // this I believe is just the assingment of logical statements
           continue;
         }
         // phi node is dead in this block, todo make a pass to check for this
-        if (var_it->second->repl_val_stack.back() == nullptr) { 
-          var_it->second->to_remove_insts.emplace_back(phi_inst);
+        if (var_it->second->repl_val_stack.back() == nullptr) {
+          // we can't remove here, liveness analysis required
+          //var_it->second->to_remove_insts.emplace_back(phi_inst);
+          //for (auto *user : phi_inst->users()) {
+          //  if (auto *inst_desc = llvm::dyn_cast<llvm::Instruction>(user)) {
+          //    var_it->second->to_remove_insts.emplace_back(
+          //        inst_desc); // todo make sure we don't remove twice
+          //  } else {
+          //    assert(false &&
+          //           "use that isn't an instructions for dead phi encountered");
+          //  }
+          //}
         } else {
           phi_inst->addIncoming(var_it->second->repl_val_stack.back(), blk);
         }
@@ -180,11 +200,30 @@ void transform(CFG &cfg, DomTree &dom) {
   rename_rec(0, inst_to_var, cfg, dom);
 
   // remove unneeded isntructions
+  std::unordered_set<llvm::Value *> removed;
   for (auto &v : vars) {
     assert(v->repl_val_stack.back() == nullptr);
     v->alloc->eraseFromParent();
     for (auto *inst : v->to_remove_insts) {
-      inst->eraseFromParent();
+      auto it = removed.insert(inst);
+      //if(!it.second) {
+      //  continue;
+      //}
+      //for(auto *user : inst->users()) {
+      //  if(auto *inst_child = llvm::dyn_cast<llvm::Instruction>(user)) {
+      //    auto it1 = removed.insert(inst_child);
+      //    if(it1.second) {
+      //      inst_child->eraseFromParent();
+      //    }
+      //  }
+      //  else {
+      //    assert(false && "we shouldn't have any uses other than isntructions");
+      //  }
+      //  
+      //}
+      if (it.second) {
+        inst->eraseFromParent();
+      }
     }
   }
 }
