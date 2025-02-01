@@ -107,17 +107,15 @@ int main() {
     cfg = CFG(fn);
     res = clean::remove_unreachable(cfg);
 
-    // cfg = CFG(fn);
-    // dom = DomTree(cfg);
-    // res = clean::trim_tree(cfg, dom);
-
-    // todo maybe trim ehre
-    // cfg = CFG(fn);
-    // res = clean::remove_unreachable(cfg);
+    cfg = CFG(fn);
+    dom = DomTree(cfg);
+    res = clean::trim_tree(cfg, dom);
 
     cfg = CFG(fn);
-    // draw_cfg(module.get(), cfg, i);
-    // i++;
+    res = clean::remove_unreachable(cfg);
+
+    cfg = CFG(fn);
+
     dom = DomTree(cfg);
     dom.dom_frontier();
     mem2reg::transform(cfg, dom);

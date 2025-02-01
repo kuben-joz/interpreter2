@@ -57,6 +57,7 @@ void rename_rec(const int blk_idx,
       }
       if (var_it->second->repl_val_stack.back() == nullptr) {
         // todo, how do we deal with this???
+        // its fine it turns out
         assert(false && "Edge case todo");
       } else {
         // This is equivalent to the C(V) renaming in the paper
@@ -106,17 +107,6 @@ void rename_rec(const int blk_idx,
         }
         // phi node is dead in this block, todo make a pass to check for this
         if (var_it->second->repl_val_stack.back() == nullptr) {
-          // we can't remove here, liveness analysis required
-          //var_it->second->to_remove_insts.emplace_back(phi_inst);
-          //for (auto *user : phi_inst->users()) {
-          //  if (auto *inst_desc = llvm::dyn_cast<llvm::Instruction>(user)) {
-          //    var_it->second->to_remove_insts.emplace_back(
-          //        inst_desc); // todo make sure we don't remove twice
-          //  } else {
-          //    assert(false &&
-          //           "use that isn't an instructions for dead phi encountered");
-          //  }
-          //}
         } else {
           phi_inst->addIncoming(var_it->second->repl_val_stack.back(), blk);
         }
