@@ -14,7 +14,9 @@ declare i8* @merge_strs(i8*, i8*)
 
 define i32 @main() {
 blk_0:
-  call void @printInt(i32 2)
+  call void @printInt(i32 42)
+  call void @printInt(i32 14)
+  call void @printInt(i32 14)
   ret i32 0
 
 }
