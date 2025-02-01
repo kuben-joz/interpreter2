@@ -20,7 +20,7 @@ set (CMAKE_CXX_STANDARD 17)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-set(my_dirs ${PROJECT_SOURCE_DIR}/graphs ${PROJECT_SOURCE_DIR}/passes ${PROJECT_SOURCE_DIR})
+set(my_dirs graphs passes .)
 
 include_directories(${LLVM_INCLUDE_DIRS} ${my_dirs})
 separate_arguments(LLVM_DEFINITIONS_LIST NATIVE_COMMAND ${LLVM_DEFINITIONS})
