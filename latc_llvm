@@ -1,12 +1,6 @@
 #!/bin/bash
 
-#llf=$(mktemp /tmp/llf.XXXXXX)
-#basefile=$(basename -- "$1" .lat)
-#outdir=$(dirname -- "$1")
-#interf="${outdir}/${basefile}.ll"
-#src/haskellsrc/Main "$1" > "$llf" && src/csrc/build/compiler < "$llf" > "$interf" || (error=$? ; rm "$llf" ; rm "$interf" ; exit $error)
-
-treef=$(mktemp /tmp/llf.XXXXXX)
+treef=$(mktemp /tmp/treef.XXXXXX)
 
 basefile=$(basename -- "$1" .lat)
 
@@ -34,7 +28,7 @@ else
 fi
 
 if [ $flag -ne 0 ]; then
-  #rm "$llf"
+  rm "$llf"
   rm "$bcf"
   exit $flag
 else
