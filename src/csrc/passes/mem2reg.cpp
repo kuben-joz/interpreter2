@@ -193,7 +193,7 @@ void transform(CFG &cfg, DomTree &dom) {
   std::unordered_set<llvm::Value *> removed;
   for (auto &v : vars) {
     assert(v->repl_val_stack.back() == nullptr);
-    v->alloc->eraseFromParent();
+    
     for (auto *inst : v->to_remove_insts) {
       auto it = removed.insert(inst);
       //if(!it.second) {
@@ -215,6 +215,7 @@ void transform(CFG &cfg, DomTree &dom) {
         inst->eraseFromParent();
       }
     }
+    v->alloc->eraseFromParent();
   }
 }
 } // namespace mem2reg

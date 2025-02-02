@@ -154,7 +154,7 @@ int main() {
     // this is mostly here to remove phi values with one incoming value
     res = clean::val_prop(cfg, dom, strs_eq_fn, str_cmp, builder.get());
     // argval here helps
-
+    //continue;
     cfg = CFG(fn);
     dom = DomTree(cfg);
     clean::fold_tree(cfg, dom); // do this last
@@ -162,7 +162,7 @@ int main() {
     i++;
   }
   printer::print(module.get(), extern_funcs);
-  module->dump();
+  // module->dump();
   return 0;
 }
 
